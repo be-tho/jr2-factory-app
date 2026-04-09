@@ -3,26 +3,36 @@ import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../../lib/supabase/client'
 
-export function LoginPage() {
+export function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
+    setSuccess(null)
     setLoading(true)
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
     })
 
-    if (signInError) {
-      setError(signInError.message)
+    if (signUpError) {
+      setError(signUpError.message)
       setLoading(false)
       return
+    }
+
+    if (data.session) {
+      setSuccess('Registro completado. Ya estas autenticado.')
+    } else {
+      setSuccess(
+        'Registro completado. Revisa tu correo para confirmar la cuenta y luego inicia sesion.'
+      )
     }
 
     setLoading(false)
@@ -33,11 +43,9 @@ export function LoginPage() {
       <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
         <div className="mb-6">
           <p className="text-sm font-medium text-slate-500">JR2 Factory</p>
-          <h1 className="text-2xl font-semibold text-slate-900">
-            Bienvenido de nuevo
-          </h1>
+          <h1 className="text-2xl font-semibold text-slate-900">Crear cuenta</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Inicia sesion para entrar al dashboard.
+            Registra un usuario para acceder al dashboard.
           </p>
         </div>
 
@@ -65,7 +73,8 @@ export function LoginPage() {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-              placeholder="********"
+              placeholder="Minimo 6 caracteres"
+              minLength={6}
               required
             />
           </label>
@@ -76,24 +85,26 @@ export function LoginPage() {
             </p>
           ) : null}
 
+          {success ? (
+            <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+              {success}
+            </p>
+          ) : null}
+
           <button
             type="submit"
             disabled={loading}
             className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loading ? 'Ingresando...' : 'Ingresar'}
+            {loading ? 'Creando cuenta...' : 'Registrarme'}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-500">
-          No tienes cuenta?{' '}
-          <Link to="/registro" className="font-medium text-slate-900 underline">
-            Registrarte
+          Ya tienes cuenta?{' '}
+          <Link to="/login" className="font-medium text-slate-900 underline">
+            Iniciar sesion
           </Link>
-        </p>
-
-        <p className="mt-3 text-center text-xs text-slate-400">
-          Acceso solo para personal autorizado.
         </p>
       </div>
     </section>
