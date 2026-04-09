@@ -16,18 +16,18 @@ export function DashboardPage() {
       </div>
 
       <section className="grid gap-4 lg:grid-cols-2">
-        <div className="flex min-h-[220px] flex-col rounded-xl border border-dashed border-slate-200 bg-white p-5 shadow-sm">
-          <h3 className="text-sm font-medium text-slate-800">Producción vs. objetivo</h3>
-          <p className="mt-1 text-xs text-slate-500">Gráfico de barras o líneas (próximamente)</p>
-          <div className="mt-auto flex flex-1 items-center justify-center rounded-lg bg-slate-50 py-8">
-            <span className="text-sm text-slate-400">Área para gráfico</span>
+        <div className="flex min-h-[220px] flex-col rounded-xl border border-dashed border-brand-border bg-brand-surface p-5 shadow-sm">
+          <h3 className="text-sm font-medium text-brand-ink">Producción vs. objetivo</h3>
+          <p className="mt-1 text-xs text-brand-ink-muted">Gráfico de barras o líneas (próximamente)</p>
+          <div className="mt-auto flex flex-1 items-center justify-center rounded-lg bg-brand-blush/25 py-8">
+            <span className="text-sm text-brand-ink-faint">Área para gráfico</span>
           </div>
         </div>
-        <div className="flex min-h-[220px] flex-col rounded-xl border border-dashed border-slate-200 bg-white p-5 shadow-sm">
-          <h3 className="text-sm font-medium text-slate-800">Stock por categoría</h3>
-          <p className="mt-1 text-xs text-slate-500">Gráfico circular o treemap (próximamente)</p>
-          <div className="mt-auto flex flex-1 items-center justify-center rounded-lg bg-slate-50 py-8">
-            <span className="text-sm text-slate-400">Área para gráfico</span>
+        <div className="flex min-h-[220px] flex-col rounded-xl border border-dashed border-brand-border bg-brand-surface p-5 shadow-sm">
+          <h3 className="text-sm font-medium text-brand-ink">Stock por categoría</h3>
+          <p className="mt-1 text-xs text-brand-ink-muted">Gráfico circular o treemap (próximamente)</p>
+          <div className="mt-auto flex flex-1 items-center justify-center rounded-lg bg-brand-blush/25 py-8">
+            <span className="text-sm text-brand-ink-faint">Área para gráfico</span>
           </div>
         </div>
       </section>

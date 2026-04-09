@@ -71,7 +71,7 @@ export function RegisterPage() {
         ) : null}
 
         {success ? (
-          <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          <p className="rounded-lg border border-brand-mint/80 bg-brand-mint/40 px-3 py-2 text-sm text-brand-ink">
             {success}
           </p>
         ) : null}
@@ -79,15 +79,18 @@ export function RegisterPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full rounded-lg border border-brand-border-strong bg-brand-primary px-4 py-2.5 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? 'Creando cuenta...' : 'Registrarme'}
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-slate-500">
+      <p className="mt-6 text-center text-sm text-brand-ink-muted">
         Ya tienes cuenta?{' '}
-        <Link to="/login" className="font-medium text-slate-900 underline">
+        <Link
+          to="/login"
+          className="font-medium text-brand-ink underline decoration-brand-primary/60 underline-offset-2 hover:text-brand-primary-hover"
+        >
           Iniciar sesion
         </Link>
       </p>

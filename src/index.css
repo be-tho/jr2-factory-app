@@ -1,2 +1,26 @@
+/* Tokens y capas base: deben ir después de @import "tailwindcss" en App.css */
 
-@import "tailwindcss";
+/* JR2 — paleta marca: primary #FFB7C5, blush #F2C7C7, mint #D5F3D8, blanco #FFFFFF */
+@theme {
+  --color-brand-canvas: #faf7f8;
+  --color-brand-surface: #ffffff;
+  --color-brand-primary: #ffb7c5;
+  --color-brand-primary-hover: #f5a3b5;
+  --color-brand-blush: #f2c7c7;
+  --color-brand-mint: #d5f3d8;
+  --color-brand-ink: #2c2829;
+  --color-brand-ink-muted: #5c5456;
+  --color-brand-ink-faint: #8a8284;
+  --color-brand-border: #ebe0e2;
+  --color-brand-border-strong: #e0d2d5;
+  --color-brand-border-subtle: #f5eff1;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+  body {
+    @apply bg-brand-canvas text-brand-ink antialiased;
+  }
+}

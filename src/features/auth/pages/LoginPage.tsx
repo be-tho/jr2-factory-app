@@ -62,20 +62,23 @@ export function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full rounded-lg border border-brand-border-strong bg-brand-primary px-4 py-2.5 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? 'Ingresando...' : 'Ingresar'}
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-slate-500">
+      <p className="mt-6 text-center text-sm text-brand-ink-muted">
         No tienes cuenta?{' '}
-        <Link to="/registro" className="font-medium text-slate-900 underline">
+        <Link
+          to="/registro"
+          className="font-medium text-brand-ink underline decoration-brand-primary/60 underline-offset-2 hover:text-brand-primary-hover"
+        >
           Registrarte
         </Link>
       </p>
 
-      <p className="mt-3 text-center text-xs text-slate-400">
+      <p className="mt-3 text-center text-xs text-brand-ink-faint">
         Acceso solo para personal autorizado.
       </p>
     </AuthCard>

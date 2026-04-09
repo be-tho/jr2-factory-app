@@ -38,7 +38,7 @@ function ChevronIcon({ open }: { open: boolean }) {
   return (
     <svg
       aria-hidden
-      className={`ml-auto h-4 w-4 shrink-0 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`}
+      className={`ml-auto h-4 w-4 shrink-0 text-brand-ink-faint transition-transform ${open ? 'rotate-180' : ''}`}
       fill="none"
       viewBox="0 0 24 24"
       strokeWidth={2}
@@ -59,17 +59,17 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
   )
 
   const itemClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center rounded-md px-3 py-2 text-sm transition ${
+    `flex items-center rounded-md px-3 py-2 text-sm font-medium transition ${
       isActive
-        ? 'bg-slate-900 text-white'
-        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+        ? 'bg-brand-primary text-brand-ink shadow-sm'
+        : 'text-brand-ink-muted hover:bg-brand-blush/50 hover:text-brand-ink'
     }`
 
   const subItemClass = ({ isActive }: { isActive: boolean }) =>
     `ml-2 flex items-center rounded-md border-l-2 py-2 pl-3 pr-2 text-sm transition ${
       isActive
-        ? 'border-slate-900 bg-slate-100 font-medium text-slate-900'
-        : 'border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900'
+        ? 'border-brand-primary bg-brand-primary/35 font-medium text-brand-ink'
+        : 'border-transparent text-brand-ink-muted hover:border-brand-border hover:bg-brand-canvas hover:text-brand-ink'
     }`
 
   return (
@@ -83,8 +83,8 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
           type="button"
           className={`flex w-full items-center rounded-md px-3 py-2 text-left text-sm font-medium transition ${
             location.pathname.startsWith('/produccion')
-              ? 'bg-slate-100 text-slate-900'
-              : 'text-slate-700 hover:bg-slate-50'
+              ? 'bg-brand-blush/70 text-brand-ink'
+              : 'text-brand-ink-muted hover:bg-brand-canvas'
           }`}
           aria-expanded={produccionOpen}
           onClick={() => setProduccionOpen((o) => !o)}
@@ -109,8 +109,8 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
           type="button"
           className={`flex w-full items-center rounded-md px-3 py-2 text-left text-sm font-medium transition ${
             location.pathname.startsWith('/inventario')
-              ? 'bg-slate-100 text-slate-900'
-              : 'text-slate-700 hover:bg-slate-50'
+              ? 'bg-brand-blush/70 text-brand-ink'
+              : 'text-brand-ink-muted hover:bg-brand-canvas'
           }`}
           aria-expanded={inventarioOpen}
           onClick={() => setInventarioOpen((o) => !o)}
@@ -168,20 +168,22 @@ export function DashboardLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-brand-canvas">
       <div className="mx-auto flex min-h-screen w-full max-w-7xl md:max-w-none">
-        <aside className="hidden w-56 shrink-0 flex-col border-r border-slate-200 bg-white sm:flex sm:sticky sm:top-0 sm:h-screen">
-          <div className="border-b border-slate-200 p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">JR2 Factory</p>
-            <p className="mt-0.5 text-base font-semibold text-slate-900">Panel interno</p>
+        <aside className="hidden w-56 shrink-0 flex-col border-r border-brand-border bg-brand-surface sm:flex sm:sticky sm:top-0 sm:h-screen">
+          <div className="border-b border-brand-border bg-brand-blush/20 p-4">
+            <p className="text-xs font-semibold uppercase tracking-widest text-brand-primary-hover">
+              JR2 Factory
+            </p>
+            <p className="mt-0.5 text-base font-semibold text-brand-ink">Panel interno</p>
           </div>
           <div className="flex flex-1 flex-col overflow-y-auto p-3">
             <SidebarNav key={location.pathname} />
           </div>
-          <div className="border-t border-slate-200 p-3">
+          <div className="border-t border-brand-border p-3">
             <button
               type="button"
-              className="w-full rounded-md px-3 py-2 text-left text-sm text-slate-600 transition hover:bg-red-50 hover:text-red-700"
+              className="w-full rounded-md px-3 py-2 text-left text-sm text-brand-ink-muted transition hover:bg-red-50 hover:text-red-700"
               onClick={handleLogout}
             >
               Cerrar sesión
@@ -190,17 +192,17 @@ export function DashboardLayout() {
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-40 border-b border-slate-200 bg-white sm:hidden">
+          <header className="sticky top-0 z-40 border-b border-brand-border bg-brand-surface sm:hidden">
             <div className="flex items-center justify-between gap-3 px-4 py-3">
               <div className="min-w-0">
-                <p className="truncate text-xs font-medium uppercase tracking-wide text-slate-500">
+                <p className="truncate text-xs font-semibold uppercase tracking-widest text-brand-primary-hover">
                   JR2 Factory
                 </p>
-                <p className="truncate text-sm font-semibold text-slate-900">Panel interno</p>
+                <p className="truncate text-sm font-semibold text-brand-ink">Panel interno</p>
               </div>
               <button
                 type="button"
-                className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+                className="inline-flex items-center gap-2 rounded-md border border-brand-border-strong bg-brand-primary px-3 py-2 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover"
                 aria-expanded={mobileMenuOpen}
                 aria-controls="mobile-dashboard-nav"
                 onClick={() => setMobileMenuOpen((o) => !o)}
@@ -208,7 +210,7 @@ export function DashboardLayout() {
                 Menú
                 <svg
                   aria-hidden
-                  className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${mobileMenuOpen ? 'rotate-180' : ''}`}
+                  className={`h-4 w-4 text-brand-ink/70 transition-transform duration-200 ${mobileMenuOpen ? 'rotate-180' : ''}`}
                   fill="none"
                   viewBox="0 0 24 24"
                   strokeWidth={2}
@@ -226,7 +228,7 @@ export function DashboardLayout() {
                 <motion.button
                   key="mobile-drawer-backdrop"
                   type="button"
-                  className="fixed inset-0 z-50 cursor-default border-0 bg-slate-900/45 p-0 backdrop-blur-[2px] sm:hidden"
+                  className="fixed inset-0 z-50 cursor-default border-0 bg-brand-ink/40 p-0 backdrop-blur-[2px] sm:hidden"
                   aria-label="Cerrar menú"
                   initial={reduceMotion ? false : { opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -240,7 +242,7 @@ export function DashboardLayout() {
                   role="dialog"
                   aria-modal="true"
                   aria-labelledby="mobile-drawer-title"
-                  className="fixed inset-y-0 left-0 z-50 flex w-[min(92vw,26rem)] flex-col border-r border-slate-200/90 bg-white pt-[env(safe-area-inset-top)] shadow-[4px_0_24px_-4px_rgba(15,23,42,0.18)] sm:hidden"
+                  className="fixed inset-y-0 left-0 z-50 flex w-[min(92vw,26rem)] flex-col border-r border-brand-border bg-brand-surface pt-[env(safe-area-inset-top)] shadow-[4px_0_28px_-6px_rgba(44,40,41,0.14)] sm:hidden"
                   initial={reduceMotion ? false : { x: '-105%' }}
                   animate={{ x: 0 }}
                   exit={{ x: '-105%' }}
@@ -250,16 +252,16 @@ export function DashboardLayout() {
                   }}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 px-4 py-4">
+                  <div className="flex shrink-0 items-start justify-between gap-3 border-b border-brand-border bg-brand-blush/25 px-4 py-4">
                     <div id="mobile-drawer-title" className="min-w-0">
-                      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                      <p className="text-xs font-semibold uppercase tracking-widest text-brand-primary-hover">
                         JR2 Factory
                       </p>
-                      <p className="mt-0.5 text-sm font-semibold text-slate-900">Panel interno</p>
+                      <p className="mt-0.5 text-sm font-semibold text-brand-ink">Panel interno</p>
                     </div>
                     <button
                       type="button"
-                      className="rounded-md p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+                      className="rounded-md p-2 text-brand-ink-muted transition hover:bg-brand-blush/60 hover:text-brand-ink"
                       aria-label="Cerrar menú"
                       onClick={() => setMobileMenuOpen(false)}
                     >
@@ -275,7 +277,7 @@ export function DashboardLayout() {
                     />
                     <button
                       type="button"
-                      className="mt-6 w-full rounded-md px-3 py-2 text-left text-sm text-slate-600 transition hover:bg-red-50 hover:text-red-700"
+                      className="mt-6 w-full rounded-md px-3 py-2 text-left text-sm text-brand-ink-muted transition hover:bg-red-50 hover:text-red-700"
                       onClick={handleLogout}
                     >
                       Cerrar sesión
