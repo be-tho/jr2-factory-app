@@ -1,0 +1,2 @@
+Uncaught SyntaxError: The requested module 'http://localhost:5173/node_modules/.vite/deps/@supabase_supabase-js.js?v=e0b5115e' doesn't provide an export named: 'Session' session.store.ts:1:10
+Error: Not allowed to define cross-origin object as property on [Object] or [Array] XrayWrapper
