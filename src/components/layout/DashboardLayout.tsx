@@ -1,9 +1,37 @@
-import { useState } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { useState, type ReactNode } from 'react'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { NavLink, useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabase/client'
+import { PageTransition } from './PageTransition'
+
+const menuEase = [0.22, 1, 0.36, 1] as const
 
 type NavBlockProps = {
   onNavigate?: () => void
+}
+
+function NavCollapsible({ open, children }: { open: boolean; children: ReactNode }) {
+  const reduceMotion = useReducedMotion()
+
+  if (reduceMotion) {
+    return open ? <div className="overflow-hidden">{children}</div> : null
+  }
+
+  return (
+    <AnimatePresence initial={false}>
+      {open && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.22, ease: menuEase }}
+          className="overflow-hidden"
+        >
+          {children}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
 }
 
 function ChevronIcon({ open }: { open: boolean }) {
@@ -64,7 +92,7 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
           Producción
           <ChevronIcon open={produccionOpen} />
         </button>
-        {produccionOpen && (
+        <NavCollapsible open={produccionOpen}>
           <div className="mt-1 flex flex-col gap-0.5">
             <NavLink to="/produccion/cortes" className={subItemClass} onClick={onNavigate}>
               Cortes
@@ -73,7 +101,7 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
               Costureros
             </NavLink>
           </div>
-        )}
+        </NavCollapsible>
       </div>
 
       <div>
@@ -90,7 +118,7 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
           Inventario
           <ChevronIcon open={inventarioOpen} />
         </button>
-        {inventarioOpen && (
+        <NavCollapsible open={inventarioOpen}>
           <div className="mt-1 flex flex-col gap-0.5">
             <NavLink to="/inventario/articulos" className={subItemClass} onClick={onNavigate}>
               Artículos
@@ -102,7 +130,7 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
               Temporadas
             </NavLink>
           </div>
-        )}
+        </NavCollapsible>
       </div>
 
       <NavLink to="/cuenta" className={itemClass} onClick={onNavigate}>
@@ -115,6 +143,7 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
 export function DashboardLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const location = useLocation()
+  const reduceMotion = useReducedMotion()
 
   async function handleLogout() {
     await supabase.auth.signOut()
@@ -174,30 +203,41 @@ export function DashboardLayout() {
               </button>
             </div>
 
-            {mobileMenuOpen && (
-              <div
-                id="mobile-dashboard-nav"
-                role="navigation"
-                className="max-h-[calc(100vh-4.5rem)] overflow-y-auto border-t border-slate-100 bg-white px-4 py-4"
-              >
-                <SidebarNav
-                  key={location.pathname}
-                  onNavigate={() => setMobileMenuOpen(false)}
-                />
-                <button
-                  type="button"
-                  className="mt-4 w-full rounded-md border border-slate-200 px-3 py-2 text-left text-sm text-slate-600 transition hover:bg-red-50 hover:text-red-700"
-                  onClick={handleLogout}
+            <AnimatePresence>
+              {mobileMenuOpen && (
+                <motion.div
+                  id="mobile-dashboard-nav"
+                  role="navigation"
+                  initial={reduceMotion ? false : { opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{
+                    duration: reduceMotion ? 0 : 0.26,
+                    ease: menuEase,
+                  }}
+                  className="overflow-hidden border-t border-slate-100 bg-white"
                 >
-                  Cerrar sesión
-                </button>
-              </div>
-            )}
+                  <div className="max-h-[calc(100vh-4.5rem)] overflow-y-auto px-4 py-4">
+                    <SidebarNav
+                      key={location.pathname}
+                      onNavigate={() => setMobileMenuOpen(false)}
+                    />
+                    <button
+                      type="button"
+                      className="mt-4 w-full rounded-md border border-slate-200 px-3 py-2 text-left text-sm text-slate-600 transition hover:bg-red-50 hover:text-red-700"
+                      onClick={handleLogout}
+                    >
+                      Cerrar sesión
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </header>
 
           <main className="flex-1 px-4 py-6 sm:px-6 sm:py-8">
             <div className="mx-auto w-full max-w-6xl">
-              <Outlet />
+              <PageTransition />
             </div>
           </main>
         </div>
