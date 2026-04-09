@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { NavLink, useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabase/client'
@@ -145,6 +145,24 @@ export function DashboardLayout() {
   const location = useLocation()
   const reduceMotion = useReducedMotion()
 
+  useEffect(() => {
+    if (!mobileMenuOpen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [mobileMenuOpen])
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setMobileMenuOpen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [mobileMenuOpen])
+
   async function handleLogout() {
     await supabase.auth.signOut()
   }
@@ -172,9 +190,7 @@ export function DashboardLayout() {
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header
-            className={`sticky top-0 z-40 border-b border-slate-200 bg-white sm:hidden ${mobileMenuOpen ? 'shadow-sm' : ''}`}
-          >
+          <header className="sticky top-0 z-40 border-b border-slate-200 bg-white sm:hidden">
             <div className="flex items-center justify-between gap-3 px-4 py-3">
               <div className="min-w-0">
                 <p className="truncate text-xs font-medium uppercase tracking-wide text-slate-500">
@@ -192,7 +208,7 @@ export function DashboardLayout() {
                 Menú
                 <svg
                   aria-hidden
-                  className={`h-4 w-4 text-slate-500 transition-transform ${mobileMenuOpen ? 'rotate-180' : ''}`}
+                  className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${mobileMenuOpen ? 'rotate-180' : ''}`}
                   fill="none"
                   viewBox="0 0 24 24"
                   strokeWidth={2}
@@ -202,38 +218,73 @@ export function DashboardLayout() {
                 </svg>
               </button>
             </div>
+          </header>
 
-            <AnimatePresence>
-              {mobileMenuOpen && (
-                <motion.div
+          <AnimatePresence>
+            {mobileMenuOpen && (
+              <>
+                <motion.button
+                  key="mobile-drawer-backdrop"
+                  type="button"
+                  className="fixed inset-0 z-50 cursor-default border-0 bg-slate-900/45 p-0 backdrop-blur-[2px] sm:hidden"
+                  aria-label="Cerrar menú"
+                  initial={reduceMotion ? false : { opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: reduceMotion ? 0 : 0.22, ease: menuEase }}
+                  onClick={() => setMobileMenuOpen(false)}
+                />
+                <motion.aside
+                  key="mobile-drawer-panel"
                   id="mobile-dashboard-nav"
-                  role="navigation"
-                  initial={reduceMotion ? false : { opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="mobile-drawer-title"
+                  className="fixed inset-y-0 left-0 z-50 flex w-[min(92vw,26rem)] flex-col border-r border-slate-200/90 bg-white pt-[env(safe-area-inset-top)] shadow-[4px_0_24px_-4px_rgba(15,23,42,0.18)] sm:hidden"
+                  initial={reduceMotion ? false : { x: '-105%' }}
+                  animate={{ x: 0 }}
+                  exit={{ x: '-105%' }}
                   transition={{
-                    duration: reduceMotion ? 0 : 0.26,
+                    duration: reduceMotion ? 0 : 0.3,
                     ease: menuEase,
                   }}
-                  className="overflow-hidden border-t border-slate-100 bg-white"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="max-h-[calc(100vh-4.5rem)] overflow-y-auto px-4 py-4">
+                  <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 px-4 py-4">
+                    <div id="mobile-drawer-title" className="min-w-0">
+                      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                        JR2 Factory
+                      </p>
+                      <p className="mt-0.5 text-sm font-semibold text-slate-900">Panel interno</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="rounded-md p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+                      aria-label="Cerrar menú"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="flex flex-1 flex-col overflow-y-auto p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
                     <SidebarNav
                       key={location.pathname}
                       onNavigate={() => setMobileMenuOpen(false)}
                     />
                     <button
                       type="button"
-                      className="mt-4 w-full rounded-md border border-slate-200 px-3 py-2 text-left text-sm text-slate-600 transition hover:bg-red-50 hover:text-red-700"
+                      className="mt-6 w-full rounded-md px-3 py-2 text-left text-sm text-slate-600 transition hover:bg-red-50 hover:text-red-700"
                       onClick={handleLogout}
                     >
                       Cerrar sesión
                     </button>
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </header>
+                </motion.aside>
+              </>
+            )}
+          </AnimatePresence>
 
           <main className="flex-1 px-4 py-6 sm:px-6 sm:py-8">
             <div className="mx-auto w-full max-w-6xl">
