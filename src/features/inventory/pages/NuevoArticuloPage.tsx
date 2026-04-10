@@ -1,7 +1,9 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useId, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { FormField } from '../../../components/ui/FormField'
 import { PageHeader } from '../../../components/ui/PageHeader'
+import { removeProductImage, uploadProductImage, validateImageFile } from '../../media/services/storage.service'
+import { createArticuloImagen } from '../services/articulo-imagenes.service'
 import { createProduct, listCategorias, listTemporadas } from '../services/products.service'
 
 const selectClass =
@@ -21,6 +23,7 @@ function SectionHeader({ title, hint }: { title: string; hint?: string }) {
 
 export function NuevoArticuloPage() {
   const navigate = useNavigate()
+  const coverInputId = useId()
   const [name, setName] = useState('')
   const [sku, setSku] = useState('')
   const [categoriaId, setCategoriaId] = useState('')
@@ -34,6 +37,10 @@ export function NuevoArticuloPage() {
   const [catalogError, setCatalogError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [coverImage, setCoverImage] = useState<File | null>(null)
+  const [coverPreview, setCoverPreview] = useState<string | null>(null)
+  /** Si el artículo ya existe en BD pero falló Storage o `articulo_imagenes`. */
+  const [articleIdPendingImage, setArticleIdPendingImage] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -53,14 +60,69 @@ export function NuevoArticuloPage() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!coverImage) {
+      setCoverPreview(null)
+      return
+    }
+    const url = URL.createObjectURL(coverImage)
+    setCoverPreview(url)
+    return () => {
+      URL.revokeObjectURL(url)
+    }
+  }, [coverImage])
+
+  async function attachImageToArticle(articuloId: string, file: File): Promise<void> {
+    const v = validateImageFile(file)
+    if (v) throw new Error(v)
+    const { path } = await uploadProductImage(articuloId, file)
+    const { error: insErr } = await createArticuloImagen({
+      articulo_id: articuloId,
+      storage_path: path,
+      es_principal: true,
+      orden: 0,
+    })
+    if (insErr) {
+      await removeProductImage(path).catch(() => {})
+      throw new Error(insErr.message)
+    }
+  }
+
+  async function retryImageOnly() {
+    if (!articleIdPendingImage) return
+    if (!coverImage) {
+      setError('Elegí una imagen para reintentar.')
+      return
+    }
+    setSaving(true)
+    setError(null)
+    try {
+      await attachImageToArticle(articleIdPendingImage, coverImage)
+      navigate(`/inventario/articulos/${articleIdPendingImage}`, { replace: true })
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo subir la imagen.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (articleIdPendingImage) return
+
     const n = name.trim()
     const s = sku.trim()
     const pl = Number.parseInt(precioLista.replace(/\s/g, ''), 10)
     if (!n || !s || !categoriaId || !temporadaId || !Number.isFinite(pl) || pl < 0) {
       setError('Completá nombre, código, categoría, temporada y precio de lista válido.')
       return
+    }
+    if (coverImage) {
+      const imgErr = validateImageFile(coverImage)
+      if (imgErr) {
+        setError(imgErr)
+        return
+      }
     }
     const promoRaw = precioPromo.trim()
     let precio_promocional: number | null = null
@@ -74,6 +136,8 @@ export function NuevoArticuloPage() {
     }
     setSaving(true)
     setError(null)
+    setArticleIdPendingImage(null)
+
     const { data, error: err } = await createProduct({
       nombre: n,
       codigo: s,
@@ -83,16 +147,32 @@ export function NuevoArticuloPage() {
       precio_promocional,
       descripcion: descripcion.trim() || null,
     })
-    setSaving(false)
-    if (err) {
-      setError(err.message)
+
+    if (err || !data?.id) {
+      setSaving(false)
+      setError(err?.message ?? 'No se pudo crear el artículo.')
       return
     }
-    if (data?.id) {
-      navigate(`/inventario/articulos/${data.id}`, { replace: true })
-    } else {
-      navigate('/inventario/articulos', { replace: true })
+
+    const newId = data.id
+
+    if (coverImage) {
+      try {
+        await attachImageToArticle(newId, coverImage)
+      } catch (e) {
+        setArticleIdPendingImage(newId)
+        setError(
+          e instanceof Error
+            ? `El artículo se creó, pero la imagen no se guardó: ${e.message}`
+            : 'El artículo se creó, pero la imagen no se guardó.'
+        )
+        setSaving(false)
+        return
+      }
     }
+
+    setSaving(false)
+    navigate(`/inventario/articulos/${newId}`, { replace: true })
   }
 
   return (
@@ -100,7 +180,7 @@ export function NuevoArticuloPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <PageHeader
           title="Nuevo artículo"
-          description="Alta en catálogo: identificación, clasificación comercial y precios. El slug se genera automáticamente."
+          description="Alta completa en un paso: datos del artículo e imagen opcional (Storage products/images/)."
         />
         <Link
           to="/inventario/articulos"
@@ -127,7 +207,7 @@ export function NuevoArticuloPage() {
               onChange={(ev) => setName(ev.target.value)}
               placeholder="Ej. Remera manga corta"
               required
-              disabled={saving}
+              disabled={saving || articleIdPendingImage != null}
             />
             <FormField
               label="Código (SKU)"
@@ -135,7 +215,7 @@ export function NuevoArticuloPage() {
               onChange={(ev) => setSku(ev.target.value)}
               placeholder="Ej. REM-105"
               required
-              disabled={saving}
+              disabled={saving || articleIdPendingImage != null}
             />
           </div>
         </section>
@@ -150,7 +230,7 @@ export function NuevoArticuloPage() {
                 value={categoriaId}
                 onChange={(ev) => setCategoriaId(ev.target.value)}
                 required
-                disabled={saving || catalogLoading || categorias.length === 0}
+                disabled={saving || catalogLoading || categorias.length === 0 || articleIdPendingImage != null}
               >
                 <option value="">{catalogLoading ? 'Cargando…' : 'Elegí una categoría'}</option>
                 {categorias.map((c) => (
@@ -167,7 +247,7 @@ export function NuevoArticuloPage() {
                 value={temporadaId}
                 onChange={(ev) => setTemporadaId(ev.target.value)}
                 required
-                disabled={saving || catalogLoading || temporadas.length === 0}
+                disabled={saving || catalogLoading || temporadas.length === 0 || articleIdPendingImage != null}
               >
                 <option value="">{catalogLoading ? 'Cargando…' : 'Elegí una temporada'}</option>
                 {temporadas.map((t) => (
@@ -192,7 +272,7 @@ export function NuevoArticuloPage() {
               onChange={(ev) => setPrecioLista(ev.target.value)}
               placeholder="0"
               required
-              disabled={saving}
+              disabled={saving || articleIdPendingImage != null}
             />
             <FormField
               label="Precio promocional (opcional)"
@@ -202,7 +282,7 @@ export function NuevoArticuloPage() {
               value={precioPromo}
               onChange={(ev) => setPrecioPromo(ev.target.value)}
               placeholder="—"
-              disabled={saving}
+              disabled={saving || articleIdPendingImage != null}
             />
           </div>
         </section>
@@ -217,12 +297,83 @@ export function NuevoArticuloPage() {
                 value={descripcion}
                 onChange={(ev) => setDescripcion(ev.target.value)}
                 placeholder="Notas o detalle comercial"
-                disabled={saving}
+                disabled={saving || articleIdPendingImage != null}
                 rows={4}
               />
             </label>
           </div>
         </section>
+
+        <section className={sectionCardClass}>
+          <SectionHeader title="Imagen del producto" hint="Opcional. Se sube al guardar, junto con el alta del artículo." />
+          <div className="px-5 py-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+              <div className="min-w-0 flex-1">
+                <label htmlFor={coverInputId} className="mb-1 block text-sm font-medium text-brand-ink-muted">
+                  Archivo
+                </label>
+                <input
+                  id={coverInputId}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  disabled={saving}
+                  className="block w-full max-w-md text-sm text-brand-ink file:mr-3 file:rounded-lg file:border file:border-brand-border file:bg-brand-canvas file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-brand-ink"
+                  onChange={(ev) => {
+                    const f = ev.target.files?.[0] ?? null
+                    setCoverImage(f)
+                  }}
+                />
+                <p className="mt-1 text-xs text-brand-ink-faint">JPEG, PNG, WebP o GIF · máx. 8 MB</p>
+                {coverImage ? (
+                  <button
+                    type="button"
+                    className="mt-2 text-sm font-medium text-brand-ink-muted underline-offset-2 hover:text-brand-ink hover:underline"
+                    onClick={() => setCoverImage(null)}
+                    disabled={saving}
+                  >
+                    Quitar imagen
+                  </button>
+                ) : null}
+              </div>
+              {coverPreview ? (
+                <div className="h-36 w-36 shrink-0 overflow-hidden rounded-lg border border-brand-border bg-brand-canvas">
+                  <img src={coverPreview} alt="" className="h-full w-full object-contain" />
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </section>
+
+        {articleIdPendingImage ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950">
+            <p className="font-medium">El artículo ya está creado</p>
+            <p className="mt-1 text-amber-900">
+              Podés reintentar solo la imagen o ir a la ficha del artículo (sin imagen en pantalla).
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={saving}
+                className="rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-medium text-amber-950 transition hover:bg-amber-100 disabled:opacity-60"
+                onClick={() => void retryImageOnly()}
+              >
+                {saving ? 'Subiendo…' : 'Reintentar imagen'}
+              </button>
+              <Link
+                to={`/inventario/articulos/${articleIdPendingImage}`}
+                className="inline-flex items-center rounded-lg border border-brand-border bg-brand-surface px-4 py-2 text-sm font-medium text-brand-ink transition hover:border-brand-border-strong"
+              >
+                Ir al artículo
+              </Link>
+              <Link
+                to="/inventario/articulos"
+                className="inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium text-amber-900 underline-offset-2 hover:underline"
+              >
+                Ir al listado
+              </Link>
+            </div>
+          </div>
+        ) : null}
 
         {error ? (
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -240,10 +391,10 @@ export function NuevoArticuloPage() {
           </Link>
           <button
             type="submit"
-            disabled={saving || catalogLoading}
+            disabled={saving || catalogLoading || articleIdPendingImage != null}
             className="inline-flex justify-center rounded-lg border border-brand-border-strong bg-brand-primary px-5 py-2.5 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {saving ? 'Guardando…' : 'Crear artículo'}
+            {saving ? 'Guardando…' : coverImage ? 'Crear artículo e imagen' : 'Crear artículo'}
           </button>
         </div>
       </form>
