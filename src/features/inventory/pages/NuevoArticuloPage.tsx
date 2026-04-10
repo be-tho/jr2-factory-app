@@ -386,7 +386,10 @@ export function NuevoArticuloPage() {
                     setCoverImage(f)
                   }}
                 />
-                <p className="mt-1 text-xs text-brand-ink-faint">JPEG, PNG, WebP, GIF o SVG · máx. 8 MB</p>
+                <p className="mt-1 text-xs text-brand-ink-faint">
+                  JPEG, PNG, WebP, GIF o SVG · máx. 8 MB. Las fotos (JPEG/PNG/WebP) se redimensionan y suben en WebP
+                  para ocupar menos en Storage; GIF y SVG se suben sin cambiar.
+                </p>
                 {coverImage ? (
                   <button
                     type="button"

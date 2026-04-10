@@ -13,9 +13,75 @@ export const PRODUCT_IMAGES_PREFIX = 'images'
 const MAX_BYTES = 8 * 1024 * 1024
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'])
 
+/** Borde máximo en px (la foto se escala manteniendo proporción antes de WebP). */
+const PRODUCT_IMAGE_MAX_EDGE = 1920
+const WEBP_QUALITY = 0.82
+
+const TYPES_CONVERTED_TO_WEBP = new Set(['image/jpeg', 'image/png', 'image/webp'])
+
 function sanitizeFileName(name: string): string {
   const base = name.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 120)
   return base || 'imagen'
+}
+
+function baseNameWithoutExtension(name: string): string {
+  const trimmed = name.trim()
+  const i = trimmed.lastIndexOf('.')
+  if (i <= 0) return trimmed || 'cover'
+  return trimmed.slice(0, i) || 'cover'
+}
+
+/**
+ * Reduce peso en Storage: JPEG/PNG/WebP → WebP con calidad fija y tamaño acotado.
+ * SVG y GIF se dejan igual (vector y animación).
+ */
+export async function prepareProductImageFileForStorage(file: File): Promise<File> {
+  if (!TYPES_CONVERTED_TO_WEBP.has(file.type)) {
+    return file
+  }
+
+  let bitmap: ImageBitmap
+  try {
+    bitmap = await createImageBitmap(file)
+  } catch {
+    throw new Error('No se pudo leer la imagen. Probá con otro archivo.')
+  }
+
+  try {
+    let w = bitmap.width
+    let h = bitmap.height
+    if (w < 1 || h < 1) {
+      throw new Error('La imagen no tiene un tamaño válido.')
+    }
+    if (w > PRODUCT_IMAGE_MAX_EDGE || h > PRODUCT_IMAGE_MAX_EDGE) {
+      const scale = PRODUCT_IMAGE_MAX_EDGE / Math.max(w, h)
+      w = Math.round(w * scale)
+      h = Math.round(h * scale)
+    }
+
+    const canvas = document.createElement('canvas')
+    canvas.width = w
+    canvas.height = h
+    const ctx = canvas.getContext('2d')
+    if (!ctx) {
+      throw new Error('No se pudo preparar la imagen en este dispositivo.')
+    }
+    ctx.drawImage(bitmap, 0, 0, w, h)
+
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, 'image/webp', WEBP_QUALITY)
+    })
+    if (!blob) {
+      throw new Error(
+        'Tu navegador no puede guardar en WebP. Actualizá el navegador o probá con Chrome o Firefox.'
+      )
+    }
+
+    const safeBase = sanitizeFileName(baseNameWithoutExtension(file.name))
+    return new File([blob], `${safeBase}.webp`, { type: 'image/webp' })
+  } finally {
+    bitmap.close()
+  }
 }
 
 /** Ruta del objeto dentro del bucket (sin nombre de bucket). */
@@ -66,10 +132,15 @@ export async function uploadProductImage(articuloId: string, file: File) {
   const err = validateImageFile(file)
   if (err) throw new Error(err)
 
-  const path = buildProductImageObjectPath(articuloId, file)
-  const { data, error } = await supabase.storage.from(PRODUCTS_BUCKET).upload(path, file, {
+  const toUpload = await prepareProductImageFileForStorage(file)
+  if (toUpload.size > MAX_BYTES) {
+    throw new Error('Tras optimizar, la imagen sigue siendo demasiado grande. Probá otra foto.')
+  }
+
+  const path = buildProductImageObjectPath(articuloId, toUpload)
+  const { data, error } = await supabase.storage.from(PRODUCTS_BUCKET).upload(path, toUpload, {
     upsert: false,
-    contentType: file.type || undefined,
+    contentType: toUpload.type || undefined,
   })
 
   if (error) throw error
