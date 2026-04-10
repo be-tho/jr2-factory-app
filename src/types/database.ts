@@ -32,6 +32,7 @@ export interface ArticuloQueryRow {
   updated_at: string
   categorias: { nombre: string } | { nombre: string }[] | null
   temporadas: { nombre: string } | { nombre: string }[] | null
+  articulo_imagenes: { storage_path: string; es_principal: boolean; orden: number }[] | null
 }
 
 /** Modelo de vista para listados y fichas (nombres legibles de categoría/temporada incluidos). */
@@ -51,6 +52,8 @@ export interface Product {
   activo: boolean
   created_at: string
   updated_at: string
+  /** Ruta en bucket `products` hacia la imagen principal; `null` si no hay fila en `articulo_imagenes`. */
+  cover_image_path: string | null
 }
 
 /** `public.articulo_imagenes` — ver `database-estructura.sql`. */

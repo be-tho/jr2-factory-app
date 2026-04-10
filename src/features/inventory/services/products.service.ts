@@ -7,7 +7,8 @@ const TABLE = 'articulos'
 const ARTICULO_SELECT = `
   *,
   categorias ( nombre ),
-  temporadas ( nombre )
+  temporadas ( nombre ),
+  articulo_imagenes ( storage_path, es_principal, orden )
 `.trim()
 
 function slugify(input: string): string {
@@ -26,6 +27,30 @@ function nombreFromEmbed(
   if (embed == null) return ''
   const row = Array.isArray(embed) ? embed[0] : embed
   return row && typeof row.nombre === 'string' ? row.nombre : ''
+}
+
+function parseArticuloImagenes(raw: unknown): ArticuloQueryRow['articulo_imagenes'] {
+  if (!Array.isArray(raw)) return null
+  const out: { storage_path: string; es_principal: boolean; orden: number }[] = []
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue
+    const o = item as Record<string, unknown>
+    const storage_path = o.storage_path
+    if (typeof storage_path !== 'string') continue
+    const es_principal = o.es_principal === true
+    const orden = typeof o.orden === 'number' ? o.orden : Number(o.orden) || 0
+    out.push({ storage_path, es_principal, orden })
+  }
+  return out.length ? out : null
+}
+
+function pickCoverStoragePath(rows: ArticuloQueryRow['articulo_imagenes']): string | null {
+  if (!rows?.length) return null
+  const sorted = [...rows].sort((a, b) => {
+    if (a.es_principal !== b.es_principal) return a.es_principal ? -1 : 1
+    return a.orden - b.orden
+  })
+  return sorted[0]?.storage_path ?? null
 }
 
 function parseArticuloRow(raw: unknown): ArticuloQueryRow | null {
@@ -80,6 +105,7 @@ function parseArticuloRow(raw: unknown): ArticuloQueryRow | null {
     updated_at,
     categorias: (r.categorias ?? null) as ArticuloQueryRow['categorias'],
     temporadas: (r.temporadas ?? null) as ArticuloQueryRow['temporadas'],
+    articulo_imagenes: parseArticuloImagenes(r.articulo_imagenes),
   }
 }
 
@@ -100,6 +126,7 @@ function rowToProduct(row: ArticuloQueryRow): Product {
     activo: row.activo,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    cover_image_path: pickCoverStoragePath(row.articulo_imagenes),
   }
 }
 

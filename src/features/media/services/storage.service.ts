@@ -1,3 +1,7 @@
+import {
+  DEFAULT_ARTICLE_IMAGE_PUBLIC_URL,
+  DEFAULT_ARTICLE_STORAGE_FILE_NAME,
+} from '../../../constants/defaultArticleImage'
 import { supabase } from '../../../lib/supabase/client'
 
 /** Bucket en Supabase Storage (equivalente al segmento `products` en `products/images/...`). */
@@ -18,6 +22,30 @@ function sanitizeFileName(name: string): string {
 export function buildProductImageObjectPath(articuloId: string, file: File): string {
   const unique = `${Date.now()}-${sanitizeFileName(file.name)}`
   return `${PRODUCT_IMAGES_PREFIX}/${articuloId}/${unique}`
+}
+
+/** Ruta fija para la imagen por defecto por artículo: `images/<id>/default-articulo.webp`. */
+export function buildDefaultArticleStoragePath(articuloId: string): string {
+  return `${PRODUCT_IMAGES_PREFIX}/${articuloId}/${DEFAULT_ARTICLE_STORAGE_FILE_NAME}`
+}
+
+/** Sube el placeholder con nombre fijo (permite reemplazar si ya existía). */
+export async function uploadDefaultArticlePlaceholder(articuloId: string, file: File) {
+  const path = buildDefaultArticleStoragePath(articuloId)
+  const { data, error } = await supabase.storage.from(PRODUCTS_BUCKET).upload(path, file, {
+    upsert: true,
+    contentType: file.type || 'image/webp',
+  })
+  if (error) throw error
+  return { path: data.path }
+}
+
+/** Carga el archivo desde `/public/default-articulo.webp` para subirlo a Storage. */
+export async function loadDefaultArticleImageFile(): Promise<File> {
+  const res = await fetch(DEFAULT_ARTICLE_IMAGE_PUBLIC_URL)
+  if (!res.ok) throw new Error('No se pudo cargar la imagen por defecto del sitio.')
+  const blob = await res.blob()
+  return new File([blob], DEFAULT_ARTICLE_STORAGE_FILE_NAME, { type: blob.type || 'image/webp' })
 }
 
 export function validateImageFile(file: File): string | null {

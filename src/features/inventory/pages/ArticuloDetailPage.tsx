@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { PageHeader } from '../../../components/ui/PageHeader'
+import { DEFAULT_ARTICLE_IMAGE_PUBLIC_URL } from '../../../constants/defaultArticleImage'
+import { getProductImagePublicUrl } from '../../media/services/storage.service'
 import type { Product } from '../../../types/database'
 import { getProductById } from '../services/products.service'
 
@@ -73,6 +75,10 @@ export function ArticuloDetailPage() {
     )
   }
 
+  const coverSrc = article.cover_image_path
+    ? getProductImagePublicUrl(article.cover_image_path)
+    : DEFAULT_ARTICLE_IMAGE_PUBLIC_URL
+
   const created = new Date(article.created_at)
   const precioLabel =
     article.precio_promocional != null
@@ -93,6 +99,18 @@ export function ArticuloDetailPage() {
           ← Volver
         </Link>
       </div>
+
+      <section className="overflow-hidden rounded-xl border border-brand-border bg-brand-surface shadow-sm shadow-brand-ink/5 ring-1 ring-brand-border-subtle">
+        <div className="aspect-[4/3] w-full overflow-hidden bg-brand-canvas sm:aspect-[16/10] sm:max-h-[min(70vh,32rem)] sm:mx-auto sm:max-w-4xl">
+          <img
+            src={coverSrc}
+            alt={article.name}
+            className="h-full w-full object-contain object-center"
+            loading="eager"
+            decoding="async"
+          />
+        </div>
+      </section>
 
       <section className="overflow-hidden rounded-xl border border-brand-border bg-brand-surface shadow-sm shadow-brand-ink/5 ring-1 ring-brand-border-subtle">
         <header className="border-b border-brand-border bg-brand-blush/20 px-5 py-3">
