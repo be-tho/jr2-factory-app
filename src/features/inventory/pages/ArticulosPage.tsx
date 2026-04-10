@@ -1,16 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { PageHeader } from '../../../components/ui/PageHeader'
 import { StatCard } from '../../../components/ui/StatCard'
 import type { Product } from '../../../types/database'
 import { listProducts } from '../services/products.service'
 import { ArticuloCard } from '../components/ArticuloCard'
-import { NuevoArticuloDialog } from '../components/NuevoArticuloDialog'
 
 export function ArticulosPage() {
   const [articles, setArticles] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [dialogOpen, setDialogOpen] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -38,17 +37,16 @@ export function ArticulosPage() {
           title="Artículos"
           description="Gestión de prendas, talles, colores y stock."
         />
-        <button
-          type="button"
-          className="shrink-0 rounded-lg border border-brand-border-strong bg-brand-primary px-4 py-2.5 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
-          onClick={() => setDialogOpen(true)}
-          disabled={loading}
+        <Link
+          to="/inventario/articulos/nuevo"
+          className={`shrink-0 rounded-lg border border-brand-border-strong bg-brand-primary px-4 py-2.5 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover ${loading ? 'pointer-events-none opacity-60' : ''}`}
+          onClick={(e) => {
+            if (loading) e.preventDefault()
+          }}
         >
           Nuevo artículo
-        </button>
+        </Link>
       </div>
-
-      <NuevoArticuloDialog open={dialogOpen} onClose={() => setDialogOpen(false)} onCreated={load} />
 
       <section className="overflow-hidden rounded-xl border border-brand-border bg-brand-surface shadow-sm shadow-brand-ink/5 ring-1 ring-brand-border-subtle">
         <header className="border-b border-brand-border bg-brand-blush/20 px-5 py-3">
@@ -81,7 +79,11 @@ export function ArticulosPage() {
 
       {!loading && !error && articles.length === 0 ? (
         <p className="rounded-xl border border-dashed border-brand-border bg-brand-surface/80 px-5 py-10 text-center text-sm text-brand-ink-muted">
-          No hay artículos todavía. Usá <span className="font-medium text-brand-ink">Nuevo artículo</span> para cargar el primero.
+          No hay artículos todavía.{' '}
+          <Link to="/inventario/articulos/nuevo" className="font-medium text-brand-ink underline-offset-2 hover:underline">
+            Crear el primero
+          </Link>
+          .
         </p>
       ) : null}
 

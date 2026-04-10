@@ -1,4 +1,9 @@
 import { Link } from 'react-router-dom'
+import {
+  DEFAULT_ARTICLE_IMAGE_PUBLIC_URL,
+  hasStorageCoverImage,
+} from '../../../constants/defaultArticleImage'
+import { getProductImagePublicUrl } from '../../media/services/storage.service'
 import type { Product } from '../../../types/database'
 
 type ArticuloCardProps = {
@@ -6,11 +11,31 @@ type ArticuloCardProps = {
 }
 
 export function ArticuloCard({ product }: ArticuloCardProps) {
+  const storagePath = product.cover_image_path
+  const hasFile = hasStorageCoverImage(storagePath)
+  const coverSrc = hasFile ? getProductImagePublicUrl(storagePath) : DEFAULT_ARTICLE_IMAGE_PUBLIC_URL
+
   return (
     <Link
       to={`/inventario/articulos/${product.id}`}
-      className="group flex flex-col rounded-xl border border-brand-border bg-brand-surface p-4 shadow-sm shadow-brand-ink/5 ring-1 ring-brand-border-subtle transition hover:border-brand-border-strong hover:shadow-md hover:ring-brand-blush/40"
+      className="group flex flex-col overflow-hidden rounded-xl border border-brand-border bg-brand-surface shadow-sm shadow-brand-ink/5 ring-1 ring-brand-border-subtle transition hover:border-brand-border-strong hover:shadow-md hover:ring-brand-blush/40"
     >
+      <div
+        className={`aspect-[4/3] w-full shrink-0 overflow-hidden ${
+          hasFile ? 'bg-brand-canvas' : 'bg-white'
+        }`}
+      >
+        <img
+          src={coverSrc}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className={`h-full w-full transition duration-300 group-hover:scale-[1.02] ${
+            hasFile ? 'object-cover' : 'object-contain p-2'
+          }`}
+        />
+      </div>
+      <div className="flex flex-col p-4">
       <p className="text-xs font-medium uppercase tracking-wide text-brand-ink-faint">
         {[product.category, product.temporada].filter(Boolean).join(' · ') || '—'}
       </p>
@@ -41,6 +66,7 @@ export function ArticuloCard({ product }: ArticuloCardProps) {
           year: 'numeric',
         })}
       </p>
+      </div>
     </Link>
   )
 }

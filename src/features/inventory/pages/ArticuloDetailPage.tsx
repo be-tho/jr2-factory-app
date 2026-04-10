@@ -1,13 +1,21 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { PageHeader } from '../../../components/ui/PageHeader'
+import {
+  DEFAULT_ARTICLE_IMAGE_PUBLIC_URL,
+  hasStorageCoverImage,
+} from '../../../constants/defaultArticleImage'
+import { getProductImagePublicUrl } from '../../media/services/storage.service'
 import type { Product } from '../../../types/database'
-import { getProductById } from '../services/products.service'
+import { deleteProduct, getProductById } from '../services/products.service'
 
 export function ArticuloDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const [article, setArticle] = useState<Product | null | undefined>(undefined)
   const [error, setError] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!id) {
@@ -73,11 +81,32 @@ export function ArticuloDetailPage() {
     )
   }
 
+  const storagePath = article.cover_image_path
+  const hasFile = hasStorageCoverImage(storagePath)
+  const coverSrc = hasFile ? getProductImagePublicUrl(storagePath) : DEFAULT_ARTICLE_IMAGE_PUBLIC_URL
+
   const created = new Date(article.created_at)
   const precioLabel =
     article.precio_promocional != null
       ? `${article.precio_promocional.toLocaleString('es-AR')} (lista ${article.precio_lista.toLocaleString('es-AR')})`
       : article.precio_lista.toLocaleString('es-AR')
+
+  async function handleDelete() {
+    if (!article) return
+    const ok = window.confirm(
+      `¿Borrar “${article.name}” (${article.sku})? Esta acción no se puede deshacer. También se eliminarán las imágenes asociadas en Storage.`
+    )
+    if (!ok) return
+    setDeleting(true)
+    setDeleteError(null)
+    const { error: delErr } = await deleteProduct(article.id)
+    setDeleting(false)
+    if (delErr) {
+      setDeleteError(delErr.message)
+      return
+    }
+    navigate('/inventario/articulos', { replace: true })
+  }
 
   return (
     <div className="space-y-6">
@@ -86,13 +115,52 @@ export function ArticuloDetailPage() {
           title={article.name}
           description={`${article.activo ? 'Activo' : 'Inactivo'} · SKU ${article.sku} · ${[article.category, article.temporada].filter(Boolean).join(' · ') || '—'}`}
         />
-        <Link
-          to="/inventario/articulos"
-          className="shrink-0 self-start rounded-lg border border-brand-border bg-brand-surface px-4 py-2 text-sm font-medium text-brand-ink-muted transition hover:border-brand-border-strong hover:text-brand-ink"
-        >
-          ← Volver
-        </Link>
+        <div className="flex shrink-0 flex-col gap-2 self-start sm:flex-row sm:items-center">
+          <Link
+            to={`/inventario/articulos/${article.id}/editar`}
+            className="inline-flex justify-center rounded-lg border border-brand-border-strong bg-brand-primary px-4 py-2 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover"
+          >
+            Editar
+          </Link>
+          <button
+            type="button"
+            disabled={deleting}
+            onClick={() => void handleDelete()}
+            className="inline-flex justify-center rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-800 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {deleting ? 'Borrando…' : 'Borrar'}
+          </button>
+          <Link
+            to="/inventario/articulos"
+            className="inline-flex justify-center rounded-lg border border-brand-border bg-brand-surface px-4 py-2 text-sm font-medium text-brand-ink-muted transition hover:border-brand-border-strong hover:text-brand-ink"
+          >
+            ← Volver
+          </Link>
+        </div>
       </div>
+
+      {deleteError ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <p className="font-medium">No se pudo borrar</p>
+          <p className="mt-1 text-red-700">{deleteError}</p>
+        </div>
+      ) : null}
+
+      <section className="overflow-hidden rounded-xl border border-brand-border bg-brand-surface shadow-sm shadow-brand-ink/5 ring-1 ring-brand-border-subtle">
+        <div
+          className={`aspect-[4/3] w-full overflow-hidden sm:aspect-[16/10] sm:max-h-[min(70vh,32rem)] sm:mx-auto sm:max-w-4xl ${
+            hasFile ? 'bg-brand-canvas' : 'bg-white'
+          }`}
+        >
+          <img
+            src={coverSrc}
+            alt={article.name}
+            className={`h-full w-full object-contain object-center ${hasFile ? '' : 'p-4 sm:p-8'}`}
+            loading="eager"
+            decoding="async"
+          />
+        </div>
+      </section>
 
       <section className="overflow-hidden rounded-xl border border-brand-border bg-brand-surface shadow-sm shadow-brand-ink/5 ring-1 ring-brand-border-subtle">
         <header className="border-b border-brand-border bg-brand-blush/20 px-5 py-3">
