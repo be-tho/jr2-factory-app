@@ -184,6 +184,8 @@ export type NewProductInput = {
   temporada_id: string
   precio_lista: number
   precio_promocional?: number | null
+  stock_actual: number
+  activo?: boolean
   descripcion?: string | null
 }
 
@@ -202,6 +204,8 @@ export async function createProduct(input: NewProductInput): Promise<{ data: Pro
     temporada_id: input.temporada_id,
     precio_lista: Math.max(0, Math.floor(input.precio_lista)),
     precio_promocional: promo,
+    stock_actual: Math.max(0, Math.floor(input.stock_actual)),
+    activo: input.activo ?? true,
     descripcion: input.descripcion?.trim() || null,
   }
 

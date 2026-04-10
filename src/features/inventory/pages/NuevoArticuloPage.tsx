@@ -37,6 +37,8 @@ export function NuevoArticuloPage() {
   const [temporadaId, setTemporadaId] = useState('')
   const [precioLista, setPrecioLista] = useState('')
   const [precioPromo, setPrecioPromo] = useState('')
+  const [stockActual, setStockActual] = useState('0')
+  const [activo, setActivo] = useState(true)
   const [descripcion, setDescripcion] = useState('')
   const [categorias, setCategorias] = useState<{ id: string; nombre: string }[]>([])
   const [temporadas, setTemporadas] = useState<{ id: string; nombre: string }[]>([])
@@ -136,8 +138,13 @@ export function NuevoArticuloPage() {
     const n = name.trim()
     const s = sku.trim()
     const pl = Number.parseInt(precioLista.replace(/\s/g, ''), 10)
+    const st = Number.parseInt(stockActual.replace(/\s/g, ''), 10)
     if (!n || !s || !categoriaId || !temporadaId || !Number.isFinite(pl) || pl < 0) {
       setError('Completá nombre, código, categoría, temporada y precio de lista válido.')
+      return
+    }
+    if (!Number.isFinite(st) || st < 0) {
+      setError('Indicá un stock actual válido (entero ≥ 0).')
       return
     }
     if (coverImage) {
@@ -168,6 +175,8 @@ export function NuevoArticuloPage() {
       temporada_id: temporadaId,
       precio_lista: pl,
       precio_promocional,
+      stock_actual: st,
+      activo,
       descripcion: descripcion.trim() || null,
     })
 
@@ -286,8 +295,11 @@ export function NuevoArticuloPage() {
         </section>
 
         <section className={sectionCardClass}>
-          <SectionHeader title="Precios" hint="Valores enteros; el stock inicia en cero salvo que lo ajustes después." />
-          <div className="grid gap-4 px-5 py-5 sm:grid-cols-2">
+          <SectionHeader
+            title="Precio, stock y estado"
+            hint="Precios y stock en unidades enteras. Activo: visible en operaciones según tus reglas de negocio."
+          />
+          <div className="grid gap-4 px-5 py-5 sm:grid-cols-2 lg:grid-cols-3">
             <FormField
               label="Precio lista"
               type="number"
@@ -309,6 +321,29 @@ export function NuevoArticuloPage() {
               placeholder="—"
               disabled={saving || articleIdPendingImage != null}
             />
+            <FormField
+              label="Stock actual"
+              type="number"
+              min={0}
+              step={1}
+              value={stockActual}
+              onChange={(ev) => setStockActual(ev.target.value)}
+              placeholder="0"
+              required
+              disabled={saving || articleIdPendingImage != null}
+            />
+          </div>
+          <div className="border-t border-brand-border-subtle px-5 py-4">
+            <label className="flex cursor-pointer items-center gap-3">
+              <input
+                type="checkbox"
+                checked={activo}
+                onChange={(ev) => setActivo(ev.target.checked)}
+                disabled={saving || articleIdPendingImage != null}
+                className="h-4 w-4 rounded border-brand-border-strong text-brand-primary focus:ring-brand-blush/50"
+              />
+              <span className="text-sm text-brand-ink">Artículo activo en catálogo</span>
+            </label>
           </div>
         </section>
 
