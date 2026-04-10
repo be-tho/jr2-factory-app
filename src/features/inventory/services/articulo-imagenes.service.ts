@@ -45,3 +45,21 @@ export async function deleteArticuloImagen(id: string): Promise<{ error: Error |
   if (error) return { error: new Error(error.message) }
   return { error: null }
 }
+
+export async function updateArticuloImagenStoragePath(
+  imagenId: string,
+  storage_path: string
+): Promise<{ error: Error | null }> {
+  const { error } = await supabase.from(TABLE).update({ storage_path }).eq('id', imagenId)
+  if (error) return { error: new Error(error.message) }
+  return { error: null }
+}
+
+export function pickPrincipalArticuloImagen(images: ProductImage[]): ProductImage | null {
+  if (!images.length) return null
+  const sorted = [...images].sort((a, b) => {
+    if (a.es_principal !== b.es_principal) return a.es_principal ? -1 : 1
+    return a.orden - b.orden
+  })
+  return sorted[0] ?? null
+}
