@@ -6,6 +6,7 @@ import { LoginPage } from '../features/auth/pages/LoginPage'
 import { RegisterPage } from '../features/auth/pages/RegisterPage'
 import { ArticuloDetailPage } from '../features/inventory/pages/ArticuloDetailPage'
 import { ArticulosPage } from '../features/inventory/pages/ArticulosPage'
+import { NuevoArticuloPage } from '../features/inventory/pages/NuevoArticuloPage'
 import { CategoriasPage } from '../features/inventory/pages/CategoriasPage'
 import { TemporadasPage } from '../features/inventory/pages/TemporadasPage'
 import { CortesPage } from '../features/production/pages/CortesPage'
@@ -26,6 +27,7 @@ export function AppRouter() {
           <Route path="/produccion/cortes" element={<CortesPage />} />
           <Route path="/produccion/costureros" element={<CosturerosPage />} />
           <Route path="/inventario/articulos" element={<ArticulosPage />} />
+          <Route path="/inventario/articulos/nuevo" element={<NuevoArticuloPage />} />
           <Route path="/inventario/articulos/:id" element={<ArticuloDetailPage />} />
           <Route path="/inventario/categorias" element={<CategoriasPage />} />
           <Route path="/inventario/temporadas" element={<TemporadasPage />} />
