@@ -1,5 +1,6 @@
 import { useEffect, useId, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { DEFAULT_ARTICLE_IMAGE_PUBLIC_URL } from '../../../constants/defaultArticleImage'
 import { FormField } from '../../../components/ui/FormField'
 import { PageHeader } from '../../../components/ui/PageHeader'
 import {
@@ -94,7 +95,7 @@ export function NuevoArticuloPage() {
     }
   }
 
-  /** Sube `default-articulo.webp` a `images/<id>/default-articulo.webp` y registra la fila. */
+  /** Sube `default-articulo.svg` a `images/<id>/default-articulo.svg` y registra la fila. */
   async function attachDefaultArticleImage(articuloId: string): Promise<void> {
     const file = await loadDefaultArticleImageFile()
     const { path } = await uploadDefaultArticlePlaceholder(articuloId, file)
@@ -204,7 +205,7 @@ export function NuevoArticuloPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <PageHeader
           title="Nuevo artículo"
-          description="Datos del artículo y foto: si no subís una, se guarda automáticamente default-articulo.webp en Storage (products/images/…)."
+          description="Si no subís foto, se usa y guarda public/default-articulo.svg en Storage para ese artículo."
         />
         <Link
           to="/inventario/articulos"
@@ -331,18 +332,18 @@ export function NuevoArticuloPage() {
         <section className={sectionCardClass}>
           <SectionHeader
             title="Imagen del producto"
-            hint="Opcional. Si no elegís archivo, al guardar se sube la imagen por defecto como images/<id>/default-articulo.webp."
+            hint="Opcional. Sin archivo, al guardar se copia public/default-articulo.svg al bucket como images/<id>/default-articulo.svg."
           />
           <div className="px-5 py-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
               <div className="min-w-0 flex-1">
                 <label htmlFor={coverInputId} className="mb-1 block text-sm font-medium text-brand-ink-muted">
-                  Archivo
+                  Archivo (si no, se usa la imagen por defecto de abajo)
                 </label>
                 <input
                   id={coverInputId}
                   type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
                   disabled={saving}
                   className="block w-full max-w-md text-sm text-brand-ink file:mr-3 file:rounded-lg file:border file:border-brand-border file:bg-brand-canvas file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-brand-ink"
                   onChange={(ev) => {
@@ -350,7 +351,7 @@ export function NuevoArticuloPage() {
                     setCoverImage(f)
                   }}
                 />
-                <p className="mt-1 text-xs text-brand-ink-faint">JPEG, PNG, WebP o GIF · máx. 8 MB</p>
+                <p className="mt-1 text-xs text-brand-ink-faint">JPEG, PNG, WebP, GIF o SVG · máx. 8 MB</p>
                 {coverImage ? (
                   <button
                     type="button"
@@ -358,15 +359,22 @@ export function NuevoArticuloPage() {
                     onClick={() => setCoverImage(null)}
                     disabled={saving}
                   >
-                    Quitar imagen
+                    Quitar y usar imagen por defecto
                   </button>
                 ) : null}
               </div>
-              {coverPreview ? (
-                <div className="h-36 w-36 shrink-0 overflow-hidden rounded-lg border border-brand-border bg-brand-canvas">
-                  <img src={coverPreview} alt="" className="h-full w-full object-contain" />
+              <div className="flex shrink-0 flex-col items-center gap-1.5">
+                <div className="h-40 w-40 overflow-hidden rounded-lg border border-brand-border bg-white shadow-sm">
+                  <img
+                    src={coverPreview ?? DEFAULT_ARTICLE_IMAGE_PUBLIC_URL}
+                    alt=""
+                    className="h-full w-full object-contain"
+                  />
                 </div>
-              ) : null}
+                <p className="max-w-[10rem] text-center text-xs text-brand-ink-muted">
+                  {coverImage ? 'Vista previa de tu archivo' : 'Por defecto: default-articulo.svg'}
+                </p>
+              </div>
             </div>
           </div>
         </section>

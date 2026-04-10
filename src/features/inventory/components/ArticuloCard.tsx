@@ -1,5 +1,8 @@
 import { Link } from 'react-router-dom'
-import { DEFAULT_ARTICLE_IMAGE_PUBLIC_URL } from '../../../constants/defaultArticleImage'
+import {
+  DEFAULT_ARTICLE_IMAGE_PUBLIC_URL,
+  hasStorageCoverImage,
+} from '../../../constants/defaultArticleImage'
 import { getProductImagePublicUrl } from '../../media/services/storage.service'
 import type { Product } from '../../../types/database'
 
@@ -8,22 +11,28 @@ type ArticuloCardProps = {
 }
 
 export function ArticuloCard({ product }: ArticuloCardProps) {
-  const coverSrc = product.cover_image_path
-    ? getProductImagePublicUrl(product.cover_image_path)
-    : DEFAULT_ARTICLE_IMAGE_PUBLIC_URL
+  const storagePath = product.cover_image_path
+  const hasFile = hasStorageCoverImage(storagePath)
+  const coverSrc = hasFile ? getProductImagePublicUrl(storagePath) : DEFAULT_ARTICLE_IMAGE_PUBLIC_URL
 
   return (
     <Link
       to={`/inventario/articulos/${product.id}`}
       className="group flex flex-col overflow-hidden rounded-xl border border-brand-border bg-brand-surface shadow-sm shadow-brand-ink/5 ring-1 ring-brand-border-subtle transition hover:border-brand-border-strong hover:shadow-md hover:ring-brand-blush/40"
     >
-      <div className="aspect-[4/3] w-full shrink-0 overflow-hidden bg-brand-canvas">
+      <div
+        className={`aspect-[4/3] w-full shrink-0 overflow-hidden ${
+          hasFile ? 'bg-brand-canvas' : 'bg-white'
+        }`}
+      >
         <img
           src={coverSrc}
           alt=""
           loading="lazy"
           decoding="async"
-          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+          className={`h-full w-full transition duration-300 group-hover:scale-[1.02] ${
+            hasFile ? 'object-cover' : 'object-contain p-2'
+          }`}
         />
       </div>
       <div className="flex flex-col p-4">

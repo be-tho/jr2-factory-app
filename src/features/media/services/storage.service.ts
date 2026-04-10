@@ -11,7 +11,7 @@ export const PRODUCTS_BUCKET = 'products'
 export const PRODUCT_IMAGES_PREFIX = 'images'
 
 const MAX_BYTES = 8 * 1024 * 1024
-const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'])
 
 function sanitizeFileName(name: string): string {
   const base = name.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 120)
@@ -24,7 +24,7 @@ export function buildProductImageObjectPath(articuloId: string, file: File): str
   return `${PRODUCT_IMAGES_PREFIX}/${articuloId}/${unique}`
 }
 
-/** Ruta fija para la imagen por defecto por artículo: `images/<id>/default-articulo.webp`. */
+/** Ruta fija para la imagen por defecto por artículo: `images/<id>/default-articulo.svg`. */
 export function buildDefaultArticleStoragePath(articuloId: string): string {
   return `${PRODUCT_IMAGES_PREFIX}/${articuloId}/${DEFAULT_ARTICLE_STORAGE_FILE_NAME}`
 }
@@ -34,18 +34,18 @@ export async function uploadDefaultArticlePlaceholder(articuloId: string, file: 
   const path = buildDefaultArticleStoragePath(articuloId)
   const { data, error } = await supabase.storage.from(PRODUCTS_BUCKET).upload(path, file, {
     upsert: true,
-    contentType: file.type || 'image/webp',
+    contentType: file.type || 'image/svg+xml',
   })
   if (error) throw error
   return { path: data.path }
 }
 
-/** Carga el archivo desde `/public/default-articulo.webp` para subirlo a Storage. */
+/** Carga el archivo desde `/public/default-articulo.svg` para subirlo a Storage. */
 export async function loadDefaultArticleImageFile(): Promise<File> {
   const res = await fetch(DEFAULT_ARTICLE_IMAGE_PUBLIC_URL)
   if (!res.ok) throw new Error('No se pudo cargar la imagen por defecto del sitio.')
   const blob = await res.blob()
-  return new File([blob], DEFAULT_ARTICLE_STORAGE_FILE_NAME, { type: blob.type || 'image/webp' })
+  return new File([blob], DEFAULT_ARTICLE_STORAGE_FILE_NAME, { type: blob.type || 'image/svg+xml' })
 }
 
 export function validateImageFile(file: File): string | null {
