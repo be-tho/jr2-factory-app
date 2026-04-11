@@ -1,7 +1,9 @@
+import { IconPackage, IconPackageOff, IconPlus, IconRefresh, IconStack, IconTag } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import { PageHeader } from '../../../components/ui/PageHeader'
 import { StatCard } from '../../../components/ui/StatCard'
 import { useProductsQuery } from '../hooks/useProducts'
+import { ic } from '../../../lib/tabler'
 import { ArticuloCard } from '../components/ArticuloCard'
 
 export function ArticulosPage() {
@@ -12,14 +14,19 @@ export function ArticulosPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <PageHeader title="Artículos" description="Gestión de prendas, talles, colores y stock." />
+        <PageHeader
+          title="Artículos"
+          description="Gestión de prendas, talles, colores y stock."
+          icon={<IconStack {...ic.header} aria-hidden />}
+        />
         <Link
           to="/inventario/articulos/nuevo"
-          className={`shrink-0 rounded-lg border border-brand-border-strong bg-brand-primary px-4 py-2.5 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover ${loading ? 'pointer-events-none opacity-60' : ''}`}
+          className={`inline-flex shrink-0 items-center gap-2 rounded-lg border border-brand-border-strong bg-brand-primary px-4 py-2.5 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover ${loading ? 'pointer-events-none opacity-60' : ''}`}
           onClick={(e) => {
             if (loading) e.preventDefault()
           }}
         >
+          <IconPlus {...ic.btn} aria-hidden />
           Nuevo artículo
         </Link>
       </div>
@@ -29,9 +36,17 @@ export function ArticulosPage() {
           <h3 className="font-medium text-brand-ink">Resumen rápido</h3>
         </header>
         <div className="grid gap-4 px-5 py-4 md:grid-cols-3">
-          <StatCard label="Artículos activos" value={loading ? '…' : String(articles.length)} />
-          <StatCard label="Sin stock" value="—" />
-          <StatCard label="Categorías (en catálogo)" value={loading ? '…' : String(categoryCount)} />
+          <StatCard
+            label="Artículos activos"
+            value={loading ? '…' : String(articles.length)}
+            icon={<IconPackage {...ic.stat} aria-hidden />}
+          />
+          <StatCard label="Sin stock" value="—" icon={<IconPackageOff {...ic.stat} aria-hidden />} />
+          <StatCard
+            label="Categorías (en catálogo)"
+            value={loading ? '…' : String(categoryCount)}
+            icon={<IconTag {...ic.stat} aria-hidden />}
+          />
         </div>
       </section>
 
@@ -41,9 +56,10 @@ export function ArticulosPage() {
           <p className="mt-1 text-red-700">{errorMessage}</p>
           <button
             type="button"
-            className="mt-3 rounded-lg border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-900 transition hover:bg-red-100"
+            className="mt-3 inline-flex items-center gap-2 rounded-lg border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-900 transition hover:bg-red-100"
             onClick={() => void refetch()}
           >
+            <IconRefresh size={16} stroke={1.5} className="shrink-0" aria-hidden />
             Reintentar
           </button>
         </div>

@@ -1,3 +1,4 @@
+import { IconChevronRight } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import {
   DEFAULT_ARTICLE_IMAGE_PUBLIC_URL,
@@ -58,14 +59,17 @@ export function ArticuloCard({ product }: ArticuloCardProps) {
           </>
         )}
       </p>
-      <p className="mt-auto pt-3 text-xs text-brand-ink-faint">
-        Alta{' '}
-        {new Date(product.created_at).toLocaleDateString('es-AR', {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric',
-        })}
-      </p>
+      <div className="mt-auto flex items-center justify-between gap-2 border-t border-brand-border-subtle pt-3">
+        <p className="text-xs text-brand-ink-faint">
+          Alta{' '}
+          {new Date(product.created_at).toLocaleDateString('es-AR', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+          })}
+        </p>
+        <IconChevronRight size={16} stroke={1.5} className="shrink-0 text-brand-ink-faint" aria-hidden />
+      </div>
       </div>
     </Link>
   )

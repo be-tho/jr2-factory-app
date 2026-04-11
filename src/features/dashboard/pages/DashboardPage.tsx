@@ -1,5 +1,7 @@
+import { IconCircleCheck, IconClipboardList, IconLayoutDashboard, IconPackage } from '@tabler/icons-react'
 import { PageHeader } from '../../../components/ui/PageHeader'
 import { StatCard } from '../../../components/ui/StatCard'
+import { ic } from '../../../lib/tabler'
 import { useProductsQuery } from '../../inventory/hooks/useProducts'
 
 export function DashboardPage() {
@@ -11,15 +13,21 @@ export function DashboardPage() {
       <PageHeader
         title="Dashboard"
         description="Resumen general de operación: métricas clave e indicadores."
+        icon={<IconLayoutDashboard {...ic.header} aria-hidden />}
       />
 
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard
           label="Artículos en inventario"
           value={productsLoading ? '…' : String(articles.length)}
+          icon={<IconPackage {...ic.stat} aria-hidden />}
         />
-        <StatCard label="Artículos activos" value={productsLoading ? '…' : String(activos)} />
-        <StatCard label="Órdenes de hoy" value="—" />
+        <StatCard
+          label="Artículos activos"
+          value={productsLoading ? '…' : String(activos)}
+          icon={<IconCircleCheck {...ic.stat} aria-hidden />}
+        />
+        <StatCard label="Órdenes de hoy" value="—" icon={<IconClipboardList {...ic.stat} aria-hidden />} />
       </div>
 
       <section className="grid gap-4 lg:grid-cols-2">

@@ -1,7 +1,9 @@
+import { IconUserPlus } from '@tabler/icons-react'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { AuthCard } from '../../../components/ui/AuthCard'
 import { FormField } from '../../../components/ui/FormField'
+import { ic } from '../../../lib/tabler'
 import { supabase } from '../../../lib/supabase/client'
 
 export function RegisterPage() {
@@ -32,7 +34,11 @@ export function RegisterPage() {
   }
 
   return (
-    <AuthCard title="Crear cuenta" subtitle="Registra un usuario para acceder al dashboard.">
+    <AuthCard
+      title="Crear cuenta"
+      subtitle="Registra un usuario para acceder al dashboard."
+      icon={<IconUserPlus {...ic.headerSm} aria-hidden />}
+    >
       <form className="space-y-4" onSubmit={handleSubmit}>
         <FormField
           label="Email"

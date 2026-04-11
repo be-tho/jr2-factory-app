@@ -1,7 +1,9 @@
+import { IconLogin } from '@tabler/icons-react'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { AuthCard } from '../../../components/ui/AuthCard'
 import { FormField } from '../../../components/ui/FormField'
+import { ic } from '../../../lib/tabler'
 import { supabase } from '../../../lib/supabase/client'
 
 export function LoginPage() {
@@ -22,7 +24,11 @@ export function LoginPage() {
   }
 
   return (
-    <AuthCard title="Bienvenido de nuevo" subtitle="Inicia sesion para entrar al dashboard.">
+    <AuthCard
+      title="Bienvenido de nuevo"
+      subtitle="Inicia sesion para entrar al dashboard."
+      icon={<IconLogin {...ic.headerSm} aria-hidden />}
+    >
       <form className="space-y-4" onSubmit={handleSubmit}>
         <FormField
           label="Email"
