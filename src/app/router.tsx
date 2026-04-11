@@ -30,6 +30,12 @@ const NuevoArticuloPage = lazy(() =>
 const CategoriasPage = lazy(() =>
   import('../features/inventory/pages/CategoriasPage').then((m) => ({ default: m.CategoriasPage })),
 )
+const EditarCategoriaPage = lazy(() =>
+  import('../features/inventory/pages/EditarCategoriaPage').then((m) => ({ default: m.EditarCategoriaPage })),
+)
+const NuevaCategoriaPage = lazy(() =>
+  import('../features/inventory/pages/NuevaCategoriaPage').then((m) => ({ default: m.NuevaCategoriaPage })),
+)
 const EditarTemporadaPage = lazy(() =>
   import('../features/inventory/pages/EditarTemporadaPage').then((m) => ({ default: m.EditarTemporadaPage })),
 )
@@ -73,6 +79,8 @@ export function AppRouter() {
             <Route path="/inventario/articulos/:id/editar" element={<EditarArticuloPage />} />
             <Route path="/inventario/articulos/:id" element={<ArticuloDetailPage />} />
             <Route path="/inventario/categorias" element={<CategoriasPage />} />
+            <Route path="/inventario/categorias/nueva" element={<NuevaCategoriaPage />} />
+            <Route path="/inventario/categorias/:id/editar" element={<EditarCategoriaPage />} />
             <Route path="/inventario/temporadas" element={<TemporadasPage />} />
             <Route path="/inventario/temporadas/nueva" element={<NuevaTemporadaPage />} />
             <Route path="/inventario/temporadas/:id/editar" element={<EditarTemporadaPage />} />

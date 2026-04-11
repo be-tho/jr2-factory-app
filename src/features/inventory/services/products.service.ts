@@ -1,5 +1,5 @@
 import { supabase } from '../../../lib/supabase/client'
-import type { ArticuloQueryRow, CategoriaRow, Product } from '../../../types/database'
+import type { ArticuloQueryRow, Product } from '../../../types/database'
 import { removeProductImage } from '../../media/services/storage.service'
 
 const TABLE = 'articulos'
@@ -131,17 +131,7 @@ function rowToProduct(row: ArticuloQueryRow): Product {
   }
 }
 
-export async function listCategorias(): Promise<{ data: CategoriaRow[]; error: Error | null }> {
-  const { data, error } = await supabase
-    .from('categorias')
-    .select('id, nombre')
-    .eq('activo', true)
-    .order('nombre')
-
-  if (error) return { data: [], error: new Error(error.message) }
-  return { data: (data ?? []) as CategoriaRow[], error: null }
-}
-
+export { listCategorias } from './categorias.service'
 export { listTemporadas } from './temporadas.service'
 
 export async function listProducts(): Promise<{ data: Product[]; error: Error | null }> {

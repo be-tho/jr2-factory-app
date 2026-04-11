@@ -23,6 +23,7 @@ export default defineConfig([
   {
     files: [
       'src/features/inventory/pages/EditarArticuloPage.tsx',
+      'src/features/inventory/pages/EditarCategoriaPage.tsx',
       'src/features/inventory/pages/EditarTemporadaPage.tsx',
     ],
     rules: {
