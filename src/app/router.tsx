@@ -9,6 +9,8 @@ import { ArticulosPage } from '../features/inventory/pages/ArticulosPage'
 import { EditarArticuloPage } from '../features/inventory/pages/EditarArticuloPage'
 import { NuevoArticuloPage } from '../features/inventory/pages/NuevoArticuloPage'
 import { CategoriasPage } from '../features/inventory/pages/CategoriasPage'
+import { EditarTemporadaPage } from '../features/inventory/pages/EditarTemporadaPage'
+import { NuevaTemporadaPage } from '../features/inventory/pages/NuevaTemporadaPage'
 import { TemporadasPage } from '../features/inventory/pages/TemporadasPage'
 import { CortesPage } from '../features/production/pages/CortesPage'
 import { CosturerosPage } from '../features/production/pages/CosturerosPage'
@@ -33,6 +35,8 @@ export function AppRouter() {
           <Route path="/inventario/articulos/:id" element={<ArticuloDetailPage />} />
           <Route path="/inventario/categorias" element={<CategoriasPage />} />
           <Route path="/inventario/temporadas" element={<TemporadasPage />} />
+          <Route path="/inventario/temporadas/nueva" element={<NuevaTemporadaPage />} />
+          <Route path="/inventario/temporadas/:id/editar" element={<EditarTemporadaPage />} />
           <Route path="/cuenta" element={<CuentaPage />} />
         </Route>
         <Route path="/productos" element={<Navigate to="/inventario/articulos" replace />} />

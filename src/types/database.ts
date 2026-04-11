@@ -10,6 +10,7 @@ export interface CategoriaRow {
 export interface TemporadaRow {
   id: string
   nombre: string
+  activo: boolean
 }
 
 /**
