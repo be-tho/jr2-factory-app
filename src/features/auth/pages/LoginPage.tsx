@@ -1,4 +1,4 @@
-import { IconLogin } from '@tabler/icons-react'
+import { IconEye, IconEyeOff, IconLogin } from '@tabler/icons-react'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { AuthCard } from '../../../components/ui/AuthCard'
@@ -9,6 +9,7 @@ import { supabase } from '../../../lib/supabase/client'
 export function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -39,15 +40,32 @@ export function LoginPage() {
           autoComplete="email"
           required
         />
-        <FormField
-          label="Password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="********"
-          autoComplete="current-password"
-          required
-        />
+        <div className="block">
+          <span className="mb-1 block text-sm font-medium text-brand-ink-muted">Password</span>
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="********"
+              autoComplete="current-password"
+              required
+              className="w-full rounded-lg border border-brand-border-strong bg-brand-surface py-2 pl-3 pr-10 text-brand-ink outline-none transition placeholder:text-brand-ink-faint focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50"
+            />
+            <button
+              type="button"
+              aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              className="absolute inset-y-0 right-0 flex items-center px-3 text-brand-ink-faint transition hover:text-brand-primary"
+              onClick={() => setShowPassword((v) => !v)}
+            >
+              {showPassword ? (
+                <IconEyeOff size={18} stroke={1.5} aria-hidden />
+              ) : (
+                <IconEye size={18} stroke={1.5} aria-hidden />
+              )}
+            </button>
+          </div>
+        </div>
 
         {error ? (
           <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
