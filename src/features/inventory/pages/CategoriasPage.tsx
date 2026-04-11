@@ -41,7 +41,7 @@ export function CategoriasPage() {
         />
         <Link
           to="/inventario/categorias/nueva"
-          className={`shrink-0 rounded-lg border border-brand-border-strong bg-brand-primary px-4 py-2.5 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover ${loading ? 'pointer-events-none opacity-60' : ''}`}
+          className={`shrink-0 rounded-lg border border-brand-primary-hover bg-brand-primary px-4 py-2.5 text-sm font-semibold text-brand-on-primary shadow-sm transition hover:bg-brand-primary-hover ${loading ? 'pointer-events-none opacity-60' : ''}`}
           onClick={(e) => {
             if (loading) e.preventDefault()
           }}

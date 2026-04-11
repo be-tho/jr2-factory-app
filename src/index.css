@@ -1,19 +1,27 @@
 /* Tokens y capas base: deben ir después de @import "tailwindcss" en App.css */
 
-/* JR2 — paleta marca: primary #FFB7C5, blush #F2C7C7, mint #D5F3D8, blanco #FFFFFF */
+/* JR2 — paleta marca centrada en primary #EB3D63 (derivados en la misma tonalidad) */
 @theme {
-  --color-brand-canvas: #faf7f8;
+  --font-sans: 'Google Sans', ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand-canvas: #fcf8f9;
   --color-brand-surface: #ffffff;
-  --color-brand-primary: #ffb7c5;
-  --color-brand-primary-hover: #f5a3b5;
-  --color-brand-blush: #f2c7c7;
+  --color-brand-primary: #eb3d63;
+  --color-brand-primary-hover: #d43559;
+  --color-brand-primary-active: #b82a49;
+  --color-brand-primary-muted: #f6a3b8;
+  --color-brand-primary-subtle: #fcecf0;
+  --color-brand-primary-ghost: #fdf2f5;
+  --color-brand-on-primary: #ffffff;
+  --color-brand-blush: #fad4df;
+  --color-brand-blush-deep: #f3b8ca;
   --color-brand-mint: #d5f3d8;
   --color-brand-ink: #2c2829;
   --color-brand-ink-muted: #5c5456;
   --color-brand-ink-faint: #8a8284;
-  --color-brand-border: #ebe0e2;
-  --color-brand-border-strong: #e0d2d5;
-  --color-brand-border-subtle: #f5eff1;
+  --color-brand-border: #f0e4e7;
+  --color-brand-border-strong: #e5d3d8;
+  --color-brand-border-subtle: #faf4f6;
 }
 
 @layer base {
@@ -22,5 +30,6 @@
   }
   body {
     @apply bg-brand-canvas text-brand-ink antialiased;
+    font-family: var(--font-sans);
   }
 }

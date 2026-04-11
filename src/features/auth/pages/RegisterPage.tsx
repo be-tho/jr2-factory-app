@@ -71,7 +71,7 @@ export function RegisterPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg border border-brand-border-strong bg-brand-primary px-4 py-2.5 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full rounded-lg border border-brand-primary-hover bg-brand-primary px-4 py-2.5 text-sm font-semibold text-brand-on-primary shadow-sm transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? 'Creando cuenta...' : 'Registrarme'}
         </button>

@@ -60,17 +60,17 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
   )
 
   const itemClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition ${
+    `flex items-center gap-2.5 rounded-md px-3 py-2.5 text-base font-bold transition ${
       isActive
-        ? 'bg-brand-primary text-brand-ink shadow-sm'
-        : 'text-brand-ink-muted hover:bg-brand-blush/50 hover:text-brand-ink'
+        ? 'bg-brand-primary text-brand-on-primary shadow-sm'
+        : 'text-brand-ink-muted hover:bg-brand-primary-subtle hover:text-brand-primary'
     }`
 
   const subItemClass = ({ isActive }: { isActive: boolean }) =>
-    `ml-2 flex items-center gap-2 rounded-md border-l-2 py-2 pl-3 pr-2 text-sm transition ${
+    `ml-2 flex items-center gap-2 rounded-md border-l-2 py-2.5 pl-3 pr-2 text-base transition ${
       isActive
-        ? 'border-brand-primary bg-brand-primary/35 font-medium text-brand-ink'
-        : 'border-transparent text-brand-ink-muted hover:border-brand-border hover:bg-brand-canvas hover:text-brand-ink'
+        ? 'border-brand-primary bg-brand-primary-subtle font-bold text-brand-primary'
+        : 'border-transparent font-bold text-brand-ink-muted hover:border-brand-border hover:bg-brand-primary-ghost hover:text-brand-primary'
     }`
 
   return (
@@ -83,10 +83,10 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
       <div>
         <button
           type="button"
-          className={`flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium transition ${
+          className={`flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-base font-bold transition ${
             location.pathname.startsWith('/produccion')
-              ? 'bg-brand-blush/70 text-brand-ink'
-              : 'text-brand-ink-muted hover:bg-brand-canvas'
+              ? 'bg-brand-primary-subtle text-brand-primary'
+              : 'text-brand-ink-muted hover:bg-brand-primary-ghost hover:text-brand-primary'
           }`}
           aria-expanded={produccionOpen}
           onClick={() => setProduccionOpen((o) => !o)}
@@ -117,10 +117,10 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
       <div>
         <button
           type="button"
-          className={`flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium transition ${
+          className={`flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-base font-bold transition ${
             location.pathname.startsWith('/inventario')
-              ? 'bg-brand-blush/70 text-brand-ink'
-              : 'text-brand-ink-muted hover:bg-brand-canvas'
+              ? 'bg-brand-primary-subtle text-brand-primary'
+              : 'text-brand-ink-muted hover:bg-brand-primary-ghost hover:text-brand-primary'
           }`}
           aria-expanded={inventarioOpen}
           onClick={() => setInventarioOpen((o) => !o)}
@@ -191,7 +191,7 @@ export function DashboardLayout() {
     <div className="min-h-screen bg-brand-canvas">
       <div className="mx-auto flex min-h-screen w-full max-w-7xl md:max-w-none">
         <aside className="hidden w-56 shrink-0 flex-col border-r border-brand-border bg-brand-surface sm:flex sm:sticky sm:top-0 sm:h-screen">
-          <div className="border-b border-brand-border bg-brand-blush/20 p-4">
+          <div className="border-b border-brand-border bg-brand-primary-ghost p-4">
             <div className="flex items-center gap-2">
               <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-brand-border/80 bg-brand-surface text-brand-primary-hover">
                 <IconBuildingFactory2 size={20} stroke={1.5} aria-hidden />
@@ -210,7 +210,7 @@ export function DashboardLayout() {
           <div className="border-t border-brand-border p-3">
             <button
               type="button"
-              className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm text-brand-ink-muted transition hover:bg-red-50 hover:text-red-700"
+              className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-base font-bold text-brand-ink-muted transition hover:bg-red-50 hover:text-red-700"
               onClick={handleLogout}
             >
               <IconLogout {...ic.nav} aria-hidden />
@@ -235,7 +235,7 @@ export function DashboardLayout() {
               </div>
               <button
                 type="button"
-                className="inline-flex items-center gap-2 rounded-md border border-brand-border-strong bg-brand-primary px-3 py-2 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover"
+                className="inline-flex items-center gap-2 rounded-md border border-brand-primary-hover bg-brand-primary px-3 py-2 text-sm font-bold text-brand-on-primary shadow-sm transition hover:bg-brand-primary-hover"
                 aria-expanded={mobileMenuOpen}
                 aria-controls="mobile-dashboard-nav"
                 onClick={() => setMobileMenuOpen((o) => !o)}
@@ -246,7 +246,7 @@ export function DashboardLayout() {
                   aria-hidden
                   size={16}
                   stroke={1.5}
-                  className={`text-brand-ink/70 transition-transform duration-200 ${mobileMenuOpen ? 'rotate-180' : ''}`}
+                  className={`text-brand-on-primary/85 transition-transform duration-200 ${mobileMenuOpen ? 'rotate-180' : ''}`}
                 />
               </button>
             </div>
@@ -282,7 +282,7 @@ export function DashboardLayout() {
                   }}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="flex shrink-0 items-start justify-between gap-3 border-b border-brand-border bg-brand-blush/25 px-4 py-4">
+                  <div className="flex shrink-0 items-start justify-between gap-3 border-b border-brand-border bg-brand-primary-ghost px-4 py-4">
                     <div id="mobile-drawer-title" className="flex min-w-0 items-center gap-2">
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-border bg-brand-surface text-brand-primary-hover">
                         <IconBuildingFactory2 size={18} stroke={1.5} aria-hidden />
@@ -310,7 +310,7 @@ export function DashboardLayout() {
                     />
                     <button
                       type="button"
-                      className="mt-6 flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm text-brand-ink-muted transition hover:bg-red-50 hover:text-red-700"
+                      className="mt-6 flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-base font-bold text-brand-ink-muted transition hover:bg-red-50 hover:text-red-700"
                       onClick={handleLogout}
                     >
                       <IconLogout {...ic.nav} aria-hidden />

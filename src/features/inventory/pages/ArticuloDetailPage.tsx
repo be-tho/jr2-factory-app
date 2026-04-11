@@ -35,7 +35,7 @@ export function ArticuloDetailPage() {
         />
         <Link
           to="/inventario/articulos"
-          className="inline-flex items-center gap-2 rounded-lg border border-brand-border-strong bg-brand-primary px-4 py-2 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover"
+          className="inline-flex items-center gap-2 rounded-lg border border-brand-primary-hover bg-brand-primary px-4 py-2 text-sm font-semibold text-brand-on-primary shadow-sm transition hover:bg-brand-primary-hover"
         >
           <IconArrowLeft {...ic.btn} aria-hidden />
           Volver al listado
@@ -77,7 +77,7 @@ export function ArticuloDetailPage() {
         </button>
         <Link
           to="/inventario/articulos"
-          className="inline-flex items-center gap-2 rounded-lg border border-brand-border-strong bg-brand-primary px-4 py-2 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover"
+          className="inline-flex items-center gap-2 rounded-lg border border-brand-primary-hover bg-brand-primary px-4 py-2 text-sm font-semibold text-brand-on-primary shadow-sm transition hover:bg-brand-primary-hover"
         >
           <IconArrowLeft {...ic.btn} aria-hidden />
           Volver al listado
@@ -96,7 +96,7 @@ export function ArticuloDetailPage() {
         />
         <Link
           to="/inventario/articulos"
-          className="inline-flex items-center gap-2 rounded-lg border border-brand-border-strong bg-brand-primary px-4 py-2 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover"
+          className="inline-flex items-center gap-2 rounded-lg border border-brand-primary-hover bg-brand-primary px-4 py-2 text-sm font-semibold text-brand-on-primary shadow-sm transition hover:bg-brand-primary-hover"
         >
           <IconArrowLeft {...ic.btn} aria-hidden />
           Volver al listado
@@ -141,7 +141,7 @@ export function ArticuloDetailPage() {
         <div className="flex shrink-0 flex-col gap-2 self-start sm:flex-row sm:items-center">
           <Link
             to={`/inventario/articulos/${product.id}/editar`}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-brand-border-strong bg-brand-primary px-4 py-2 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-brand-primary-hover bg-brand-primary px-4 py-2 text-sm font-semibold text-brand-on-primary shadow-sm transition hover:bg-brand-primary-hover"
           >
             <IconPencil {...ic.btn} aria-hidden />
             Editar
