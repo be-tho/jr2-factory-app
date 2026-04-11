@@ -4,6 +4,7 @@ import {
   createTemporada,
   deleteTemporada,
   getTemporadaById,
+  listTemporadas,
   listTemporadasAdmin,
   updateTemporada,
   type NewTemporadaInput,
@@ -14,7 +15,20 @@ import {
 export const temporadasKeys = {
   all: ['temporadas'] as const,
   admin: () => [...temporadasKeys.all, 'admin'] as const,
+  catalog: () => [...temporadasKeys.all, 'catalog'] as const,
   detail: (id: string) => [...temporadasKeys.all, 'detail', id] as const,
+}
+
+/** Temporadas activas — selects en artículos (comparte invalidación con admin). */
+export function useTemporadasCatalogQuery() {
+  return useQuery({
+    queryKey: temporadasKeys.catalog(),
+    queryFn: async (): Promise<TemporadaRow[]> => {
+      const { data, error } = await listTemporadas()
+      if (error) throw error
+      return data
+    },
+  })
 }
 
 export function useTemporadasAdminQuery() {

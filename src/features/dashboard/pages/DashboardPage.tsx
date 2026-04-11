@@ -1,7 +1,11 @@
 import { PageHeader } from '../../../components/ui/PageHeader'
 import { StatCard } from '../../../components/ui/StatCard'
+import { useProductsQuery } from '../../inventory/hooks/useProducts'
 
 export function DashboardPage() {
+  const { data: articles = [], isPending: productsLoading } = useProductsQuery()
+  const activos = articles.filter((a) => a.activo).length
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -10,9 +14,12 @@ export function DashboardPage() {
       />
 
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard label="Órdenes de hoy" value="24" />
-        <StatCard label="Producción activa" value="8 lotes" />
-        <StatCard label="Alertas de stock" value="3" />
+        <StatCard
+          label="Artículos en inventario"
+          value={productsLoading ? '…' : String(articles.length)}
+        />
+        <StatCard label="Artículos activos" value={productsLoading ? '…' : String(activos)} />
+        <StatCard label="Órdenes de hoy" value="—" />
       </div>
 
       <section className="grid gap-4 lg:grid-cols-2">

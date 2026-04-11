@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import type { FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { AuthCard } from '../../../components/ui/AuthCard'
 import { FormField } from '../../../components/ui/FormField'
@@ -15,48 +14,37 @@ export function LoginPage() {
     event.preventDefault()
     setError(null)
     setLoading(true)
-
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+    setLoading(false)
     if (signInError) {
       setError(signInError.message)
-      setLoading(false)
-      return
     }
-
-    setLoading(false)
   }
 
   return (
-    <AuthCard
-      title="Bienvenido de nuevo"
-      subtitle="Inicia sesion para entrar al dashboard."
-    >
+    <AuthCard title="Bienvenido de nuevo" subtitle="Inicia sesion para entrar al dashboard.">
       <form className="space-y-4" onSubmit={handleSubmit}>
         <FormField
           label="Email"
           type="email"
           value={email}
-          onChange={(event) => setEmail(event.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
           placeholder="tu@email.com"
+          autoComplete="email"
           required
         />
         <FormField
           label="Password"
           type="password"
           value={password}
-          onChange={(event) => setPassword(event.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
           placeholder="********"
+          autoComplete="current-password"
           required
         />
 
         {error ? (
-          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-            {error}
-          </p>
+          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
         ) : null}
 
         <button
@@ -78,9 +66,7 @@ export function LoginPage() {
         </Link>
       </p>
 
-      <p className="mt-3 text-center text-xs text-brand-ink-faint">
-        Acceso solo para personal autorizado.
-      </p>
+      <p className="mt-3 text-center text-xs text-brand-ink-faint">Acceso solo para personal autorizado.</p>
     </AuthCard>
   )
 }
