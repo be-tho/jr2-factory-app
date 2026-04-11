@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import type { FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { AuthCard } from '../../../components/ui/AuthCard'
 import { FormField } from '../../../components/ui/FormField'
@@ -17,63 +16,50 @@ export function RegisterPage() {
     setError(null)
     setSuccess(null)
     setLoading(true)
-
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-    })
-
+    const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
+    setLoading(false)
     if (signUpError) {
       setError(signUpError.message)
-      setLoading(false)
       return
     }
-
     if (data.session) {
       setSuccess('Registro completado. Ya estas autenticado.')
     } else {
       setSuccess(
-        'Registro completado. Revisa tu correo para confirmar la cuenta y luego inicia sesion.'
+        'Registro completado. Revisa tu correo para confirmar la cuenta y luego inicia sesion.',
       )
     }
-
-    setLoading(false)
   }
 
   return (
-    <AuthCard
-      title="Crear cuenta"
-      subtitle="Registra un usuario para acceder al dashboard."
-    >
+    <AuthCard title="Crear cuenta" subtitle="Registra un usuario para acceder al dashboard.">
       <form className="space-y-4" onSubmit={handleSubmit}>
         <FormField
           label="Email"
           type="email"
           value={email}
-          onChange={(event) => setEmail(event.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
           placeholder="tu@email.com"
+          autoComplete="email"
           required
         />
         <FormField
           label="Password"
           type="password"
           value={password}
-          onChange={(event) => setPassword(event.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
           placeholder="Minimo 6 caracteres"
           minLength={6}
+          autoComplete="new-password"
           required
         />
 
         {error ? (
-          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-            {error}
-          </p>
+          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
         ) : null}
 
         {success ? (
-          <p className="rounded-lg border border-brand-mint/80 bg-brand-mint/40 px-3 py-2 text-sm text-brand-ink">
-            {success}
-          </p>
+          <p className="rounded-lg border border-brand-mint/80 bg-brand-mint/40 px-3 py-2 text-sm text-brand-ink">{success}</p>
         ) : null}
 
         <button

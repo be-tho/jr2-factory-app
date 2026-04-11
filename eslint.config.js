@@ -20,4 +20,15 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    files: [
+      'src/features/inventory/pages/EditarArticuloPage.tsx',
+      'src/features/inventory/pages/EditarCategoriaPage.tsx',
+      'src/features/inventory/pages/EditarTemporadaPage.tsx',
+    ],
+    rules: {
+      // Formularios controlados: sync desde TanStack Query + previews con createObjectURL
+      'react-hooks/set-state-in-effect': 'off',
+    },
+  },
 ])

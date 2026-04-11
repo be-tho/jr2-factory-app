@@ -9,13 +9,15 @@ import {
   uploadProductImage,
   validateImageFile,
 } from '../../media/services/storage.service'
+import { useArticuloImagenesQuery } from '../hooks/useArticuloImagenes'
+import { useCategoriasQuery } from '../hooks/useCategorias'
+import { useProductQuery, useUpdateProductMutation } from '../hooks/useProducts'
+import { useTemporadasCatalogQuery } from '../hooks/useTemporadas'
 import {
   createArticuloImagen,
-  listArticuloImagenes,
   pickPrincipalArticuloImagen,
   updateArticuloImagenStoragePath,
 } from '../services/articulo-imagenes.service'
-import { getProductById, listCategorias, listTemporadas, updateProduct } from '../services/products.service'
 import type { ProductImage } from '../../../types/database'
 
 const selectClass =
@@ -39,8 +41,31 @@ export function EditarArticuloPage() {
   const coverInputId = useId()
   const coverFileInputRef = useRef<HTMLInputElement>(null)
 
-  const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState<string | null>(null)
+  const productQ = useProductQuery(id)
+  const imagenesQ = useArticuloImagenesQuery(id)
+  const categoriasQ = useCategoriasQuery()
+  const temporadasQ = useTemporadasCatalogQuery()
+  const updateMutation = useUpdateProductMutation()
+
+  const categorias = categoriasQ.data ?? []
+  const temporadas = temporadasQ.data ?? []
+  const catalogLoading = categoriasQ.isPending || temporadasQ.isPending
+  const catalogError =
+    categoriasQ.isError && categoriasQ.error instanceof Error
+      ? categoriasQ.error.message
+      : temporadasQ.isError && temporadasQ.error instanceof Error
+        ? temporadasQ.error.message
+        : null
+
+  const loading =
+    Boolean(id) &&
+    (productQ.isPending || imagenesQ.isPending || categoriasQ.isPending || temporadasQ.isPending)
+  const loadError = !id
+    ? 'Falta el identificador del artículo.'
+    : productQ.isError && productQ.error instanceof Error
+      ? productQ.error.message
+      : null
+
   const [principalRow, setPrincipalRow] = useState<ProductImage | null>(null)
   const [initialCoverPath, setInitialCoverPath] = useState<string | null>(null)
 
@@ -53,68 +78,39 @@ export function EditarArticuloPage() {
   const [stockActual, setStockActual] = useState('0')
   const [activo, setActivo] = useState(true)
   const [descripcion, setDescripcion] = useState('')
-  const [categorias, setCategorias] = useState<{ id: string; nombre: string }[]>([])
-  const [temporadas, setTemporadas] = useState<{ id: string; nombre: string }[]>([])
-  const [catalogLoading, setCatalogLoading] = useState(true)
-  const [catalogError, setCatalogError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [coverImage, setCoverImage] = useState<File | null>(null)
   const [coverPreview, setCoverPreview] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!id) {
-      setLoadError('Falta el identificador del artículo.')
-      setLoading(false)
-      return
-    }
-
-    let cancelled = false
-    setLoading(true)
-    setLoadError(null)
-
-    void (async () => {
-      const [productRes, imgsRes, c, t] = await Promise.all([
-        getProductById(id),
-        listArticuloImagenes(id),
-        listCategorias(),
-        listTemporadas(),
-      ])
-
-      if (cancelled) return
-
-      setCatalogLoading(false)
-      if (c.error) setCatalogError(c.error.message)
-      else setCategorias(c.data)
-      if (t.error) setCatalogError((prev) => prev ?? t.error?.message ?? null)
-      else setTemporadas(t.data)
-
-      if (productRes.error || !productRes.data) {
-        setLoadError(productRes.error?.message ?? 'No se encontró el artículo.')
-        setLoading(false)
-        return
-      }
-
-      const p = productRes.data
-      setName(p.name)
-      setSku(p.sku)
-      setCategoriaId(p.categoria_id)
-      setTemporadaId(p.temporada_id)
-      setPrecioLista(String(p.precio_lista))
-      setPrecioPromo(p.precio_promocional != null ? String(p.precio_promocional) : '')
-      setStockActual(String(p.stock_actual))
-      setActivo(p.activo)
-      setDescripcion(p.descripcion ?? '')
-      setInitialCoverPath(p.cover_image_path)
-      setPrincipalRow(imgsRes.error ? null : pickPrincipalArticuloImagen(imgsRes.data))
-      setCoverImage(null)
-      setLoading(false)
-    })()
-
-    return () => {
-      cancelled = true
-    }
+    setPrincipalRow(null)
   }, [id])
+
+  useEffect(() => {
+    const p = productQ.data
+    if (!p) return
+    setName(p.name)
+    setSku(p.sku)
+    setCategoriaId(p.categoria_id)
+    setTemporadaId(p.temporada_id)
+    setPrecioLista(String(p.precio_lista))
+    setPrecioPromo(p.precio_promocional != null ? String(p.precio_promocional) : '')
+    setStockActual(String(p.stock_actual))
+    setActivo(p.activo)
+    setDescripcion(p.descripcion ?? '')
+    setInitialCoverPath(p.cover_image_path)
+    setCoverImage(null)
+  }, [productQ.data])
+
+  useEffect(() => {
+    if (!id || !productQ.data) return
+    if (imagenesQ.isSuccess) {
+      setPrincipalRow(pickPrincipalArticuloImagen(imagenesQ.data))
+    } else if (imagenesQ.isError) {
+      setPrincipalRow(null)
+    }
+  }, [id, productQ.data, imagenesQ.data, imagenesQ.isSuccess, imagenesQ.isError])
 
   useEffect(() => {
     if (coverImage) {
@@ -205,21 +201,24 @@ export function EditarArticuloPage() {
     setSaving(true)
     setError(null)
 
-    const { error: upErr } = await updateProduct(id, {
-      nombre: n,
-      codigo: s,
-      categoria_id: categoriaId,
-      temporada_id: temporadaId,
-      precio_lista: pl,
-      precio_promocional,
-      stock_actual: st,
-      activo,
-      descripcion: descripcion.trim() || null,
-    })
-
-    if (upErr) {
+    try {
+      await updateMutation.mutateAsync({
+        id,
+        input: {
+          nombre: n,
+          codigo: s,
+          categoria_id: categoriaId,
+          temporada_id: temporadaId,
+          precio_lista: pl,
+          precio_promocional,
+          stock_actual: st,
+          activo,
+          descripcion: descripcion.trim() || null,
+        },
+      })
+    } catch (e) {
       setSaving(false)
-      setError(upErr.message)
+      setError(e instanceof Error ? e.message : 'No se pudo guardar.')
       return
     }
 
@@ -266,6 +265,15 @@ export function EditarArticuloPage() {
       <div className="space-y-6">
         <PageHeader title="Editar artículo" description="No se pudo abrir el formulario." />
         <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{loadError}</p>
+        {id ? (
+          <button
+            type="button"
+            className="rounded-lg border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-900 transition hover:bg-red-100"
+            onClick={() => void productQ.refetch()}
+          >
+            Reintentar
+          </button>
+        ) : null}
         <Link
           to="/inventario/articulos"
           className="inline-flex rounded-lg border border-brand-border-strong bg-brand-primary px-4 py-2 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover"

@@ -10,8 +10,10 @@ import {
   uploadProductImage,
   validateImageFile,
 } from '../../media/services/storage.service'
+import { useCategoriasQuery } from '../hooks/useCategorias'
+import { useCreateProductMutation } from '../hooks/useProducts'
+import { useTemporadasCatalogQuery } from '../hooks/useTemporadas'
 import { createArticuloImagen } from '../services/articulo-imagenes.service'
-import { createProduct, listCategorias, listTemporadas } from '../services/products.service'
 
 const selectClass =
   'w-full rounded-lg border border-brand-border-strong bg-brand-surface px-3 py-2 text-brand-ink outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50'
@@ -31,6 +33,18 @@ function SectionHeader({ title, hint }: { title: string; hint?: string }) {
 export function NuevoArticuloPage() {
   const navigate = useNavigate()
   const coverInputId = useId()
+  const categoriasQ = useCategoriasQuery()
+  const temporadasQ = useTemporadasCatalogQuery()
+  const createMutation = useCreateProductMutation()
+  const categorias = categoriasQ.data ?? []
+  const temporadas = temporadasQ.data ?? []
+  const catalogLoading = categoriasQ.isPending || temporadasQ.isPending
+  const catalogError =
+    categoriasQ.isError && categoriasQ.error instanceof Error
+      ? categoriasQ.error.message
+      : temporadasQ.isError && temporadasQ.error instanceof Error
+        ? temporadasQ.error.message
+        : null
   const [name, setName] = useState('')
   const [sku, setSku] = useState('')
   const [categoriaId, setCategoriaId] = useState('')
@@ -40,34 +54,12 @@ export function NuevoArticuloPage() {
   const [stockActual, setStockActual] = useState('0')
   const [activo, setActivo] = useState(true)
   const [descripcion, setDescripcion] = useState('')
-  const [categorias, setCategorias] = useState<{ id: string; nombre: string }[]>([])
-  const [temporadas, setTemporadas] = useState<{ id: string; nombre: string }[]>([])
-  const [catalogLoading, setCatalogLoading] = useState(true)
-  const [catalogError, setCatalogError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [coverImage, setCoverImage] = useState<File | null>(null)
   const [coverPreview, setCoverPreview] = useState<string | null>(null)
   /** Si el artículo ya existe en BD pero falló Storage o `articulo_imagenes`. */
   const [articleIdPendingImage, setArticleIdPendingImage] = useState<string | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    setCatalogLoading(true)
-    setCatalogError(null)
-    void (async () => {
-      const [c, t] = await Promise.all([listCategorias(), listTemporadas()])
-      if (cancelled) return
-      setCatalogLoading(false)
-      if (c.error) setCatalogError(c.error.message)
-      else setCategorias(c.data)
-      if (t.error) setCatalogError((prev) => prev ?? t.error?.message ?? null)
-      else setTemporadas(t.data)
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [])
 
   useEffect(() => {
     if (!coverImage) {
@@ -168,25 +160,30 @@ export function NuevoArticuloPage() {
     setError(null)
     setArticleIdPendingImage(null)
 
-    const { data, error: err } = await createProduct({
-      nombre: n,
-      codigo: s,
-      categoria_id: categoriaId,
-      temporada_id: temporadaId,
-      precio_lista: pl,
-      precio_promocional,
-      stock_actual: st,
-      activo,
-      descripcion: descripcion.trim() || null,
-    })
-
-    if (err || !data?.id) {
+    let newId: string
+    try {
+      const data = await createMutation.mutateAsync({
+        nombre: n,
+        codigo: s,
+        categoria_id: categoriaId,
+        temporada_id: temporadaId,
+        precio_lista: pl,
+        precio_promocional,
+        stock_actual: st,
+        activo,
+        descripcion: descripcion.trim() || null,
+      })
+      if (!data?.id) {
+        setSaving(false)
+        setError('No se pudo crear el artículo.')
+        return
+      }
+      newId = data.id
+    } catch (e) {
       setSaving(false)
-      setError(err?.message ?? 'No se pudo crear el artículo.')
+      setError(e instanceof Error ? e.message : 'No se pudo crear el artículo.')
       return
     }
-
-    const newId = data.id
 
     try {
       if (coverImage) {

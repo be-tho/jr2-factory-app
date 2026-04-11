@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { PageHeader } from '../../../components/ui/PageHeader'
 import {
@@ -6,44 +6,30 @@ import {
   hasStorageCoverImage,
 } from '../../../constants/defaultArticleImage'
 import { getProductImagePublicUrl } from '../../media/services/storage.service'
-import type { Product } from '../../../types/database'
-import { deleteProduct, getProductById } from '../services/products.service'
+import { useDeleteProductMutation, useProductQuery } from '../hooks/useProducts'
 
 export function ArticuloDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [article, setArticle] = useState<Product | null | undefined>(undefined)
-  const [error, setError] = useState<string | null>(null)
-  const [deleting, setDeleting] = useState(false)
+  const { data: article, isPending, isError, error, refetch } = useProductQuery(id)
+  const deleteMutation = useDeleteProductMutation()
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!id) {
-      setArticle(null)
-      return
-    }
+  if (!id) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Artículo" description="Ruta inválida." />
+        <Link
+          to="/inventario/articulos"
+          className="inline-flex rounded-lg border border-brand-border-strong bg-brand-primary px-4 py-2 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover"
+        >
+          Volver al listado
+        </Link>
+      </div>
+    )
+  }
 
-    let cancelled = false
-    setArticle(undefined)
-    setError(null)
-
-    void (async () => {
-      const { data, error: err } = await getProductById(id)
-      if (cancelled) return
-      if (err) {
-        setError(err.message)
-        setArticle(null)
-        return
-      }
-      setArticle(data)
-    })()
-
-    return () => {
-      cancelled = true
-    }
-  }, [id])
-
-  if (article === undefined && !error) {
+  if (isPending) {
     return (
       <div className="space-y-6">
         <PageHeader title="Artículo" description="Cargando ficha…" />
@@ -52,11 +38,19 @@ export function ArticuloDetailPage() {
     )
   }
 
-  if (error) {
+  if (isError) {
+    const msg = error instanceof Error ? error.message : 'Error desconocido'
     return (
       <div className="space-y-6">
         <PageHeader title="Error" description="No se pudo cargar el artículo." />
-        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</p>
+        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{msg}</p>
+        <button
+          type="button"
+          className="rounded-lg border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-900 transition hover:bg-red-100"
+          onClick={() => void refetch()}
+        >
+          Reintentar
+        </button>
         <Link
           to="/inventario/articulos"
           className="inline-flex rounded-lg border border-brand-border-strong bg-brand-primary px-4 py-2 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover"
@@ -81,54 +75,52 @@ export function ArticuloDetailPage() {
     )
   }
 
-  const storagePath = article.cover_image_path
+  const product = article
+  const storagePath = product.cover_image_path
   const hasFile = hasStorageCoverImage(storagePath)
   const coverSrc = hasFile ? getProductImagePublicUrl(storagePath) : DEFAULT_ARTICLE_IMAGE_PUBLIC_URL
 
-  const created = new Date(article.created_at)
+  const created = new Date(product.created_at)
   const precioLabel =
-    article.precio_promocional != null
-      ? `${article.precio_promocional.toLocaleString('es-AR')} (lista ${article.precio_lista.toLocaleString('es-AR')})`
-      : article.precio_lista.toLocaleString('es-AR')
+    product.precio_promocional != null
+      ? `${product.precio_promocional.toLocaleString('es-AR')} (lista ${product.precio_lista.toLocaleString('es-AR')})`
+      : product.precio_lista.toLocaleString('es-AR')
 
-  async function handleDelete() {
-    if (!article) return
+  function handleDelete() {
     const ok = window.confirm(
-      `¿Borrar “${article.name}” (${article.sku})? Esta acción no se puede deshacer. También se eliminarán las imágenes asociadas en Storage.`
+      `¿Borrar “${product.name}” (${product.sku})? Esta acción no se puede deshacer. También se eliminarán las imágenes asociadas en Storage.`,
     )
     if (!ok) return
-    setDeleting(true)
     setDeleteError(null)
-    const { error: delErr } = await deleteProduct(article.id)
-    setDeleting(false)
-    if (delErr) {
-      setDeleteError(delErr.message)
-      return
-    }
-    navigate('/inventario/articulos', { replace: true })
+    deleteMutation.mutate(product.id, {
+      onSuccess: () => navigate('/inventario/articulos', { replace: true }),
+      onError: (e) => {
+        setDeleteError(e instanceof Error ? e.message : 'No se pudo borrar.')
+      },
+    })
   }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <PageHeader
-          title={article.name}
-          description={`${article.activo ? 'Activo' : 'Inactivo'} · SKU ${article.sku} · ${[article.category, article.temporada].filter(Boolean).join(' · ') || '—'}`}
+          title={product.name}
+          description={`${product.activo ? 'Activo' : 'Inactivo'} · SKU ${product.sku} · ${[product.category, product.temporada].filter(Boolean).join(' · ') || '—'}`}
         />
         <div className="flex shrink-0 flex-col gap-2 self-start sm:flex-row sm:items-center">
           <Link
-            to={`/inventario/articulos/${article.id}/editar`}
+            to={`/inventario/articulos/${product.id}/editar`}
             className="inline-flex justify-center rounded-lg border border-brand-border-strong bg-brand-primary px-4 py-2 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover"
           >
             Editar
           </Link>
           <button
             type="button"
-            disabled={deleting}
-            onClick={() => void handleDelete()}
+            disabled={deleteMutation.isPending}
+            onClick={() => handleDelete()}
             className="inline-flex justify-center rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-800 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {deleting ? 'Borrando…' : 'Borrar'}
+            {deleteMutation.isPending ? 'Borrando…' : 'Borrar'}
           </button>
           <Link
             to="/inventario/articulos"
@@ -154,7 +146,7 @@ export function ArticuloDetailPage() {
         >
           <img
             src={coverSrc}
-            alt={article.name}
+            alt={product.name}
             className={`h-full w-full object-contain object-center ${hasFile ? '' : 'p-4 sm:p-8'}`}
             loading="eager"
             decoding="async"
@@ -169,23 +161,23 @@ export function ArticuloDetailPage() {
         <dl className="grid gap-4 px-5 py-5 sm:grid-cols-2">
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-brand-ink-faint">Nombre</dt>
-            <dd className="mt-1 text-brand-ink">{article.name}</dd>
+            <dd className="mt-1 text-brand-ink">{product.name}</dd>
           </div>
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-brand-ink-faint">Slug</dt>
-            <dd className="mt-1 font-mono text-sm text-brand-ink">{article.slug}</dd>
+            <dd className="mt-1 font-mono text-sm text-brand-ink">{product.slug}</dd>
           </div>
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-brand-ink-faint">SKU</dt>
-            <dd className="mt-1 font-mono text-brand-ink">{article.sku}</dd>
+            <dd className="mt-1 font-mono text-brand-ink">{product.sku}</dd>
           </div>
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-brand-ink-faint">Categoría</dt>
-            <dd className="mt-1 text-brand-ink">{article.category || '—'}</dd>
+            <dd className="mt-1 text-brand-ink">{product.category || '—'}</dd>
           </div>
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-brand-ink-faint">Temporada</dt>
-            <dd className="mt-1 text-brand-ink">{article.temporada || '—'}</dd>
+            <dd className="mt-1 text-brand-ink">{product.temporada || '—'}</dd>
           </div>
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-brand-ink-faint">Precio</dt>
@@ -193,11 +185,11 @@ export function ArticuloDetailPage() {
           </div>
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-brand-ink-faint">Stock actual</dt>
-            <dd className="mt-1 text-brand-ink">{article.stock_actual}</dd>
+            <dd className="mt-1 text-brand-ink">{product.stock_actual}</dd>
           </div>
           <div className="sm:col-span-2">
             <dt className="text-xs font-semibold uppercase tracking-wide text-brand-ink-faint">Descripción</dt>
-            <dd className="mt-1 whitespace-pre-wrap text-brand-ink">{article.descripcion?.trim() || '—'}</dd>
+            <dd className="mt-1 whitespace-pre-wrap text-brand-ink">{product.descripcion?.trim() || '—'}</dd>
           </div>
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-brand-ink-faint">Fecha de alta</dt>
@@ -211,7 +203,7 @@ export function ArticuloDetailPage() {
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-brand-ink-faint">Última actualización</dt>
             <dd className="mt-1 text-brand-ink">
-              {new Date(article.updated_at).toLocaleString('es-AR', {
+              {new Date(product.updated_at).toLocaleString('es-AR', {
                 dateStyle: 'long',
                 timeStyle: 'short',
               })}
@@ -219,7 +211,7 @@ export function ArticuloDetailPage() {
           </div>
           <div className="sm:col-span-2">
             <dt className="text-xs font-semibold uppercase tracking-wide text-brand-ink-faint">ID interno</dt>
-            <dd className="mt-1 break-all font-mono text-sm text-brand-ink-muted">{article.id}</dd>
+            <dd className="mt-1 break-all font-mono text-sm text-brand-ink-muted">{product.id}</dd>
           </div>
         </dl>
       </section>

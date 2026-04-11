@@ -4,12 +4,14 @@ export type AppRole = 'admin' | 'ventas' | 'produccion' | 'inventario'
 export interface CategoriaRow {
   id: string
   nombre: string
+  activo: boolean
 }
 
 /** `public.temporadas` — ver `database-estructura.sql`. */
 export interface TemporadaRow {
   id: string
   nombre: string
+  activo: boolean
 }
 
 /**
