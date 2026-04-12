@@ -10,7 +10,6 @@ import {
 } from '@tabler/icons-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { PageHeader } from '../../../components/ui/PageHeader'
 import { StatCard } from '../../../components/ui/StatCard'
 import { useProductsQuery } from '../hooks/useProducts'
 import { ic } from '../../../lib/tabler'
@@ -81,55 +80,54 @@ export function ArticulosPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <PageHeader
-          title="Artículos"
-          description="Gestión de prendas, talles, colores y stock."
-          icon={<IconStack {...ic.header} aria-hidden />}
-        />
+      {/* Page header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-primary-ghost text-brand-primary">
+              <IconStack {...ic.headerSm} aria-hidden />
+            </span>
+            <h1 className="text-2xl font-bold tracking-tight text-[#3d3b4f]">Artículos</h1>
+          </div>
+          <p className="mt-1.5 text-sm text-[#6e6b7b]">Gestión de prendas, talles, colores y stock.</p>
+        </div>
         <Link
           to="/inventario/articulos/nuevo"
-          className={`inline-flex shrink-0 items-center gap-2 rounded-lg border border-brand-primary-hover bg-brand-primary px-4 py-2.5 text-sm font-semibold text-brand-on-primary shadow-sm transition hover:bg-brand-primary-hover ${loading ? 'pointer-events-none opacity-60' : ''}`}
-          onClick={(e) => {
-            if (loading) e.preventDefault()
-          }}
+          className={`inline-flex shrink-0 items-center gap-2 rounded-lg bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-primary-hover ${loading ? 'pointer-events-none opacity-60' : ''}`}
+          onClick={(e) => { if (loading) e.preventDefault() }}
         >
           <IconPlus {...ic.btn} aria-hidden />
           Nuevo artículo
         </Link>
       </div>
 
-      <section className="overflow-hidden rounded-xl border border-brand-border bg-brand-surface shadow-sm shadow-brand-ink/5 ring-1 ring-brand-border-subtle">
-        <header className="border-b border-brand-border bg-brand-primary-ghost px-5 py-3">
-          <h3 className="font-medium text-brand-ink">Resumen rápido</h3>
-        </header>
-        <div className="grid gap-4 px-5 py-4 md:grid-cols-3">
-          <StatCard
-            label="Artículos activos"
-            value={loading ? '…' : String(activeCount)}
-            icon={<IconPackage {...ic.stat} aria-hidden />}
-          />
-          <StatCard
-            label="Sin stock"
-            value={loading ? '…' : String(noStockCount)}
-            icon={<IconPackageOff {...ic.stat} aria-hidden />}
-          />
-          <StatCard
-            label="Categorías (en catálogo)"
-            value={loading ? '…' : String(categorias.length)}
-            icon={<IconTag {...ic.stat} aria-hidden />}
-          />
-        </div>
-      </section>
+      {/* Stats islands */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StatCard
+          label="Artículos activos"
+          value={loading ? '…' : String(activeCount)}
+          icon={<IconPackage {...ic.stat} aria-hidden />}
+        />
+        <StatCard
+          label="Sin stock"
+          value={loading ? '…' : String(noStockCount)}
+          icon={<IconPackageOff {...ic.stat} aria-hidden />}
+        />
+        <StatCard
+          label="Categorías en catálogo"
+          value={loading ? '…' : String(categorias.length)}
+          icon={<IconTag {...ic.stat} aria-hidden />}
+        />
+      </div>
 
-      {/* Barra de búsqueda y filtros */}
+      {/* Filter bar island */}
       {!errorMessage && (
-        <section className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-black/4 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <IconSearch
-              size={16}
+              size={15}
               stroke={1.5}
-              className="pointer-events-none absolute inset-y-0 left-3 my-auto text-brand-ink-faint"
+              className="pointer-events-none absolute inset-y-0 left-3 my-auto text-[#b9b6c3]"
               aria-hidden
             />
             <input
@@ -137,14 +135,14 @@ export function ArticulosPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Buscar por nombre, código, categoría o temporada…"
-              className="w-full rounded-lg border border-brand-border-strong bg-brand-surface py-2 pl-9 pr-3 text-sm text-brand-ink outline-none transition placeholder:text-brand-ink-faint focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50"
+              className="w-full rounded-lg border border-[#e8e4f0] bg-[#f8f7fa] py-2 pl-9 pr-3 text-sm text-[#3d3b4f] outline-none transition placeholder:text-[#b9b6c3] focus:border-brand-primary focus:bg-white focus:ring-2 focus:ring-brand-blush/50"
             />
           </div>
 
           <select
             value={categoriaFilter}
             onChange={(e) => setCategoriaFilter(e.target.value)}
-            className="rounded-lg border border-brand-border-strong bg-brand-surface px-3 py-2 text-sm text-brand-ink outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50 sm:w-44"
+            className="rounded-lg border border-[#e8e4f0] bg-[#f8f7fa] px-3 py-2 text-sm text-[#3d3b4f] outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50 sm:w-44"
           >
             <option value="">Todas las categorías</option>
             {categorias.map(([id, nombre]) => (
@@ -154,16 +152,16 @@ export function ArticulosPage() {
             ))}
           </select>
 
-          <div className="flex items-center gap-1 rounded-lg border border-brand-border-strong bg-brand-surface p-1">
+          <div className="flex items-center gap-1 rounded-lg border border-[#e8e4f0] bg-[#f8f7fa] p-1">
             {(['todos', 'activo', 'inactivo'] as const).map((op) => (
               <button
                 key={op}
                 type="button"
                 onClick={() => setEstadoFilter(op)}
-                className={`rounded-md px-3 py-1 text-sm font-medium capitalize transition ${
+                className={`rounded-md px-3 py-1 text-sm font-medium transition ${
                   estadoFilter === op
-                    ? 'bg-brand-primary text-brand-on-primary shadow-sm'
-                    : 'text-brand-ink-muted hover:text-brand-ink'
+                    ? 'bg-brand-primary text-white shadow-sm'
+                    : 'text-[#6e6b7b] hover:text-[#3d3b4f]'
                 }`}
               >
                 {op === 'todos' ? 'Todos' : op === 'activo' ? 'Activos' : 'Inactivos'}
@@ -175,64 +173,68 @@ export function ArticulosPage() {
             <button
               type="button"
               onClick={clearFilters}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border-strong px-3 py-2 text-sm text-brand-ink-muted transition hover:border-brand-border hover:text-brand-ink"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[#e8e4f0] px-3 py-2 text-sm text-[#6e6b7b] transition hover:bg-[#f8f7fa] hover:text-[#3d3b4f]"
             >
               <IconX size={14} stroke={2} aria-hidden />
               Limpiar
             </button>
           )}
-        </section>
+        </div>
       )}
 
+      {/* Error */}
       {errorMessage ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">
-          <p className="font-medium">No se pudieron cargar los artículos</p>
-          <p className="mt-1 text-red-700">{errorMessage}</p>
+        <div className="rounded-xl bg-red-50 px-5 py-4 text-sm ring-1 ring-red-200">
+          <p className="font-semibold text-red-800">No se pudieron cargar los artículos</p>
+          <p className="mt-1 text-red-600">{errorMessage}</p>
           <button
             type="button"
-            className="mt-3 inline-flex items-center gap-2 rounded-lg border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-900 transition hover:bg-red-100"
+            className="mt-3 inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-800 transition hover:bg-red-100"
             onClick={() => void refetch()}
           >
-            <IconRefresh size={16} stroke={1.5} className="shrink-0" aria-hidden />
+            <IconRefresh size={15} stroke={1.5} className="shrink-0" aria-hidden />
             Reintentar
           </button>
         </div>
       ) : null}
 
+      {/* Loading skeleton */}
       {loading && !errorMessage ? (
         <ul className="grid list-none gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
           {Array.from({ length: 8 }).map((_, i) => (
-            <li key={i} className="animate-pulse rounded-xl border border-brand-border bg-brand-surface">
-              <div className="aspect-4/3 rounded-t-xl bg-brand-canvas" />
+            <li key={i} className="animate-pulse rounded-xl bg-white shadow-sm ring-1 ring-black/4">
+              <div className="aspect-4/3 rounded-t-xl bg-[#f8f7fa]" />
               <div className="space-y-2 p-4">
-                <div className="h-3 w-1/3 rounded bg-brand-border" />
-                <div className="h-4 w-3/4 rounded bg-brand-border" />
-                <div className="h-3 w-1/2 rounded bg-brand-border" />
+                <div className="h-3 w-1/3 rounded bg-[#f0eef5]" />
+                <div className="h-4 w-3/4 rounded bg-[#f0eef5]" />
+                <div className="h-3 w-1/2 rounded bg-[#f0eef5]" />
               </div>
             </li>
           ))}
         </ul>
       ) : null}
 
+      {/* Empty — no articles at all */}
       {!loading && !errorMessage && articles.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-brand-border bg-brand-surface/80 px-5 py-10 text-center text-sm text-brand-ink-muted">
-          No hay artículos todavía.{' '}
-          <Link to="/inventario/articulos/nuevo" className="font-medium text-brand-ink underline-offset-2 hover:underline">
-            Crear el primero
-          </Link>
-          .
-        </p>
+        <div className="rounded-xl bg-white px-5 py-14 text-center shadow-sm ring-1 ring-black/4">
+          <IconPackage size={40} stroke={1.25} className="mx-auto text-[#b9b6c3]" aria-hidden />
+          <p className="mt-3 text-sm font-medium text-[#3d3b4f]">No hay artículos todavía</p>
+          <p className="mt-1 text-sm text-[#6e6b7b]">
+            <Link to="/inventario/articulos/nuevo" className="font-semibold text-brand-primary hover:underline">
+              Crear el primero
+            </Link>
+          </p>
+        </div>
       ) : null}
 
+      {/* Empty — filtered */}
       {!loading && !errorMessage && articles.length > 0 && filtered.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-brand-border bg-brand-surface/80 px-5 py-10 text-center">
-          <p className="text-sm text-brand-ink-muted">
-            Ningún artículo coincide con los filtros aplicados.
-          </p>
+        <div className="rounded-xl bg-white px-5 py-14 text-center shadow-sm ring-1 ring-black/4">
+          <p className="text-sm text-[#6e6b7b]">Ningún artículo coincide con los filtros aplicados.</p>
           <button
             type="button"
             onClick={clearFilters}
-            className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-brand-border-strong px-3 py-1.5 text-sm text-brand-ink-muted transition hover:text-brand-ink"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-[#e8e4f0] px-3 py-1.5 text-sm text-[#6e6b7b] transition hover:text-[#3d3b4f]"
           >
             <IconX size={14} stroke={2} aria-hidden />
             Limpiar filtros
@@ -240,10 +242,11 @@ export function ArticulosPage() {
         </div>
       ) : null}
 
+      {/* Results */}
       {!loading && !errorMessage && filtered.length > 0 ? (
         <>
           {hasFilters && (
-            <p className="text-sm text-brand-ink-muted">
+            <p className="text-sm text-[#b9b6c3]">
               {filtered.length === articles.length
                 ? `${filtered.length} artículos`
                 : `${filtered.length} de ${articles.length} artículos`}

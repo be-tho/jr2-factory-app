@@ -1,6 +1,7 @@
 import { IconEye, IconEyeOff, IconUserPlus } from '@tabler/icons-react'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { toast } from 'sonner'
 import { AuthCard } from '../../../components/ui/AuthCard'
 import { FormField } from '../../../components/ui/FormField'
 import { ic } from '../../../lib/tabler'
@@ -10,27 +11,21 @@ export function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setError(null)
-    setSuccess(null)
     setLoading(true)
     const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
     setLoading(false)
     if (signUpError) {
-      setError(signUpError.message)
+      toast.error(signUpError.message)
       return
     }
     if (data.session) {
-      setSuccess('Registro completado. Ya estas autenticado.')
+      toast.success('Registro completado. Ya estás autenticado.')
     } else {
-      setSuccess(
-        'Registro completado. Revisa tu correo para confirmar la cuenta y luego inicia sesion.',
-      )
+      toast.success('Registro completado. Revisá tu correo para confirmar la cuenta.')
     }
   }
 
@@ -77,14 +72,6 @@ export function RegisterPage() {
             </button>
           </div>
         </div>
-
-        {error ? (
-          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-        ) : null}
-
-        {success ? (
-          <p className="rounded-lg border border-brand-mint/80 bg-brand-mint/40 px-3 py-2 text-sm text-brand-ink">{success}</p>
-        ) : null}
 
         <button
           type="submit"

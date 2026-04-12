@@ -1,6 +1,7 @@
 import { IconEye, IconEyeOff, IconLogin } from '@tabler/icons-react'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { toast } from 'sonner'
 import { AuthCard } from '../../../components/ui/AuthCard'
 import { FormField } from '../../../components/ui/FormField'
 import { ic } from '../../../lib/tabler'
@@ -10,17 +11,20 @@ export function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setError(null)
     setLoading(true)
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
     setLoading(false)
     if (signInError) {
-      setError(signInError.message)
+      toast.error(signInError.message)
+    } else {
+      const name = data.user?.email?.split('@')[0] ?? 'usuario'
+      toast.success(`¡Bienvenido, ${name}!`, {
+        description: 'Sesión iniciada correctamente.',
+      })
     }
   }
 
@@ -66,10 +70,6 @@ export function LoginPage() {
             </button>
           </div>
         </div>
-
-        {error ? (
-          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-        ) : null}
 
         <button
           type="submit"

@@ -1,5 +1,16 @@
 export type AppRole = 'admin' | 'ventas' | 'produccion' | 'inventario'
 
+/** `public.profiles` — extiende auth.users con datos del usuario. */
+export interface Profile {
+  id: string
+  full_name: string | null
+  avatar_path: string | null
+  role: string | null
+  bio: string | null
+  created_at: string
+  updated_at: string
+}
+
 /** `public.categorias` — ver `database-estructura.sql`. */
 export interface CategoriaRow {
   id: string
