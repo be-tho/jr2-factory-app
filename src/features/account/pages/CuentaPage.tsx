@@ -10,12 +10,12 @@ import {
   IconX,
 } from '@tabler/icons-react'
 import { useEffect, useId, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { FormField } from '../../../components/ui/FormField'
 import { useSession } from '../../../hooks/useSession'
-import { useProfileQuery, useUpdateProfileMutation } from '../hooks/useProfile'
+import { useAvatarUrl, useProfileQuery, useUpdateProfileMutation } from '../hooks/useProfile'
 import {
-  getAvatarPublicUrl,
   uploadAvatar,
   validateAvatarFile,
 } from '../services/profile.service'
@@ -87,6 +87,7 @@ export function CuentaPage() {
   const user = session?.user
   const { data: profile, isPending } = useProfileQuery()
   const updateMutation = useUpdateProfileMutation()
+  const queryClient = useQueryClient()
 
   // Edit state
   const [isEditing, setIsEditing] = useState(false)
@@ -134,7 +135,7 @@ export function CuentaPage() {
 
     if (avatarFile) {
       try {
-        newAvatarPath = await uploadAvatar(user.id, avatarFile)
+        newAvatarPath = await uploadAvatar(user.id, avatarFile, profile?.avatar_path)
       } catch (e) {
         toast.error(e instanceof Error ? e.message : 'No se pudo subir la imagen.')
         setSaving(false)
@@ -153,6 +154,10 @@ export function CuentaPage() {
         onSuccess: () => {
           setAvatarFile(null)
           setIsEditing(false)
+          // Invalida la signed URL para que el hook la regenere con el nuevo archivo
+          if (newAvatarPath) {
+            void queryClient.invalidateQueries({ queryKey: ['avatar-url', newAvatarPath] })
+          }
         },
         onSettled: () => setSaving(false),
       },
@@ -166,10 +171,8 @@ export function CuentaPage() {
     CARGO_OPTIONS.find((o) => o.value === (profile?.role ?? ''))?.label ??
     profile?.role ??
     null
-  const currentAvatarUrl = profile?.avatar_path
-    ? getAvatarPublicUrl(profile.avatar_path)
-    : null
-  const avatarUrl = avatarPreview ?? currentAvatarUrl
+  const { data: signedAvatarUrl } = useAvatarUrl(profile?.avatar_path)
+  const avatarUrl = avatarPreview ?? signedAvatarUrl ?? null
   const initials = displayName
     .split(' ')
     .filter(Boolean)

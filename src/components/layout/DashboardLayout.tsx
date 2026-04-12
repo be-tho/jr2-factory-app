@@ -9,6 +9,7 @@ import {
   IconLogout,
   IconMenu2,
   IconPackage,
+  IconRuler,
   IconScissors,
   IconTag,
   IconUser,
@@ -20,8 +21,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { ic } from '../../lib/tabler'
 import { supabase } from '../../lib/supabase/client'
 import { useSession } from '../../hooks/useSession'
-import { useProfileQuery } from '../../features/account/hooks/useProfile'
-import { getAvatarPublicUrl } from '../../features/account/services/profile.service'
+import { useAvatarUrl, useProfileQuery } from '../../features/account/hooks/useProfile'
 import { PageTransition } from './PageTransition'
 
 const menuEase = [0.22, 1, 0.36, 1] as const
@@ -114,6 +114,10 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
               <IconUsers {...ic.navSub} aria-hidden />
               Costureros
             </NavLink>
+            <NavLink to="/produccion/patrones" className={subItemClass} onClick={onNavigate}>
+              <IconRuler {...ic.navSub} aria-hidden />
+              Patrones
+            </NavLink>
           </div>
         </NavCollapsible>
       </div>
@@ -167,7 +171,7 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
 function SidebarUserCard() {
   const { session } = useSession()
   const { data: profile } = useProfileQuery()
-  const avatarUrl = profile?.avatar_path ? getAvatarPublicUrl(profile.avatar_path) : null
+  const { data: avatarUrl } = useAvatarUrl(profile?.avatar_path)
   const displayName =
     profile?.full_name?.trim() || session?.user.email?.split('@')[0] || 'Usuario'
   const email = session?.user.email ?? ''

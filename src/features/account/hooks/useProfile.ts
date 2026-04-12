@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { useSession } from '../../../hooks/useSession'
 import type { Profile } from '../../../types/database'
 import {
+  getAvatarSignedUrl,
   getProfile,
   upsertProfile,
   type ProfileUpsertInput,
@@ -10,6 +11,7 @@ import {
 
 export const profileKeys = {
   own: (userId: string) => ['profile', userId] as const,
+  avatar: (path: string) => ['avatar-url', path] as const,
 }
 
 export function useProfileQuery() {
@@ -24,6 +26,21 @@ export function useProfileQuery() {
       return data
     },
     enabled: Boolean(userId),
+  })
+}
+
+/**
+ * Obtiene la Signed URL del avatar y la cachea 55 min (expira en 60).
+ * Devuelve `null` si no hay avatar_path.
+ */
+export function useAvatarUrl(storagePath: string | null | undefined) {
+  return useQuery({
+    queryKey: profileKeys.avatar(storagePath ?? ''),
+    queryFn: () => getAvatarSignedUrl(storagePath!),
+    enabled: Boolean(storagePath),
+    staleTime: 1000 * 60 * 55,   // 55 min — renueva antes de que expire
+    gcTime: 1000 * 60 * 60,      // mantiene en caché 1 hora
+    retry: 1,
   })
 }
 

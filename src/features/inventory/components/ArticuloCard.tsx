@@ -1,4 +1,5 @@
 import { IconChevronRight } from '@tabler/icons-react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   DEFAULT_ARTICLE_IMAGE_PUBLIC_URL,
@@ -16,6 +17,13 @@ export function ArticuloCard({ product }: ArticuloCardProps) {
   const hasFile = hasStorageCoverImage(storagePath)
   const coverSrc = hasFile ? getProductImagePublicUrl(storagePath) : DEFAULT_ARTICLE_IMAGE_PUBLIC_URL
 
+  const imgRef = useRef<HTMLImageElement>(null)
+  const [imgLoaded, setImgLoaded] = useState(false)
+
+  useEffect(() => {
+    if (imgRef.current?.complete) setImgLoaded(true)
+  }, [coverSrc])
+
   return (
     <Link
       to={`/inventario/articulos/${product.id}`}
@@ -27,13 +35,15 @@ export function ArticuloCard({ product }: ArticuloCardProps) {
         }`}
       >
         <img
+          ref={imgRef}
           src={coverSrc}
           alt=""
           loading="lazy"
           decoding="async"
-          className={`h-full w-full transition duration-300 group-hover:scale-[1.02] ${
+          onLoad={() => setImgLoaded(true)}
+          className={`h-full w-full transition-[opacity,transform] duration-300 group-hover:scale-[1.02] ${
             hasFile ? 'object-cover' : 'object-contain p-2'
-          }`}
+          } ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
         />
       </div>
       <div className="flex flex-col p-4">
