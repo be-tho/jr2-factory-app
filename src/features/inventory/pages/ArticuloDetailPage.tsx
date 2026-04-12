@@ -23,15 +23,6 @@ import { getProductImagePublicUrl } from '../../media/services/storage.service'
 import { ic } from '../../../lib/tabler'
 import { useDeleteProductMutation, useProductQuery } from '../hooks/useProducts'
 
-// ── Page wrapper — bleeds over the layout's padding to set #f8f7fa background ─
-function PageShell({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="-mx-4 -my-6 min-h-screen bg-[#f8f7fa] px-4 py-6 sm:-mx-6 sm:-my-8 sm:px-6 sm:py-8">
-      {children}
-    </div>
-  )
-}
-
 // ── Island — white card base ──────────────────────────────────────────────────
 function Island({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
@@ -44,30 +35,28 @@ function Island({ children, className = '' }: { children: React.ReactNode; class
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 function DetailSkeleton() {
   return (
-    <PageShell>
-      <div className="animate-pulse space-y-5">
-        <div className="h-7 w-40 rounded-lg bg-white/80 shadow-sm" />
-        <div className="grid gap-5 lg:grid-cols-[1fr_1.65fr]">
-          <div className="flex flex-col gap-4">
-            <div className="aspect-square rounded-xl bg-white shadow-sm" />
-            <div className="h-32 rounded-xl bg-white shadow-sm" />
-          </div>
-          <div className="flex flex-col gap-4">
-            <div className="h-40 rounded-xl bg-white shadow-sm" />
-            <div className="grid grid-cols-2 gap-4">
-              <div className="h-24 rounded-xl bg-white shadow-sm" />
-              <div className="h-24 rounded-xl bg-white shadow-sm" />
-            </div>
-            <div className="h-28 rounded-xl bg-white shadow-sm" />
-          </div>
+    <div className="animate-pulse space-y-5">
+      <div className="h-7 w-40 rounded-lg bg-white/80 shadow-sm" />
+      <div className="grid gap-5 lg:grid-cols-[1fr_1.65fr]">
+        <div className="flex flex-col gap-4">
+          <div className="aspect-square rounded-xl bg-white shadow-sm" />
+          <div className="h-32 rounded-xl bg-white shadow-sm" />
         </div>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="h-20 rounded-xl bg-white shadow-sm" />
-          ))}
+        <div className="flex flex-col gap-4">
+          <div className="h-40 rounded-xl bg-white shadow-sm" />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="h-24 rounded-xl bg-white shadow-sm" />
+            <div className="h-24 rounded-xl bg-white shadow-sm" />
+          </div>
+          <div className="h-28 rounded-xl bg-white shadow-sm" />
         </div>
       </div>
-    </PageShell>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="h-20 rounded-xl bg-white shadow-sm" />
+        ))}
+      </div>
+    </div>
   )
 }
 
@@ -137,7 +126,7 @@ export function ArticuloDetailPage() {
 
   if (!id) {
     return (
-      <PageShell>
+
         <div className="space-y-4">
           <BackButton />
           <Island className="flex flex-col items-center gap-3 px-8 py-16 text-center">
@@ -146,7 +135,7 @@ export function ArticuloDetailPage() {
             <p className="text-sm text-[#6e6b7b]">No se encontró el identificador del artículo.</p>
           </Island>
         </div>
-      </PageShell>
+  
     )
   }
 
@@ -155,7 +144,7 @@ export function ArticuloDetailPage() {
   if (isError) {
     const msg = error instanceof Error ? error.message : 'Error desconocido'
     return (
-      <PageShell>
+
         <div className="space-y-4">
           <BackButton />
           <Island className="flex flex-col items-center gap-4 px-8 py-14 text-center">
@@ -176,13 +165,13 @@ export function ArticuloDetailPage() {
             </button>
           </Island>
         </div>
-      </PageShell>
+  
     )
   }
 
   if (!article) {
     return (
-      <PageShell>
+
         <div className="space-y-4">
           <BackButton />
           <Island className="flex flex-col items-center gap-3 px-8 py-16 text-center">
@@ -193,7 +182,7 @@ export function ArticuloDetailPage() {
             </p>
           </Island>
         </div>
-      </PageShell>
+  
     )
   }
 
@@ -229,8 +218,7 @@ export function ArticuloDetailPage() {
   }
 
   return (
-    <PageShell>
-      <div className="space-y-5">
+    <div className="space-y-5">
 
         {/* ── Top bar ── */}
         <div className="flex items-center justify-between gap-4">
@@ -432,6 +420,5 @@ export function ArticuloDetailPage() {
         </div>
 
       </div>
-    </PageShell>
   )
 }

@@ -2,7 +2,8 @@ import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { DEFAULT_ARTICLE_IMAGE_PUBLIC_URL, hasStorageCoverImage } from '../../../constants/defaultArticleImage'
 import { FormField } from '../../../components/ui/FormField'
-import { PageHeader } from '../../../components/ui/PageHeader'
+import { IconArrowLeft, IconPencil } from '@tabler/icons-react'
+import { ic } from '../../../lib/tabler'
 import {
   getProductImagePublicUrl,
   removeProductImage,
@@ -23,14 +24,13 @@ import type { ProductImage } from '../../../types/database'
 const selectClass =
   'w-full rounded-lg border border-brand-border-strong bg-brand-surface px-3 py-2 text-brand-ink outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50'
 
-const sectionCardClass =
-  'overflow-hidden rounded-xl border border-brand-border bg-brand-surface shadow-sm shadow-brand-ink/5 ring-1 ring-brand-border-subtle'
+const sectionCardClass = 'overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/4'
 
 function SectionHeader({ title, hint }: { title: string; hint?: string }) {
   return (
-    <header className="border-b border-brand-border bg-brand-blush/20 px-5 py-3">
-      <h2 className="font-medium text-brand-ink">{title}</h2>
-      {hint ? <p className="mt-0.5 text-sm text-brand-ink-muted">{hint}</p> : null}
+    <header className="border-b border-[#f0eef5] bg-[#f8f7fa] px-5 py-3">
+      <h2 className="text-xs font-semibold uppercase tracking-wider text-[#b9b6c3]">{title}</h2>
+      {hint ? <p className="mt-0.5 text-sm text-[#6e6b7b]">{hint}</p> : null}
     </header>
   )
 }
@@ -240,69 +240,77 @@ export function EditarArticuloPage() {
     navigate(`/inventario/articulos/${id}`, { replace: true })
   }
 
+  const backToList = (
+    <Link
+      to="/inventario/articulos"
+      className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-[#6e6b7b] transition hover:bg-white hover:text-[#3d3b4f] hover:shadow-sm"
+    >
+      <IconArrowLeft size={16} stroke={1.5} className="shrink-0" aria-hidden />
+      Volver al listado
+    </Link>
+  )
+
   if (!id) {
     return (
-      <div className="space-y-6">
-        <PageHeader title="Editar artículo" description="Ruta inválida." />
-        <Link to="/inventario/articulos" className="text-sm font-medium text-brand-ink underline-offset-2 hover:underline">
-          Volver al listado
-        </Link>
+      <div className="space-y-4">
+        {backToList}
+        <div className="rounded-xl bg-red-50 px-5 py-4 text-sm text-red-800 ring-1 ring-red-200">Ruta inválida.</div>
       </div>
     )
   }
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <PageHeader title="Editar artículo" description="Cargando…" />
-        <p className="text-sm text-brand-ink-muted">Cargando datos del artículo…</p>
+      <div className="space-y-4">
+        {backToList}
+        <div className="animate-pulse space-y-4">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="h-32 rounded-xl bg-white shadow-sm ring-1 ring-black/4" />
+          ))}
+        </div>
       </div>
     )
   }
 
   if (loadError) {
     return (
-      <div className="space-y-6">
-        <PageHeader title="Editar artículo" description="No se pudo abrir el formulario." />
-        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{loadError}</p>
+      <div className="space-y-4">
+        {backToList}
+        <div className="rounded-xl bg-red-50 px-5 py-4 text-sm text-red-800 ring-1 ring-red-200">{loadError}</div>
         {id ? (
           <button
             type="button"
-            className="rounded-lg border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-900 transition hover:bg-red-100"
+            className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-800 transition hover:bg-red-50"
             onClick={() => void productQ.refetch()}
           >
             Reintentar
           </button>
         ) : null}
-        <Link
-          to="/inventario/articulos"
-          className="inline-flex rounded-lg border border-brand-primary-hover bg-brand-primary px-4 py-2 text-sm font-semibold text-brand-on-primary shadow-sm transition hover:bg-brand-primary-hover"
-        >
-          Volver al listado
-        </Link>
       </div>
     )
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <PageHeader
-          title="Editar artículo"
-          description="Los datos del formulario se guardan siempre. La imagen del catálogo solo cambia si elegís un archivo nuevo; si no, se mantiene la que está en la base."
-        />
-        <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-primary-ghost text-brand-primary">
+              <IconPencil {...ic.headerSm} aria-hidden />
+            </span>
+            <h1 className="text-2xl font-bold tracking-tight text-[#3d3b4f]">Editar artículo</h1>
+          </div>
+          <p className="mt-1.5 text-sm text-[#6e6b7b]">
+            Los datos se guardan siempre. La imagen solo cambia si elegís un archivo nuevo.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
           <Link
             to={`/inventario/articulos/${id}`}
-            className="shrink-0 rounded-lg border border-brand-border bg-brand-surface px-4 py-2.5 text-sm font-medium text-brand-ink-muted transition hover:border-brand-border-strong hover:text-brand-ink"
+            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-[#6e6b7b] transition hover:bg-white hover:text-[#3d3b4f] hover:shadow-sm"
           >
-            ← Ver ficha
-          </Link>
-          <Link
-            to="/inventario/articulos"
-            className="shrink-0 rounded-lg border border-brand-border bg-brand-surface px-4 py-2.5 text-sm font-medium text-brand-ink-muted transition hover:border-brand-border-strong hover:text-brand-ink"
-          >
-            Listado
+            <IconArrowLeft size={16} stroke={1.5} className="shrink-0" aria-hidden />
+            Ver ficha
           </Link>
         </div>
       </div>
@@ -510,17 +518,17 @@ export function EditarArticuloPage() {
           </div>
         ) : null}
 
-        <div className="flex flex-col-reverse gap-3 border-t border-brand-border-subtle pt-2 sm:flex-row sm:justify-end">
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Link
             to={`/inventario/articulos/${id}`}
-            className="inline-flex justify-center rounded-lg border border-brand-border bg-brand-surface px-5 py-2.5 text-sm font-medium text-brand-ink-muted transition hover:bg-brand-canvas hover:text-brand-ink"
+            className="inline-flex justify-center rounded-lg border border-[#e8e4f0] bg-white px-5 py-2.5 text-sm font-medium text-[#6e6b7b] transition hover:text-[#3d3b4f]"
           >
             Cancelar
           </Link>
           <button
             type="submit"
             disabled={saving || catalogLoading}
-            className="inline-flex justify-center rounded-lg border border-brand-primary-hover bg-brand-primary px-5 py-2.5 text-sm font-semibold text-brand-on-primary shadow-sm transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex justify-center rounded-lg bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
             {saving ? 'Guardando…' : 'Guardar cambios'}
           </button>

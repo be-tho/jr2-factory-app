@@ -188,7 +188,7 @@ export function DashboardLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-brand-canvas">
+    <div className="min-h-screen bg-[#f8f7fa]">
       <div className="mx-auto flex min-h-screen w-full max-w-7xl md:max-w-none">
         <aside className="hidden w-56 shrink-0 flex-col border-r border-brand-border bg-brand-surface sm:flex sm:sticky sm:top-0 sm:h-screen">
           <div className="border-b border-brand-border bg-brand-primary-ghost p-4">

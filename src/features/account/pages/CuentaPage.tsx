@@ -1,4 +1,5 @@
-import { PageHeader } from '../../../components/ui/PageHeader'
+import { IconAt, IconCalendar, IconHash, IconUser } from '@tabler/icons-react'
+import { ic } from '../../../lib/tabler'
 import { useSession } from '../../../hooks/useSession'
 
 export function CuentaPage() {
@@ -7,36 +8,56 @@ export function CuentaPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Cuenta"
-        description="Datos de tu sesión en JR2 Factory."
-      />
+      {/* Page title */}
+      <div>
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-primary-ghost text-brand-primary">
+            <IconUser {...ic.headerSm} aria-hidden />
+          </span>
+          <h1 className="text-2xl font-bold tracking-tight text-[#3d3b4f]">Cuenta</h1>
+        </div>
+        <p className="mt-1.5 text-sm text-[#6e6b7b]">Datos de tu sesión en JR2 Factory.</p>
+      </div>
 
-      <section className="overflow-hidden rounded-xl border border-brand-border bg-brand-surface shadow-sm shadow-brand-ink/5 ring-1 ring-brand-border-subtle">
-        <header className="border-b border-brand-border bg-brand-blush/20 px-5 py-3">
-          <h3 className="font-medium text-brand-ink">Usuario registrado</h3>
-        </header>
-        <dl className="grid gap-4 px-5 py-4 sm:grid-cols-2">
-          <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-brand-ink-muted">Correo</dt>
-            <dd className="mt-1 text-sm text-brand-ink">{user?.email ?? '—'}</dd>
+      {/* User info islands */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="flex items-start gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-black/4">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-primary-ghost text-brand-primary">
+            <IconAt size={16} stroke={1.5} aria-hidden />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#b9b6c3]">Correo</p>
+            <p className="mt-0.5 truncate text-sm font-medium text-[#3d3b4f]">{user?.email ?? '—'}</p>
           </div>
-          <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-brand-ink-muted">ID</dt>
-            <dd className="mt-1 break-all font-mono text-xs text-brand-ink-muted">{user?.id ?? '—'}</dd>
+        </div>
+
+        <div className="flex items-start gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-black/4 sm:col-span-2 lg:col-span-1">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f8f7fa] text-[#b9b6c3]">
+            <IconHash size={16} stroke={1.5} aria-hidden />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#b9b6c3]">ID de usuario</p>
+            <p className="mt-0.5 break-all font-mono text-xs text-[#6e6b7b]">{user?.id ?? '—'}</p>
           </div>
-          {user?.created_at && (
-            <div className="sm:col-span-2">
-              <dt className="text-xs font-medium uppercase tracking-wide text-brand-ink-muted">
-                Alta en la aplicación
-              </dt>
-              <dd className="mt-1 text-sm text-brand-ink">
-                {new Date(user.created_at).toLocaleString()}
-              </dd>
+        </div>
+
+        {user?.created_at ? (
+          <div className="flex items-start gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-black/4">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f8f7fa] text-[#b9b6c3]">
+              <IconCalendar size={16} stroke={1.5} aria-hidden />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#b9b6c3]">Alta en la app</p>
+              <p className="mt-0.5 text-sm font-medium text-[#3d3b4f]">
+                {new Date(user.created_at).toLocaleString('es-AR', {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                })}
+              </p>
             </div>
-          )}
-        </dl>
-      </section>
+          </div>
+        ) : null}
+      </div>
     </div>
   )
 }

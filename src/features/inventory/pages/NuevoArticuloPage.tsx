@@ -2,7 +2,8 @@ import { useEffect, useId, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { DEFAULT_ARTICLE_IMAGE_PUBLIC_URL } from '../../../constants/defaultArticleImage'
 import { FormField } from '../../../components/ui/FormField'
-import { PageHeader } from '../../../components/ui/PageHeader'
+import { IconArrowLeft, IconStack } from '@tabler/icons-react'
+import { ic } from '../../../lib/tabler'
 import {
   loadDefaultArticleImageFile,
   removeProductImage,
@@ -18,14 +19,13 @@ import { createArticuloImagen } from '../services/articulo-imagenes.service'
 const selectClass =
   'w-full rounded-lg border border-brand-border-strong bg-brand-surface px-3 py-2 text-brand-ink outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50'
 
-const sectionCardClass =
-  'overflow-hidden rounded-xl border border-brand-border bg-brand-surface shadow-sm shadow-brand-ink/5 ring-1 ring-brand-border-subtle'
+const sectionCardClass = 'overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/4'
 
 function SectionHeader({ title, hint }: { title: string; hint?: string }) {
   return (
-    <header className="border-b border-brand-border bg-brand-blush/20 px-5 py-3">
-      <h2 className="font-medium text-brand-ink">{title}</h2>
-      {hint ? <p className="mt-0.5 text-sm text-brand-ink-muted">{hint}</p> : null}
+    <header className="border-b border-[#f0eef5] bg-[#f8f7fa] px-5 py-3">
+      <h2 className="text-xs font-semibold uppercase tracking-wider text-[#b9b6c3]">{title}</h2>
+      {hint ? <p className="mt-0.5 text-sm text-[#6e6b7b]">{hint}</p> : null}
     </header>
   )
 }
@@ -208,16 +208,24 @@ export function NuevoArticuloPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <PageHeader
-          title="Nuevo artículo"
-          description="Si no subís foto, se usa y guarda public/default-articulo.svg en Storage para ese artículo."
-        />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-primary-ghost text-brand-primary">
+              <IconStack {...ic.headerSm} aria-hidden />
+            </span>
+            <h1 className="text-2xl font-bold tracking-tight text-[#3d3b4f]">Nuevo artículo</h1>
+          </div>
+          <p className="mt-1.5 text-sm text-[#6e6b7b]">
+            Si no subís foto, se guarda la imagen por defecto en Storage.
+          </p>
+        </div>
         <Link
           to="/inventario/articulos"
-          className="shrink-0 self-start rounded-lg border border-brand-border bg-brand-surface px-4 py-2.5 text-sm font-medium text-brand-ink-muted transition hover:border-brand-border-strong hover:text-brand-ink"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-[#6e6b7b] transition hover:bg-white hover:text-[#3d3b4f] hover:shadow-sm"
         >
-          ← Volver al listado
+          <IconArrowLeft size={16} stroke={1.5} className="shrink-0" aria-hidden />
+          Volver al listado
         </Link>
       </div>
 
@@ -406,7 +414,7 @@ export function NuevoArticuloPage() {
                     className="h-full w-full object-contain"
                   />
                 </div>
-                <p className="max-w-[10rem] text-center text-xs text-brand-ink-muted">
+                <p className="max-w-40 text-center text-xs text-brand-ink-muted">
                   {coverImage ? 'Vista previa de tu archivo' : 'Por defecto: default-articulo.svg'}
                 </p>
               </div>
@@ -452,17 +460,17 @@ export function NuevoArticuloPage() {
           </div>
         ) : null}
 
-        <div className="flex flex-col-reverse gap-3 border-t border-brand-border-subtle pt-2 sm:flex-row sm:justify-end">
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Link
             to="/inventario/articulos"
-            className="inline-flex justify-center rounded-lg border border-brand-border bg-brand-surface px-5 py-2.5 text-sm font-medium text-brand-ink-muted transition hover:bg-brand-canvas hover:text-brand-ink"
+            className="inline-flex justify-center rounded-lg border border-[#e8e4f0] bg-white px-5 py-2.5 text-sm font-medium text-[#6e6b7b] transition hover:text-[#3d3b4f]"
           >
             Cancelar
           </Link>
           <button
             type="submit"
             disabled={saving || catalogLoading || articleIdPendingImage != null}
-            className="inline-flex justify-center rounded-lg border border-brand-primary-hover bg-brand-primary px-5 py-2.5 text-sm font-semibold text-brand-on-primary shadow-sm transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex justify-center rounded-lg bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
             {saving ? 'Guardando…' : coverImage ? 'Crear artículo e imagen' : 'Crear artículo'}
           </button>
