@@ -10,8 +10,6 @@ export interface ProfileUpsertInput {
   full_name?: string | null
   avatar_path?: string | null
   role?: string | null
-  phone?: string | null
-  location?: string | null
   bio?: string | null
 }
 

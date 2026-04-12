@@ -5,9 +5,7 @@ import {
   IconCamera,
   IconFileText,
   IconHash,
-  IconMapPin,
   IconPencil,
-  IconPhone,
   IconUser,
   IconX,
 } from '@tabler/icons-react'
@@ -94,8 +92,6 @@ export function CuentaPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [fullName, setFullName] = useState('')
   const [cargo, setCargo] = useState('')
-  const [phone, setPhone] = useState('')
-  const [location, setLocation] = useState('')
   const [bio, setBio] = useState('')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
@@ -108,8 +104,6 @@ export function CuentaPage() {
     if (profile) {
       setFullName(profile.full_name ?? '')
       setCargo(profile.role ?? '')
-      setPhone(profile.phone ?? '')
-      setLocation(profile.location ?? '')
       setBio(profile.bio ?? '')
     }
   }, [profile])
@@ -126,8 +120,6 @@ export function CuentaPage() {
     if (profile) {
       setFullName(profile.full_name ?? '')
       setCargo(profile.role ?? '')
-      setPhone(profile.phone ?? '')
-      setLocation(profile.location ?? '')
       setBio(profile.bio ?? '')
     }
     setAvatarFile(null)
@@ -154,8 +146,6 @@ export function CuentaPage() {
       {
         full_name: fullName.trim() || null,
         role: cargo || null,
-        phone: phone.trim() || null,
-        location: location.trim() || null,
         bio: bio.trim() || null,
         avatar_path: newAvatarPath,
       },
@@ -188,8 +178,6 @@ export function CuentaPage() {
     .join('')
   const hasProfileData = !!(
     profile?.full_name ||
-    profile?.phone ||
-    profile?.location ||
     profile?.bio ||
     profile?.role
   )
@@ -208,7 +196,10 @@ export function CuentaPage() {
       {/* ── Header card ──────────────────────────────────────────── */}
       <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/4">
         {/* Gradient banner */}
-        <div className="h-28 bg-linear-to-br from-brand-primary via-[#c07ad4] to-[#7c3aed]" />
+        <div
+          className="h-28"
+          style={{ background: 'linear-gradient(135deg, #ffffc4 0%, #ff6164 50%, #b00012 100%)' }}
+        />
 
         <div className="px-6 pb-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -271,12 +262,6 @@ export function CuentaPage() {
                       {cargoLabel}
                     </span>
                   )}
-                  {profile?.location && (
-                    <span className="flex items-center gap-1 text-xs text-[#6e6b7b]">
-                      <IconMapPin size={12} stroke={1.5} aria-hidden />
-                      {profile.location}
-                    </span>
-                  )}
                   {memberSince && (
                     <span className="flex items-center gap-1 text-xs text-[#b9b6c3]">
                       <IconCalendar size={12} stroke={1.5} aria-hidden />
@@ -336,16 +321,6 @@ export function CuentaPage() {
                 icon={<IconBriefcase size={14} stroke={1.5} />}
                 label="Cargo / Área"
                 value={cargoLabel}
-              />
-              <InfoRow
-                icon={<IconPhone size={14} stroke={1.5} />}
-                label="Teléfono"
-                value={profile?.phone}
-              />
-              <InfoRow
-                icon={<IconMapPin size={14} stroke={1.5} />}
-                label="Ubicación"
-                value={profile?.location}
               />
               <InfoRow
                 icon={<IconFileText size={14} stroke={1.5} />}
@@ -440,23 +415,6 @@ export function CuentaPage() {
                   </select>
                 </label>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <FormField
-                    label="Teléfono"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="Ej. +54 9 11 1234-5678"
-                    disabled={saving}
-                  />
-                  <FormField
-                    label="Ubicación"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="Ej. Buenos Aires"
-                    disabled={saving}
-                  />
-                </div>
-
                 <label className="block">
                   <span className="mb-1 block text-sm font-medium text-brand-ink-muted">
                     Bio / Notas
@@ -503,7 +461,7 @@ export function CuentaPage() {
                   <div className="rounded-xl border border-amber-200 bg-amber-50 p-5">
                     <p className="font-semibold text-amber-900">Completá tu perfil</p>
                     <p className="mt-1 text-sm text-amber-800">
-                      Agregá tu nombre, cargo, teléfono y foto para que el equipo
+                      Agregá tu nombre, cargo y foto para que el equipo
                       pueda identificarte fácilmente.
                     </p>
                     <button

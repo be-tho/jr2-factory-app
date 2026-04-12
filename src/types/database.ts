@@ -6,8 +6,6 @@ export interface Profile {
   full_name: string | null
   avatar_path: string | null
   role: string | null
-  phone: string | null
-  location: string | null
   bio: string | null
   created_at: string
   updated_at: string
