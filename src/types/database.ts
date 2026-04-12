@@ -79,3 +79,25 @@ export interface ProductImage {
   es_principal: boolean
   created_at: string
 }
+
+/** `public.patrones` — fila cruda de la tabla. */
+export interface PatronRow {
+  id: string
+  articulo_id: string
+  nombre: string
+  descripcion: string | null
+  storage_path: string
+  file_name: string
+  file_size: number | null
+  file_type: string | null
+  activo: boolean
+  created_at: string
+  updated_at: string
+}
+
+/** Modelo de vista para listados y fichas (incluye datos del artículo vinculado). */
+export interface Patron extends PatronRow {
+  articulo_nombre: string
+  articulo_sku: string
+  articulo_cover_image_path: string | null
+}

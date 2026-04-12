@@ -51,6 +51,18 @@ const CortesPage = lazy(() =>
 const CosturerosPage = lazy(() =>
   import('../features/production/pages/CosturerosPage').then((m) => ({ default: m.CosturerosPage })),
 )
+const PatronesPage = lazy(() =>
+  import('../features/patterns/pages/PatronesPage').then((m) => ({ default: m.PatronesPage })),
+)
+const NuevoPatronPage = lazy(() =>
+  import('../features/patterns/pages/NuevoPatronPage').then((m) => ({ default: m.NuevoPatronPage })),
+)
+const PatronDetailPage = lazy(() =>
+  import('../features/patterns/pages/PatronDetailPage').then((m) => ({ default: m.PatronDetailPage })),
+)
+const EditarPatronPage = lazy(() =>
+  import('../features/patterns/pages/EditarPatronPage').then((m) => ({ default: m.EditarPatronPage })),
+)
 
 function RouteFallback() {
   return (
@@ -74,6 +86,10 @@ export function AppRouter() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/produccion/cortes" element={<CortesPage />} />
             <Route path="/produccion/costureros" element={<CosturerosPage />} />
+            <Route path="/produccion/patrones" element={<PatronesPage />} />
+            <Route path="/produccion/patrones/nuevo" element={<NuevoPatronPage />} />
+            <Route path="/produccion/patrones/:id/editar" element={<EditarPatronPage />} />
+            <Route path="/produccion/patrones/:id" element={<PatronDetailPage />} />
             <Route path="/inventario/articulos" element={<ArticulosPage />} />
             <Route path="/inventario/articulos/nuevo" element={<NuevoArticuloPage />} />
             <Route path="/inventario/articulos/:id/editar" element={<EditarArticuloPage />} />
