@@ -1,4 +1,6 @@
 import {
+  IconChevronLeft,
+  IconChevronRight,
   IconPackage,
   IconPackageOff,
   IconPlus,
@@ -8,7 +10,7 @@ import {
   IconTag,
   IconX,
 } from '@tabler/icons-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { StatCard } from '../../../components/ui/StatCard'
 import { useProductsQuery } from '../hooks/useProducts'
@@ -16,7 +18,82 @@ import { ic } from '../../../lib/tabler'
 import { ArticuloCard } from '../components/ArticuloCard'
 import type { Product } from '../../../types/database'
 
+const PAGE_SIZE = 12
+
 type EstadoFilter = 'todos' | 'activo' | 'inactivo'
+
+type PaginationProps = {
+  currentPage: number
+  totalPages: number
+  onPageChange: (page: number) => void
+}
+
+function getPaginationRange(current: number, total: number): (number | '…')[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
+  const delta = 1
+  const left = current - delta
+  const right = current + delta
+  const pages: (number | '…')[] = []
+  let prev: number | null = null
+  for (let i = 1; i <= total; i++) {
+    if (i === 1 || i === total || (i >= left && i <= right)) {
+      if (prev !== null && i - prev > 1) pages.push('…')
+      pages.push(i)
+      prev = i
+    }
+  }
+  return pages
+}
+
+function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
+  const range = getPaginationRange(currentPage, totalPages)
+
+  return (
+    <nav aria-label="Paginación de artículos" className="flex items-center justify-center gap-1">
+      <button
+        type="button"
+        disabled={currentPage === 1}
+        onClick={() => onPageChange(currentPage - 1)}
+        aria-label="Página anterior"
+        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#e8e4f0] bg-white text-[#6e6b7b] transition hover:bg-[#f8f7fa] hover:text-[#3d3b4f] disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <IconChevronLeft size={16} stroke={1.5} aria-hidden />
+      </button>
+
+      {range.map((item, idx) =>
+        item === '…' ? (
+          <span key={`ellipsis-${idx}`} className="flex h-9 w-9 items-center justify-center text-sm text-[#b9b6c3]">
+            …
+          </span>
+        ) : (
+          <button
+            key={item}
+            type="button"
+            onClick={() => onPageChange(item)}
+            aria-current={item === currentPage ? 'page' : undefined}
+            className={`inline-flex h-9 w-9 items-center justify-center rounded-lg text-sm font-medium transition ${
+              item === currentPage
+                ? 'bg-brand-primary text-white shadow-sm'
+                : 'border border-[#e8e4f0] bg-white text-[#6e6b7b] hover:bg-[#f8f7fa] hover:text-[#3d3b4f]'
+            }`}
+          >
+            {item}
+          </button>
+        ),
+      )}
+
+      <button
+        type="button"
+        disabled={currentPage === totalPages}
+        onClick={() => onPageChange(currentPage + 1)}
+        aria-label="Página siguiente"
+        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#e8e4f0] bg-white text-[#6e6b7b] transition hover:bg-[#f8f7fa] hover:text-[#3d3b4f] disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <IconChevronRight size={16} stroke={1.5} aria-hidden />
+      </button>
+    </nav>
+  )
+}
 
 function normalize(str: string): string {
   return str
@@ -53,6 +130,11 @@ export function ArticulosPage() {
   const [query, setQuery] = useState('')
   const [categoriaFilter, setCategoriaFilter] = useState('')
   const [estadoFilter, setEstadoFilter] = useState<EstadoFilter>('todos')
+  const [currentPage, setCurrentPage] = useState(1)
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [query, categoriaFilter, estadoFilter])
 
   const activeCount = articles.filter((a) => a.activo).length
   const noStockCount = articles.filter((a) => a.stock_actual === 0).length
@@ -69,6 +151,10 @@ export function ArticulosPage() {
     () => filterArticulos(articles, query, categoriaFilter, estadoFilter),
     [articles, query, categoriaFilter, estadoFilter],
   )
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const safePage = Math.min(currentPage, totalPages)
+  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
 
   const hasFilters = query.trim() !== '' || categoriaFilter !== '' || estadoFilter !== 'todos'
 
@@ -200,7 +286,7 @@ export function ArticulosPage() {
 
       {/* Loading skeleton */}
       {loading && !errorMessage ? (
-        <ul className="grid list-none gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+        <ul className="grid list-none gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <li key={i} className="animate-pulse rounded-xl bg-white shadow-sm ring-1 ring-black/4">
               <div className="aspect-4/3 rounded-t-xl bg-[#f8f7fa]" />
@@ -245,20 +331,32 @@ export function ArticulosPage() {
       {/* Results */}
       {!loading && !errorMessage && filtered.length > 0 ? (
         <>
-          {hasFilters && (
+          <div className="flex items-center justify-between gap-2">
             <p className="text-sm text-[#b9b6c3]">
               {filtered.length === articles.length
                 ? `${filtered.length} artículos`
                 : `${filtered.length} de ${articles.length} artículos`}
             </p>
-          )}
-          <ul className="grid list-none gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-            {filtered.map((product) => (
+            {totalPages > 1 && (
+              <p className="text-sm text-[#b9b6c3]">
+                Página {safePage} de {totalPages}
+              </p>
+            )}
+          </div>
+          <ul className="grid list-none gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {paginated.map((product) => (
               <li key={product.id}>
                 <ArticuloCard product={product} />
               </li>
             ))}
           </ul>
+          {totalPages > 1 && (
+            <Pagination
+              currentPage={safePage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          )}
         </>
       ) : null}
     </div>
