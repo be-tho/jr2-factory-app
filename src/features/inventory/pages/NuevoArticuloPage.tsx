@@ -1,5 +1,6 @@
 import { useEffect, useId, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import { DEFAULT_ARTICLE_IMAGE_PUBLIC_URL } from '../../../constants/defaultArticleImage'
 import { FormField } from '../../../components/ui/FormField'
 import { IconArrowLeft, IconStack } from '@tabler/icons-react'
@@ -117,7 +118,9 @@ export function NuevoArticuloPage() {
       }
       navigate(`/inventario/articulos/${articleIdPendingImage}`, { replace: true })
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo subir la imagen.')
+      const msg = e instanceof Error ? e.message : 'No se pudo subir la imagen.'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setSaving(false)
     }

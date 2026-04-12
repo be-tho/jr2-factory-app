@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { toast } from 'sonner'
 import { DEFAULT_ARTICLE_IMAGE_PUBLIC_URL, hasStorageCoverImage } from '../../../constants/defaultArticleImage'
 import { FormField } from '../../../components/ui/FormField'
 import { IconArrowLeft, IconPencil } from '@tabler/icons-react'
@@ -216,9 +217,8 @@ export function EditarArticuloPage() {
           descripcion: descripcion.trim() || null,
         },
       })
-    } catch (e) {
+    } catch {
       setSaving(false)
-      setError(e instanceof Error ? e.message : 'No se pudo guardar.')
       return
     }
 
@@ -228,11 +228,11 @@ export function EditarArticuloPage() {
       }
     } catch (imErr) {
       setSaving(false)
-      setError(
-        imErr instanceof Error
-          ? `Los datos se guardaron, pero hubo un problema con la imagen: ${imErr.message}`
-          : 'Los datos se guardaron, pero hubo un problema con la imagen.'
-      )
+      const msg = imErr instanceof Error
+        ? `Los datos se guardaron, pero hubo un problema con la imagen: ${imErr.message}`
+        : 'Los datos se guardaron, pero hubo un problema con la imagen.'
+      setError(msg)
+      toast.warning(msg)
       return
     }
 

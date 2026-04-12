@@ -12,10 +12,6 @@ export function NuevaTemporadaPage() {
   const [activo, setActivo] = useState(true)
 
   const saving = createMutation.isPending
-  const errorMessage =
-    createMutation.isError && createMutation.error instanceof Error
-      ? createMutation.error.message
-      : null
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -76,9 +72,6 @@ export function NuevaTemporadaPage() {
             Temporada activa (visible en formularios de artículos)
           </label>
 
-          {errorMessage ? (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-200">{errorMessage}</p>
-          ) : null}
         </div>
 
         <div className="flex flex-wrap gap-3 border-t border-[#f0eef5] px-5 py-4">

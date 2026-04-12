@@ -1,5 +1,4 @@
 import { IconRefresh, IconTag } from '@tabler/icons-react'
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { StatCard } from '../../../components/ui/StatCard'
 import { ic } from '../../../lib/tabler'
@@ -9,7 +8,6 @@ import { useCategoriasAdminQuery, useDeleteCategoriaMutation } from '../hooks/us
 export function CategoriasPage() {
   const { data: rows = [], isPending, isError, error, refetch } = useCategoriasAdminQuery()
   const deleteMutation = useDeleteCategoriaMutation()
-  const [deleteMessage, setDeleteMessage] = useState<string | null>(null)
 
   const loading = isPending
   const errorMessage = isError && error instanceof Error ? error.message : null
@@ -22,13 +20,7 @@ export function CategoriasPage() {
       `¿Eliminar la categoría «${row.nombre}»? Solo es posible si no hay artículos asociados.`,
     )
     if (!ok) return
-    setDeleteMessage(null)
-    deleteMutation.mutate(row.id, {
-      onSuccess: () => setDeleteMessage(null),
-      onError: (e) => {
-        setDeleteMessage(e instanceof Error ? e.message : 'No se pudo eliminar.')
-      },
-    })
+    deleteMutation.mutate(row.id)
   }
 
   const deletingId = deleteMutation.isPending ? deleteMutation.variables : null
@@ -77,13 +69,6 @@ export function CategoriasPage() {
             <IconRefresh size={15} stroke={1.5} className="shrink-0" aria-hidden />
             Reintentar
           </button>
-        </div>
-      ) : null}
-
-      {/* Delete message */}
-      {deleteMessage ? (
-        <div className="rounded-xl bg-amber-50 px-5 py-4 text-sm text-amber-900 ring-1 ring-amber-200">
-          {deleteMessage}
         </div>
       ) : null}
 

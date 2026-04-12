@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { toast } from 'sonner'
 import {
   IconBuildingFactory2,
   IconCalendar,
@@ -185,6 +186,9 @@ export function DashboardLayout() {
 
   async function handleLogout() {
     await supabase.auth.signOut()
+    toast.success('Sesión cerrada', {
+      description: '¡Hasta la próxima!',
+    })
   }
 
   return (

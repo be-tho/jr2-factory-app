@@ -85,10 +85,6 @@ export function EditarTemporadaPage() {
   }
 
   const saving = updateMutation.isPending
-  const saveError =
-    updateMutation.isError && updateMutation.error instanceof Error
-      ? updateMutation.error.message
-      : null
 
   return (
     <div className="space-y-6">
@@ -135,9 +131,6 @@ export function EditarTemporadaPage() {
             Temporada activa (visible en formularios de artículos)
           </label>
 
-          {saveError ? (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-200">{saveError}</p>
-          ) : null}
         </div>
 
         <div className="flex flex-wrap gap-3 border-t border-[#f0eef5] px-5 py-4">

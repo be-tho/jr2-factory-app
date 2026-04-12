@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import type { Product } from '../../../types/database'
 import { articuloImagenesKeys } from './useArticuloImagenes'
 import {
@@ -53,6 +54,10 @@ export function useDeleteProductMutation() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: productsKeys.all })
+      toast.success('Artículo eliminado')
+    },
+    onError: (e) => {
+      toast.error(e instanceof Error ? e.message : 'No se pudo eliminar el artículo.')
     },
   })
 }
@@ -68,6 +73,10 @@ export function useCreateProductMutation() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: productsKeys.all })
+      toast.success('Artículo creado')
+    },
+    onError: (e) => {
+      toast.error(e instanceof Error ? e.message : 'No se pudo crear el artículo.')
     },
   })
 }
@@ -85,6 +94,10 @@ export function useUpdateProductMutation() {
       void queryClient.invalidateQueries({ queryKey: productsKeys.all })
       void queryClient.invalidateQueries({ queryKey: productsKeys.detail(variables.id) })
       void queryClient.invalidateQueries({ queryKey: articuloImagenesKeys.byArticulo(variables.id) })
+      toast.success('Artículo actualizado')
+    },
+    onError: (e) => {
+      toast.error(e instanceof Error ? e.message : 'No se pudo actualizar el artículo.')
     },
   })
 }

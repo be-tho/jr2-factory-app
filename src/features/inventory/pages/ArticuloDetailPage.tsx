@@ -13,7 +13,6 @@ import {
   IconTag,
   IconTrash,
 } from '@tabler/icons-react'
-import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   DEFAULT_ARTICLE_IMAGE_PUBLIC_URL,
@@ -122,7 +121,6 @@ export function ArticuloDetailPage() {
   const navigate = useNavigate()
   const { data: article, isPending, isError, error, refetch } = useProductQuery(id)
   const deleteMutation = useDeleteProductMutation()
-  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   if (!id) {
     return (
@@ -208,12 +206,8 @@ export function ArticuloDetailPage() {
       `¿Borrar "${product.name}" (${product.sku})? Esta acción no se puede deshacer. También se eliminarán las imágenes asociadas en Storage.`,
     )
     if (!ok) return
-    setDeleteError(null)
     deleteMutation.mutate(product.id, {
       onSuccess: () => navigate('/inventario/articulos', { replace: true }),
-      onError: (e) => {
-        setDeleteError(e instanceof Error ? e.message : 'No se pudo borrar.')
-      },
     })
   }
 
@@ -242,14 +236,6 @@ export function ArticuloDetailPage() {
             </button>
           </div>
         </div>
-
-        {/* ── Delete error ── */}
-        {deleteError ? (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm">
-            <p className="font-medium text-red-800">No se pudo borrar</p>
-            <p className="mt-0.5 text-red-600">{deleteError}</p>
-          </div>
-        ) : null}
 
         {/* ── Main grid ── */}
         <div className="grid gap-5 lg:grid-cols-[1fr_1.65fr]">

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import type { TemporadaRow } from '../../../types/database'
 import {
   createTemporada,
@@ -67,6 +68,10 @@ export function useCreateTemporadaMutation() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: temporadasKeys.all })
+      toast.success('Temporada creada')
+    },
+    onError: (e) => {
+      toast.error(e instanceof Error ? e.message : 'No se pudo crear la temporada.')
     },
   })
 }
@@ -82,6 +87,10 @@ export function useUpdateTemporadaMutation() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: temporadasKeys.all })
+      toast.success('Temporada actualizada')
+    },
+    onError: (e) => {
+      toast.error(e instanceof Error ? e.message : 'No se pudo actualizar la temporada.')
     },
   })
 }
@@ -95,6 +104,10 @@ export function useDeleteTemporadaMutation() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: temporadasKeys.all })
+      toast.success('Temporada eliminada')
+    },
+    onError: (e) => {
+      toast.error(e instanceof Error ? e.message : 'No se pudo eliminar la temporada.')
     },
   })
 }

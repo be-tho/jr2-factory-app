@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import type { CategoriaRow } from '../../../types/database'
 import {
   createCategoria,
@@ -67,6 +68,10 @@ export function useCreateCategoriaMutation() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: categoriasKeys.all })
+      toast.success('Categoría creada')
+    },
+    onError: (e) => {
+      toast.error(e instanceof Error ? e.message : 'No se pudo crear la categoría.')
     },
   })
 }
@@ -82,6 +87,10 @@ export function useUpdateCategoriaMutation() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: categoriasKeys.all })
+      toast.success('Categoría actualizada')
+    },
+    onError: (e) => {
+      toast.error(e instanceof Error ? e.message : 'No se pudo actualizar la categoría.')
     },
   })
 }
@@ -95,6 +104,10 @@ export function useDeleteCategoriaMutation() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: categoriasKeys.all })
+      toast.success('Categoría eliminada')
+    },
+    onError: (e) => {
+      toast.error(e instanceof Error ? e.message : 'No se pudo eliminar la categoría.')
     },
   })
 }
