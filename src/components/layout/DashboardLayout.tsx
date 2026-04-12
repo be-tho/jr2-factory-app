@@ -19,6 +19,9 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { NavLink, useLocation } from 'react-router-dom'
 import { ic } from '../../lib/tabler'
 import { supabase } from '../../lib/supabase/client'
+import { useSession } from '../../hooks/useSession'
+import { useProfileQuery } from '../../features/account/hooks/useProfile'
+import { getAvatarPublicUrl } from '../../features/account/services/profile.service'
 import { PageTransition } from './PageTransition'
 
 const menuEase = [0.22, 1, 0.36, 1] as const
@@ -161,6 +164,42 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
   )
 }
 
+function SidebarUserCard() {
+  const { session } = useSession()
+  const { data: profile } = useProfileQuery()
+  const avatarUrl = profile?.avatar_path ? getAvatarPublicUrl(profile.avatar_path) : null
+  const displayName =
+    profile?.full_name?.trim() || session?.user.email?.split('@')[0] || 'Usuario'
+  const email = session?.user.email ?? ''
+  const initials = displayName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w: string) => w[0].toUpperCase())
+    .join('')
+
+  return (
+    <NavLink
+      to="/cuenta"
+      className="flex items-center gap-2.5 rounded-lg px-2 py-2 transition hover:bg-brand-primary-ghost"
+    >
+      <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full border border-brand-border bg-brand-primary-ghost">
+        {avatarUrl ? (
+          <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-xs font-bold text-brand-primary">
+            {initials || <IconUser size={14} stroke={1.5} />}
+          </div>
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-[#3d3b4f]">{displayName}</p>
+        <p className="truncate text-xs text-[#b9b6c3]">{email}</p>
+      </div>
+    </NavLink>
+  )
+}
+
 export function DashboardLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const location = useLocation()
@@ -211,10 +250,11 @@ export function DashboardLayout() {
           <div className="flex flex-1 flex-col overflow-y-auto p-3">
             <SidebarNav key={location.pathname} />
           </div>
-          <div className="border-t border-brand-border p-3">
+          <div className="border-t border-brand-border p-3 space-y-1">
+            <SidebarUserCard />
             <button
               type="button"
-              className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-base font-bold text-brand-ink-muted transition hover:bg-red-50 hover:text-red-700"
+              className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-semibold text-brand-ink-muted transition hover:bg-red-50 hover:text-red-700"
               onClick={handleLogout}
             >
               <IconLogout {...ic.nav} aria-hidden />
