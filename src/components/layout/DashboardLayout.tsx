@@ -1,6 +1,22 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import {
+  IconBuildingFactory2,
+  IconCalendar,
+  IconChevronDown,
+  IconLayoutDashboard,
+  IconStack,
+  IconLogout,
+  IconMenu2,
+  IconPackage,
+  IconScissors,
+  IconTag,
+  IconUser,
+  IconUsers,
+  IconX,
+} from '@tabler/icons-react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { NavLink, useLocation } from 'react-router-dom'
+import { ic } from '../../lib/tabler'
 import { supabase } from '../../lib/supabase/client'
 import { PageTransition } from './PageTransition'
 
@@ -34,21 +50,6 @@ function NavCollapsible({ open, children }: { open: boolean; children: ReactNode
   )
 }
 
-function ChevronIcon({ open }: { open: boolean }) {
-  return (
-    <svg
-      aria-hidden
-      className={`ml-auto h-4 w-4 shrink-0 text-brand-ink-faint transition-transform ${open ? 'rotate-180' : ''}`}
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={2}
-      stroke="currentColor"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-    </svg>
-  )
-}
-
 function SidebarNav({ onNavigate }: NavBlockProps) {
   const location = useLocation()
   const [produccionOpen, setProduccionOpen] = useState(() =>
@@ -59,45 +60,54 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
   )
 
   const itemClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center rounded-md px-3 py-2 text-sm font-medium transition ${
+    `flex items-center gap-2.5 rounded-md px-3 py-2.5 text-base font-bold transition ${
       isActive
-        ? 'bg-brand-primary text-brand-ink shadow-sm'
-        : 'text-brand-ink-muted hover:bg-brand-blush/50 hover:text-brand-ink'
+        ? 'bg-brand-primary text-brand-on-primary shadow-sm'
+        : 'text-brand-ink-muted hover:bg-brand-primary-subtle hover:text-brand-primary'
     }`
 
   const subItemClass = ({ isActive }: { isActive: boolean }) =>
-    `ml-2 flex items-center rounded-md border-l-2 py-2 pl-3 pr-2 text-sm transition ${
+    `ml-2 flex items-center gap-2 rounded-md border-l-2 py-2.5 pl-3 pr-2 text-base transition ${
       isActive
-        ? 'border-brand-primary bg-brand-primary/35 font-medium text-brand-ink'
-        : 'border-transparent text-brand-ink-muted hover:border-brand-border hover:bg-brand-canvas hover:text-brand-ink'
+        ? 'border-brand-primary bg-brand-primary-subtle font-bold text-brand-primary'
+        : 'border-transparent font-bold text-brand-ink-muted hover:border-brand-border hover:bg-brand-primary-ghost hover:text-brand-primary'
     }`
 
   return (
     <nav className="flex flex-col gap-1">
       <NavLink to="/dashboard" end className={itemClass} onClick={onNavigate}>
+        <IconLayoutDashboard {...ic.nav} aria-hidden />
         Dashboard
       </NavLink>
 
       <div>
         <button
           type="button"
-          className={`flex w-full items-center rounded-md px-3 py-2 text-left text-sm font-medium transition ${
+          className={`flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-base font-bold transition ${
             location.pathname.startsWith('/produccion')
-              ? 'bg-brand-blush/70 text-brand-ink'
-              : 'text-brand-ink-muted hover:bg-brand-canvas'
+              ? 'bg-brand-primary-subtle text-brand-primary'
+              : 'text-brand-ink-muted hover:bg-brand-primary-ghost hover:text-brand-primary'
           }`}
           aria-expanded={produccionOpen}
           onClick={() => setProduccionOpen((o) => !o)}
         >
-          Producción
-          <ChevronIcon open={produccionOpen} />
+          <IconBuildingFactory2 {...ic.nav} aria-hidden />
+          <span className="min-w-0 flex-1">Producción</span>
+          <IconChevronDown
+            aria-hidden
+            size={16}
+            stroke={1.5}
+            className={`shrink-0 text-brand-ink-faint transition-transform ${produccionOpen ? 'rotate-180' : ''}`}
+          />
         </button>
         <NavCollapsible open={produccionOpen}>
           <div className="mt-1 flex flex-col gap-0.5">
             <NavLink to="/produccion/cortes" className={subItemClass} onClick={onNavigate}>
+              <IconScissors {...ic.navSub} aria-hidden />
               Cortes
             </NavLink>
             <NavLink to="/produccion/costureros" className={subItemClass} onClick={onNavigate}>
+              <IconUsers {...ic.navSub} aria-hidden />
               Costureros
             </NavLink>
           </div>
@@ -107,26 +117,35 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
       <div>
         <button
           type="button"
-          className={`flex w-full items-center rounded-md px-3 py-2 text-left text-sm font-medium transition ${
+          className={`flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-base font-bold transition ${
             location.pathname.startsWith('/inventario')
-              ? 'bg-brand-blush/70 text-brand-ink'
-              : 'text-brand-ink-muted hover:bg-brand-canvas'
+              ? 'bg-brand-primary-subtle text-brand-primary'
+              : 'text-brand-ink-muted hover:bg-brand-primary-ghost hover:text-brand-primary'
           }`}
           aria-expanded={inventarioOpen}
           onClick={() => setInventarioOpen((o) => !o)}
         >
-          Inventario
-          <ChevronIcon open={inventarioOpen} />
+          <IconPackage {...ic.nav} aria-hidden />
+          <span className="min-w-0 flex-1">Inventario</span>
+          <IconChevronDown
+            aria-hidden
+            size={16}
+            stroke={1.5}
+            className={`shrink-0 text-brand-ink-faint transition-transform ${inventarioOpen ? 'rotate-180' : ''}`}
+          />
         </button>
         <NavCollapsible open={inventarioOpen}>
           <div className="mt-1 flex flex-col gap-0.5">
             <NavLink to="/inventario/articulos" className={subItemClass} onClick={onNavigate}>
+              <IconStack {...ic.navSub} aria-hidden />
               Artículos
             </NavLink>
             <NavLink to="/inventario/categorias" className={subItemClass} onClick={onNavigate}>
+              <IconTag {...ic.navSub} aria-hidden />
               Categorías
             </NavLink>
             <NavLink to="/inventario/temporadas" className={subItemClass} onClick={onNavigate}>
+              <IconCalendar {...ic.navSub} aria-hidden />
               Temporadas
             </NavLink>
           </div>
@@ -134,6 +153,7 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
       </div>
 
       <NavLink to="/cuenta" className={itemClass} onClick={onNavigate}>
+        <IconUser {...ic.nav} aria-hidden />
         Cuenta
       </NavLink>
     </nav>
@@ -171,11 +191,18 @@ export function DashboardLayout() {
     <div className="min-h-screen bg-brand-canvas">
       <div className="mx-auto flex min-h-screen w-full max-w-7xl md:max-w-none">
         <aside className="hidden w-56 shrink-0 flex-col border-r border-brand-border bg-brand-surface sm:flex sm:sticky sm:top-0 sm:h-screen">
-          <div className="border-b border-brand-border bg-brand-blush/20 p-4">
-            <p className="text-xs font-semibold uppercase tracking-widest text-brand-primary-hover">
-              JR2 Factory
-            </p>
-            <p className="mt-0.5 text-base font-semibold text-brand-ink">Panel interno</p>
+          <div className="border-b border-brand-border bg-brand-primary-ghost p-4">
+            <div className="flex items-center gap-2">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-brand-border/80 bg-brand-surface text-brand-primary-hover">
+                <IconBuildingFactory2 size={20} stroke={1.5} aria-hidden />
+              </span>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-widest text-brand-primary-hover">
+                  JR2 Factory
+                </p>
+                <p className="mt-0.5 truncate text-base font-semibold text-brand-ink">Panel interno</p>
+              </div>
+            </div>
           </div>
           <div className="flex flex-1 flex-col overflow-y-auto p-3">
             <SidebarNav key={location.pathname} />
@@ -183,9 +210,10 @@ export function DashboardLayout() {
           <div className="border-t border-brand-border p-3">
             <button
               type="button"
-              className="w-full rounded-md px-3 py-2 text-left text-sm text-brand-ink-muted transition hover:bg-red-50 hover:text-red-700"
+              className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-base font-bold text-brand-ink-muted transition hover:bg-red-50 hover:text-red-700"
               onClick={handleLogout}
             >
+              <IconLogout {...ic.nav} aria-hidden />
               Cerrar sesión
             </button>
           </div>
@@ -194,30 +222,32 @@ export function DashboardLayout() {
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-40 border-b border-brand-border bg-brand-surface sm:hidden">
             <div className="flex items-center justify-between gap-3 px-4 py-3">
-              <div className="min-w-0">
-                <p className="truncate text-xs font-semibold uppercase tracking-widest text-brand-primary-hover">
-                  JR2 Factory
-                </p>
-                <p className="truncate text-sm font-semibold text-brand-ink">Panel interno</p>
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-border bg-brand-blush/30 text-brand-primary-hover">
+                  <IconBuildingFactory2 size={18} stroke={1.5} aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-semibold uppercase tracking-widest text-brand-primary-hover">
+                    JR2 Factory
+                  </p>
+                  <p className="truncate text-sm font-semibold text-brand-ink">Panel interno</p>
+                </div>
               </div>
               <button
                 type="button"
-                className="inline-flex items-center gap-2 rounded-md border border-brand-border-strong bg-brand-primary px-3 py-2 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover"
+                className="inline-flex items-center gap-2 rounded-md border border-brand-primary-hover bg-brand-primary px-3 py-2 text-sm font-bold text-brand-on-primary shadow-sm transition hover:bg-brand-primary-hover"
                 aria-expanded={mobileMenuOpen}
                 aria-controls="mobile-dashboard-nav"
                 onClick={() => setMobileMenuOpen((o) => !o)}
               >
+                <IconMenu2 size={18} stroke={1.5} aria-hidden />
                 Menú
-                <svg
+                <IconChevronDown
                   aria-hidden
-                  className={`h-4 w-4 text-brand-ink/70 transition-transform duration-200 ${mobileMenuOpen ? 'rotate-180' : ''}`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                </svg>
+                  size={16}
+                  stroke={1.5}
+                  className={`text-brand-on-primary/85 transition-transform duration-200 ${mobileMenuOpen ? 'rotate-180' : ''}`}
+                />
               </button>
             </div>
           </header>
@@ -252,12 +282,17 @@ export function DashboardLayout() {
                   }}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="flex shrink-0 items-start justify-between gap-3 border-b border-brand-border bg-brand-blush/25 px-4 py-4">
-                    <div id="mobile-drawer-title" className="min-w-0">
-                      <p className="text-xs font-semibold uppercase tracking-widest text-brand-primary-hover">
-                        JR2 Factory
-                      </p>
-                      <p className="mt-0.5 text-sm font-semibold text-brand-ink">Panel interno</p>
+                  <div className="flex shrink-0 items-start justify-between gap-3 border-b border-brand-border bg-brand-primary-ghost px-4 py-4">
+                    <div id="mobile-drawer-title" className="flex min-w-0 items-center gap-2">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-border bg-brand-surface text-brand-primary-hover">
+                        <IconBuildingFactory2 size={18} stroke={1.5} aria-hidden />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold uppercase tracking-widest text-brand-primary-hover">
+                          JR2 Factory
+                        </p>
+                        <p className="mt-0.5 text-sm font-semibold text-brand-ink">Panel interno</p>
+                      </div>
                     </div>
                     <button
                       type="button"
@@ -265,9 +300,7 @@ export function DashboardLayout() {
                       aria-label="Cerrar menú"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                      </svg>
+                      <IconX size={22} stroke={1.5} aria-hidden />
                     </button>
                   </div>
                   <div className="flex flex-1 flex-col overflow-y-auto p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
@@ -277,9 +310,10 @@ export function DashboardLayout() {
                     />
                     <button
                       type="button"
-                      className="mt-6 w-full rounded-md px-3 py-2 text-left text-sm text-brand-ink-muted transition hover:bg-red-50 hover:text-red-700"
+                      className="mt-6 flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-base font-bold text-brand-ink-muted transition hover:bg-red-50 hover:text-red-700"
                       onClick={handleLogout}
                     >
+                      <IconLogout {...ic.nav} aria-hidden />
                       Cerrar sesión
                     </button>
                   </div>

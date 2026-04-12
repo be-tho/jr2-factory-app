@@ -276,7 +276,7 @@ export function EditarArticuloPage() {
         ) : null}
         <Link
           to="/inventario/articulos"
-          className="inline-flex rounded-lg border border-brand-border-strong bg-brand-primary px-4 py-2 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover"
+          className="inline-flex rounded-lg border border-brand-primary-hover bg-brand-primary px-4 py-2 text-sm font-semibold text-brand-on-primary shadow-sm transition hover:bg-brand-primary-hover"
         >
           Volver al listado
         </Link>
@@ -520,7 +520,7 @@ export function EditarArticuloPage() {
           <button
             type="submit"
             disabled={saving || catalogLoading}
-            className="inline-flex justify-center rounded-lg border border-brand-border-strong bg-brand-primary px-5 py-2.5 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex justify-center rounded-lg border border-brand-primary-hover bg-brand-primary px-5 py-2.5 text-sm font-semibold text-brand-on-primary shadow-sm transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
             {saving ? 'Guardando…' : 'Guardar cambios'}
           </button>

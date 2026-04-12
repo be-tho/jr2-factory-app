@@ -1,3 +1,12 @@
+import {
+  IconAlertCircle,
+  IconArrowLeft,
+  IconMoodEmpty,
+  IconPencil,
+  IconRefresh,
+  IconStack,
+  IconTrash,
+} from '@tabler/icons-react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { PageHeader } from '../../../components/ui/PageHeader'
@@ -6,6 +15,7 @@ import {
   hasStorageCoverImage,
 } from '../../../constants/defaultArticleImage'
 import { getProductImagePublicUrl } from '../../media/services/storage.service'
+import { ic } from '../../../lib/tabler'
 import { useDeleteProductMutation, useProductQuery } from '../hooks/useProducts'
 
 export function ArticuloDetailPage() {
@@ -18,11 +28,16 @@ export function ArticuloDetailPage() {
   if (!id) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Artículo" description="Ruta inválida." />
+        <PageHeader
+          title="Artículo"
+          description="Ruta inválida."
+          icon={<IconStack {...ic.header} aria-hidden />}
+        />
         <Link
           to="/inventario/articulos"
-          className="inline-flex rounded-lg border border-brand-border-strong bg-brand-primary px-4 py-2 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover"
+          className="inline-flex items-center gap-2 rounded-lg border border-brand-primary-hover bg-brand-primary px-4 py-2 text-sm font-semibold text-brand-on-primary shadow-sm transition hover:bg-brand-primary-hover"
         >
+          <IconArrowLeft {...ic.btn} aria-hidden />
           Volver al listado
         </Link>
       </div>
@@ -32,7 +47,11 @@ export function ArticuloDetailPage() {
   if (isPending) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Artículo" description="Cargando ficha…" />
+        <PageHeader
+          title="Artículo"
+          description="Cargando ficha…"
+          icon={<IconStack {...ic.header} aria-hidden />}
+        />
         <p className="text-sm text-brand-ink-muted">Cargando…</p>
       </div>
     )
@@ -42,19 +61,25 @@ export function ArticuloDetailPage() {
     const msg = error instanceof Error ? error.message : 'Error desconocido'
     return (
       <div className="space-y-6">
-        <PageHeader title="Error" description="No se pudo cargar el artículo." />
+        <PageHeader
+          title="Error"
+          description="No se pudo cargar el artículo."
+          icon={<IconAlertCircle {...ic.header} aria-hidden />}
+        />
         <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{msg}</p>
         <button
           type="button"
-          className="rounded-lg border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-900 transition hover:bg-red-100"
+          className="inline-flex items-center gap-2 rounded-lg border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-900 transition hover:bg-red-100"
           onClick={() => void refetch()}
         >
+          <IconRefresh size={16} stroke={1.5} className="shrink-0" aria-hidden />
           Reintentar
         </button>
         <Link
           to="/inventario/articulos"
-          className="inline-flex rounded-lg border border-brand-border-strong bg-brand-primary px-4 py-2 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover"
+          className="inline-flex items-center gap-2 rounded-lg border border-brand-primary-hover bg-brand-primary px-4 py-2 text-sm font-semibold text-brand-on-primary shadow-sm transition hover:bg-brand-primary-hover"
         >
+          <IconArrowLeft {...ic.btn} aria-hidden />
           Volver al listado
         </Link>
       </div>
@@ -64,11 +89,16 @@ export function ArticuloDetailPage() {
   if (!article) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Artículo no encontrado" description="Ese artículo no existe o no tenés permiso para verlo." />
+        <PageHeader
+          title="Artículo no encontrado"
+          description="Ese artículo no existe o no tenés permiso para verlo."
+          icon={<IconMoodEmpty {...ic.header} aria-hidden />}
+        />
         <Link
           to="/inventario/articulos"
-          className="inline-flex rounded-lg border border-brand-border-strong bg-brand-primary px-4 py-2 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover"
+          className="inline-flex items-center gap-2 rounded-lg border border-brand-primary-hover bg-brand-primary px-4 py-2 text-sm font-semibold text-brand-on-primary shadow-sm transition hover:bg-brand-primary-hover"
         >
+          <IconArrowLeft {...ic.btn} aria-hidden />
           Volver al listado
         </Link>
       </div>
@@ -106,27 +136,31 @@ export function ArticuloDetailPage() {
         <PageHeader
           title={product.name}
           description={`${product.activo ? 'Activo' : 'Inactivo'} · SKU ${product.sku} · ${[product.category, product.temporada].filter(Boolean).join(' · ') || '—'}`}
+          icon={<IconStack {...ic.header} aria-hidden />}
         />
         <div className="flex shrink-0 flex-col gap-2 self-start sm:flex-row sm:items-center">
           <Link
             to={`/inventario/articulos/${product.id}/editar`}
-            className="inline-flex justify-center rounded-lg border border-brand-border-strong bg-brand-primary px-4 py-2 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-brand-primary-hover bg-brand-primary px-4 py-2 text-sm font-semibold text-brand-on-primary shadow-sm transition hover:bg-brand-primary-hover"
           >
+            <IconPencil {...ic.btn} aria-hidden />
             Editar
           </Link>
           <button
             type="button"
             disabled={deleteMutation.isPending}
             onClick={() => handleDelete()}
-            className="inline-flex justify-center rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-800 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-800 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
+            <IconTrash {...ic.btn} aria-hidden />
             {deleteMutation.isPending ? 'Borrando…' : 'Borrar'}
           </button>
           <Link
             to="/inventario/articulos"
-            className="inline-flex justify-center rounded-lg border border-brand-border bg-brand-surface px-4 py-2 text-sm font-medium text-brand-ink-muted transition hover:border-brand-border-strong hover:text-brand-ink"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-brand-border bg-brand-surface px-4 py-2 text-sm font-medium text-brand-ink-muted transition hover:border-brand-border-strong hover:text-brand-ink"
           >
-            ← Volver
+            <IconArrowLeft {...ic.btn} aria-hidden />
+            Volver
           </Link>
         </div>
       </div>

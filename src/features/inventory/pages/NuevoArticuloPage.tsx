@@ -462,7 +462,7 @@ export function NuevoArticuloPage() {
           <button
             type="submit"
             disabled={saving || catalogLoading || articleIdPendingImage != null}
-            className="inline-flex justify-center rounded-lg border border-brand-border-strong bg-brand-primary px-5 py-2.5 text-sm font-medium text-brand-ink shadow-sm transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex justify-center rounded-lg border border-brand-primary-hover bg-brand-primary px-5 py-2.5 text-sm font-semibold text-brand-on-primary shadow-sm transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
             {saving ? 'Guardando…' : coverImage ? 'Crear artículo e imagen' : 'Crear artículo'}
           </button>
