@@ -232,6 +232,18 @@ export async function updateCorte(
   return getCorteById(id)
 }
 
+export async function patchCorteImagePath(
+  id: string,
+  imagenPath: string,
+): Promise<{ error: Error | null }> {
+  const { error } = await supabase
+    .from(TABLE)
+    .update({ imagen_path: imagenPath })
+    .eq('id', id)
+  if (error) return { error: new Error(error.message) }
+  return { error: null }
+}
+
 export async function deleteCorte(id: string): Promise<{ error: Error | null }> {
   const { error } = await supabase.from(TABLE).delete().eq('id', id)
   if (error) return { error: new Error(error.message) }

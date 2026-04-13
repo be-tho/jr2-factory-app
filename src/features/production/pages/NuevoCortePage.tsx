@@ -1,13 +1,16 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { uploadCorteImage } from '../../media/services/storage.service'
-import { updateCorte } from '../services/cortes.service'
+import { patchCorteImagePath } from '../services/cortes.service'
 import { CorteForm } from '../components/CorteForm'
-import { useCreateCorteMutation } from '../hooks/useCortes'
+import { useCreateCorteMutation, cortesKeys } from '../hooks/useCortes'
 import type { NewCorteInput } from '../services/cortes.service'
 
 export function NuevoCortePage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const createMutation = useCreateCorteMutation()
   const [error, setError] = useState<string | null>(null)
 
@@ -16,21 +19,22 @@ export function NuevoCortePage() {
     try {
       const corte = await createMutation.mutateAsync(input)
 
-      if (imageFile) {
-        try {
-          const { path } = await uploadCorteImage(corte.id, imageFile)
-          await updateCorte(corte.id, { ...input, imagen_path: path })
-        } catch (imgErr) {
-          // Corte creado pero imagen falló: navegar igual, mostrar aviso
-          setError(
-            `El corte se creó, pero la imagen no se guardó: ${imgErr instanceof Error ? imgErr.message : 'error desconocido'}`
-          )
-          navigate(`/produccion/cortes/${corte.id}`, { replace: true })
-          return
-        }
-      }
-
+      // Navegar de inmediato — la imagen se sube en segundo plano
       navigate(`/produccion/cortes/${corte.id}`, { replace: true })
+
+      if (imageFile) {
+        uploadCorteImage(corte.id, imageFile)
+          .then(async ({ path }) => {
+            await patchCorteImagePath(corte.id, path)
+            // Refetch del detalle para que aparezca la imagen
+            void queryClient.invalidateQueries({ queryKey: cortesKeys.detail(corte.id) })
+          })
+          .catch((imgErr: unknown) => {
+            toast.error(
+              `La imagen no se guardó: ${imgErr instanceof Error ? imgErr.message : 'error desconocido'}`,
+            )
+          })
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo crear el corte.')
     }
