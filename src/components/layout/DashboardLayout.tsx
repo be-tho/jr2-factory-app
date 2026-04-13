@@ -62,6 +62,7 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
   const [inventarioOpen, setInventarioOpen] = useState(() =>
     location.pathname.startsWith('/inventario'),
   )
+  const { data: profile } = useProfileQuery()
 
   const itemClass = ({ isActive }: { isActive: boolean }) =>
     `flex items-center gap-2.5 rounded-md px-3 py-2.5 text-base font-bold transition ${
@@ -159,6 +160,13 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
           </div>
         </NavCollapsible>
       </div>
+
+      {profile?.role === 'admin' && (
+        <NavLink to="/usuarios" className={itemClass} onClick={onNavigate}>
+          <IconUsers {...ic.nav} aria-hidden />
+          Usuarios
+        </NavLink>
+      )}
 
       <NavLink to="/cuenta" className={itemClass} onClick={onNavigate}>
         <IconUser {...ic.nav} aria-hidden />

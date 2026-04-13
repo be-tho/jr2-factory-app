@@ -7,6 +7,7 @@ export interface Profile {
   avatar_path: string | null
   role: string | null
   bio: string | null
+  is_active: boolean
   created_at: string
   updated_at: string
 }

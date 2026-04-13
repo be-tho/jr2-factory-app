@@ -1,6 +1,6 @@
 import { IconEye, IconEyeOff, IconUserPlus } from '@tabler/icons-react'
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { AuthCard } from '../../../components/ui/AuthCard'
 import { FormField } from '../../../components/ui/FormField'
@@ -12,21 +12,19 @@ export function RegisterPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setLoading(true)
-    const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
-    setLoading(false)
+    const { error: signUpError } = await supabase.auth.signUp({ email, password })
     if (signUpError) {
       toast.error(signUpError.message)
+      setLoading(false)
       return
     }
-    if (data.session) {
-      toast.success('Registro completado. Ya estás autenticado.')
-    } else {
-      toast.success('Registro completado. Revisá tu correo para confirmar la cuenta.')
-    }
+    toast.success('Cuenta creada. Iniciá sesión para continuar.')
+    navigate('/login', { replace: true })
   }
 
   return (

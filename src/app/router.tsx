@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { DashboardLayout } from '../components/layout/DashboardLayout'
-import { ProtectedRoute, PublicRoute } from './guards'
+import { AdminRoute, ProtectedRoute, PublicRoute } from './guards'
 
 const CuentaPage = lazy(() =>
   import('../features/account/pages/CuentaPage').then((m) => ({ default: m.CuentaPage })),
@@ -63,6 +63,9 @@ const PatronDetailPage = lazy(() =>
 const EditarPatronPage = lazy(() =>
   import('../features/patterns/pages/EditarPatronPage').then((m) => ({ default: m.EditarPatronPage })),
 )
+const AdminUsersPage = lazy(() =>
+  import('../features/admin/pages/AdminUsersPage').then((m) => ({ default: m.AdminUsersPage })),
+)
 
 function RouteFallback() {
   return (
@@ -101,6 +104,9 @@ export function AppRouter() {
             <Route path="/inventario/temporadas/nueva" element={<NuevaTemporadaPage />} />
             <Route path="/inventario/temporadas/:id/editar" element={<EditarTemporadaPage />} />
             <Route path="/cuenta" element={<CuentaPage />} />
+            <Route element={<AdminRoute />}>
+              <Route path="/usuarios" element={<AdminUsersPage />} />
+            </Route>
           </Route>
           <Route path="/productos" element={<Navigate to="/inventario/articulos" replace />} />
         </Route>
