@@ -1,7 +1,57 @@
-import { lazy, Suspense } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { lazy, Suspense, useEffect } from 'react'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { DashboardLayout } from '../components/layout/DashboardLayout'
 import { AdminRoute, ProtectedRoute, PublicRoute } from './guards'
+
+const APP_NAME = 'JR2-MODA'
+
+const ROUTE_TITLES: Array<{ pattern: RegExp | string; title: string }> = [
+  { pattern: '/login', title: 'Ingresar' },
+  { pattern: '/registro', title: 'Registro' },
+  { pattern: '/dashboard', title: 'Dashboard' },
+  { pattern: /^\/produccion\/cortes\/[^/]+\/editar$/, title: 'Editar Corte' },
+  { pattern: /^\/produccion\/cortes\/[^/]+$/, title: 'Detalle Corte' },
+  { pattern: '/produccion/cortes/nuevo', title: 'Nuevo Corte' },
+  { pattern: '/produccion/cortes', title: 'Cortes' },
+  { pattern: /^\/produccion\/costureros\/[^/]+\/editar$/, title: 'Editar Costurero' },
+  { pattern: /^\/produccion\/costureros\/[^/]+$/, title: 'Detalle Costurero' },
+  { pattern: '/produccion/costureros/nuevo', title: 'Nuevo Costurero' },
+  { pattern: '/produccion/costureros', title: 'Costureros' },
+  { pattern: /^\/produccion\/patrones\/[^/]+\/editar$/, title: 'Editar Patrón' },
+  { pattern: /^\/produccion\/patrones\/[^/]+$/, title: 'Detalle Patrón' },
+  { pattern: '/produccion/patrones/nuevo', title: 'Nuevo Patrón' },
+  { pattern: '/produccion/patrones', title: 'Patrones' },
+  { pattern: /^\/inventario\/articulos\/[^/]+\/editar$/, title: 'Editar Artículo' },
+  { pattern: /^\/inventario\/articulos\/[^/]+$/, title: 'Detalle Artículo' },
+  { pattern: '/inventario/articulos/nuevo', title: 'Nuevo Artículo' },
+  { pattern: '/inventario/articulos', title: 'Artículos' },
+  { pattern: /^\/inventario\/categorias\/[^/]+\/editar$/, title: 'Editar Categoría' },
+  { pattern: '/inventario/categorias/nueva', title: 'Nueva Categoría' },
+  { pattern: '/inventario/categorias', title: 'Categorías' },
+  { pattern: /^\/inventario\/temporadas\/[^/]+\/editar$/, title: 'Editar Temporada' },
+  { pattern: '/inventario/temporadas/nueva', title: 'Nueva Temporada' },
+  { pattern: '/inventario/temporadas', title: 'Temporadas' },
+  { pattern: '/cuenta', title: 'Mi Cuenta' },
+  { pattern: '/usuarios', title: 'Usuarios' },
+]
+
+function resolveTitle(pathname: string): string {
+  for (const { pattern, title } of ROUTE_TITLES) {
+    if (typeof pattern === 'string' ? pathname === pattern : pattern.test(pathname)) {
+      return title
+    }
+  }
+  return ''
+}
+
+function PageTitleManager() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    const section = resolveTitle(pathname)
+    document.title = section ? `${APP_NAME} | ${section}` : APP_NAME
+  }, [pathname])
+  return null
+}
 
 const CuentaPage = lazy(() =>
   import('../features/account/pages/CuentaPage').then((m) => ({ default: m.CuentaPage })),
@@ -96,6 +146,7 @@ function RouteFallback() {
 export function AppRouter() {
   return (
     <Suspense fallback={<RouteFallback />}>
+      <PageTitleManager />
       <Routes>
         <Route element={<PublicRoute />}>
           <Route path="/login" element={<LoginPage />} />
