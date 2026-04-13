@@ -7,6 +7,7 @@ export interface Profile {
   avatar_path: string | null
   role: string | null
   bio: string | null
+  is_active: boolean
   created_at: string
   updated_at: string
 }
@@ -100,4 +101,66 @@ export interface Patron extends PatronRow {
   articulo_nombre: string
   articulo_sku: string
   articulo_cover_image_path: string | null
+}
+
+// ─── Cortes Textiles ───────────────────────────────────────────────────────────
+
+export type CorteEstado = 'pendiente' | 'en_proceso' | 'completado' | 'cancelado'
+
+/** Fila cruda de `public.cortes`. */
+export interface CorteRow {
+  id: string
+  numero_corte: string
+  tipo_tela: string
+  cantidad_total: number
+  costureros: string | null
+  estado: CorteEstado
+  fecha: string
+  descripcion: string | null
+  imagen_path: string | null
+  created_at: string
+  updated_at: string
+}
+
+/** Fila de `public.corte_colores`. */
+export interface CorteColor {
+  id: string
+  corte_id: string
+  color: string
+  cantidad: number
+}
+
+/** Artículo embebido dentro de un corte (para listados). */
+export interface CorteArticuloEmbed {
+  articulo_id: string
+  nombre: string
+  codigo: string
+  cover_image_path: string | null
+}
+
+/** Modelo de vista para listados y detalle de cortes (artículos y colores embebidos). */
+export interface Corte extends CorteRow {
+  articulos: CorteArticuloEmbed[]
+  colores: Omit<CorteColor, 'corte_id'>[]
+}
+
+// ─── Costureros ───────────────────────────────────────────────────────────────
+
+export type TipoDocumento = 'DNI' | 'CUIL' | 'CUIT'
+
+/** Fila de `public.costureros`. */
+export interface Costurero {
+  id: string
+  nombre_completo: string
+  telefono: string | null
+  email: string | null
+  direccion: string | null
+  tipo_documento: TipoDocumento
+  numero_documento: string
+  /** CBU o alias bancario — para pagos futuros. */
+  cbu_alias: string | null
+  notas: string | null
+  activo: boolean
+  created_at: string
+  updated_at: string
 }

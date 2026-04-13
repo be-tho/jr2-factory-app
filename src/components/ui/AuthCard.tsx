@@ -1,4 +1,5 @@
 import type { PropsWithChildren, ReactNode } from 'react'
+import { BrandLogo } from './BrandLogo'
 
 type AuthCardProps = PropsWithChildren<{
   title: string
@@ -10,9 +11,10 @@ export function AuthCard({ title, subtitle, icon, children }: AuthCardProps) {
   return (
     <section className="grid min-h-screen place-items-center bg-linear-to-b from-brand-canvas via-brand-surface to-brand-blush/25 px-4 py-12">
       <div className="w-full max-w-md rounded-2xl border border-brand-border bg-brand-surface p-8 shadow-sm shadow-brand-ink/5 ring-1 ring-brand-border-subtle">
-        <div className="mb-6 border-b border-brand-border-subtle pb-6">
-          <p className="text-xs font-semibold uppercase tracking-widest text-brand-primary-hover">JR2 Factory</p>
-          <div className="mt-2 flex items-start gap-3">
+        {/* Brand header */}
+        <div className="mb-6 flex flex-col items-center gap-4 border-b border-brand-border-subtle pb-6">
+          <BrandLogo size="lg" showText subtitle="Panel interno" />
+          <div className="flex items-start gap-3 self-stretch">
             {icon ? (
               <span
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-brand-border bg-brand-blush/25 text-brand-primary-hover"

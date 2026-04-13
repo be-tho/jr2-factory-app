@@ -16,6 +16,7 @@ import {
   IconUsers,
   IconX,
 } from '@tabler/icons-react'
+import { BrandLogo } from '../ui/BrandLogo'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { NavLink, useLocation } from 'react-router-dom'
 import { ic } from '../../lib/tabler'
@@ -62,6 +63,7 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
   const [inventarioOpen, setInventarioOpen] = useState(() =>
     location.pathname.startsWith('/inventario'),
   )
+  const { data: profile } = useProfileQuery()
 
   const itemClass = ({ isActive }: { isActive: boolean }) =>
     `flex items-center gap-2.5 rounded-md px-3 py-2.5 text-base font-bold transition ${
@@ -160,6 +162,13 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
         </NavCollapsible>
       </div>
 
+      {profile?.role === 'admin' && (
+        <NavLink to="/usuarios" className={itemClass} onClick={onNavigate}>
+          <IconUsers {...ic.nav} aria-hidden />
+          Usuarios
+        </NavLink>
+      )}
+
       <NavLink to="/cuenta" className={itemClass} onClick={onNavigate}>
         <IconUser {...ic.nav} aria-hidden />
         Cuenta
@@ -239,17 +248,7 @@ export function DashboardLayout() {
       <div className="mx-auto flex min-h-screen w-full max-w-7xl md:max-w-none">
         <aside className="hidden w-56 shrink-0 flex-col border-r border-brand-border bg-brand-surface sm:flex sm:sticky sm:top-0 sm:h-screen">
           <div className="border-b border-brand-border bg-brand-primary-ghost p-4">
-            <div className="flex items-center gap-2">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-brand-border/80 bg-brand-surface text-brand-primary-hover">
-                <IconBuildingFactory2 size={20} stroke={1.5} aria-hidden />
-              </span>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-widest text-brand-primary-hover">
-                  JR2 Factory
-                </p>
-                <p className="mt-0.5 truncate text-base font-semibold text-brand-ink">Panel interno</p>
-              </div>
-            </div>
+            <BrandLogo size="md" showText subtitle="Panel interno" />
           </div>
           <div className="flex flex-1 flex-col overflow-y-auto p-3">
             <SidebarNav key={location.pathname} />
@@ -270,17 +269,7 @@ export function DashboardLayout() {
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-40 border-b border-brand-border bg-brand-surface sm:hidden">
             <div className="flex items-center justify-between gap-3 px-4 py-3">
-              <div className="flex min-w-0 items-center gap-2">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-border bg-brand-blush/30 text-brand-primary-hover">
-                  <IconBuildingFactory2 size={18} stroke={1.5} aria-hidden />
-                </span>
-                <div className="min-w-0">
-                  <p className="truncate text-xs font-semibold uppercase tracking-widest text-brand-primary-hover">
-                    JR2 Factory
-                  </p>
-                  <p className="truncate text-sm font-semibold text-brand-ink">Panel interno</p>
-                </div>
-              </div>
+              <BrandLogo size="sm" showText subtitle="Panel interno" className="min-w-0" />
               <button
                 type="button"
                 className="inline-flex items-center gap-2 rounded-md border border-brand-primary-hover bg-brand-primary px-3 py-2 text-sm font-bold text-brand-on-primary shadow-sm transition hover:bg-brand-primary-hover"
@@ -331,16 +320,8 @@ export function DashboardLayout() {
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="flex shrink-0 items-start justify-between gap-3 border-b border-brand-border bg-brand-primary-ghost px-4 py-4">
-                    <div id="mobile-drawer-title" className="flex min-w-0 items-center gap-2">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-border bg-brand-surface text-brand-primary-hover">
-                        <IconBuildingFactory2 size={18} stroke={1.5} aria-hidden />
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold uppercase tracking-widest text-brand-primary-hover">
-                          JR2 Factory
-                        </p>
-                        <p className="mt-0.5 text-sm font-semibold text-brand-ink">Panel interno</p>
-                      </div>
+                    <div id="mobile-drawer-title" className="flex min-w-0 items-center">
+                      <BrandLogo size="md" showText subtitle="Panel interno" />
                     </div>
                     <button
                       type="button"

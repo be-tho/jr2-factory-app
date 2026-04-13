@@ -156,3 +156,57 @@ export async function removeProductImage(storagePath: string) {
   const { error } = await supabase.storage.from(PRODUCTS_BUCKET).remove([storagePath])
   if (error) throw error
 }
+
+// ─── Cortes Storage (private bucket "cortes") ─────────────────────────────────
+
+export const CORTES_BUCKET = 'cortes'
+
+/** Ruta dentro del bucket: `images/<corteId>/<timestamp>-plantilla.webp`. */
+export function buildCorteImageObjectPath(corteId: string, file: File): string {
+  const safeBase = sanitizeFileName(baseNameWithoutExtension(file.name))
+  const unique = `${Date.now()}-${safeBase}`
+  return `images/${corteId}/${unique}`
+}
+
+/**
+ * Optimiza y sube la plantilla de corte al bucket privado `cortes`.
+ * JPEG/PNG/WebP → WebP; el resto se sube tal cual.
+ */
+export async function uploadCorteImage(
+  corteId: string,
+  file: File,
+): Promise<{ path: string }> {
+  const validationError = validateImageFile(file)
+  if (validationError) throw new Error(validationError)
+
+  const toUpload = await prepareProductImageFileForStorage(file)
+  if (toUpload.size > MAX_BYTES) {
+    throw new Error('Tras optimizar, la imagen sigue siendo demasiado grande.')
+  }
+
+  const path = buildCorteImageObjectPath(corteId, toUpload)
+  const { data, error } = await supabase.storage.from(CORTES_BUCKET).upload(path, toUpload, {
+    upsert: false,
+    contentType: toUpload.type || undefined,
+  })
+
+  if (error) throw new Error(error.message)
+  return { path: data.path }
+}
+
+/**
+ * Genera una URL firmada (válida 2 horas) para mostrar la imagen privada.
+ * Retorna `null` si falla en lugar de lanzar.
+ */
+export async function getCorteImageSignedUrl(storagePath: string): Promise<string | null> {
+  const { data, error } = await supabase.storage
+    .from(CORTES_BUCKET)
+    .createSignedUrl(storagePath, 60 * 60 * 2)
+  if (error || !data?.signedUrl) return null
+  return data.signedUrl
+}
+
+export async function removeCorteImage(storagePath: string): Promise<void> {
+  const { error } = await supabase.storage.from(CORTES_BUCKET).remove([storagePath])
+  if (error) throw new Error(error.message)
+}

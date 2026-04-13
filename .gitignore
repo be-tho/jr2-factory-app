@@ -26,5 +26,7 @@ dist-ssr
 #sql files
 database-estructura.sql
 
-#el md de claude
-claude.md
+#restringir todos los archivos md excepto el readme.md
+*.md
+!readme.md
+
