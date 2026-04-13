@@ -30,3 +30,7 @@ database-estructura.sql
 *.md
 !readme.md
 
+# Cursor agent skills (IDE-specific, no subir a git)
+# Descomenta la línea de abajo si no querés incluirlo:
+# .agents/
+
