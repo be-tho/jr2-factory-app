@@ -1,6 +1,6 @@
-import { IconEye, IconEyeOff, IconLogin } from '@tabler/icons-react'
+import { IconClock, IconEye, IconEyeOff, IconLogin } from '@tabler/icons-react'
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import { AuthCard } from '../../../components/ui/AuthCard'
 import { FormField } from '../../../components/ui/FormField'
@@ -12,20 +12,42 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const location = useLocation()
+  const pendingActivation = (location.state as { pendingActivation?: boolean } | null)?.pendingActivation === true
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setLoading(true)
+
     const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-    setLoading(false)
+
     if (signInError) {
+      setLoading(false)
       toast.error(signInError.message)
-    } else {
-      const name = data.user?.email?.split('@')[0] ?? 'usuario'
-      toast.success(`¡Bienvenido, ${name}!`, {
-        description: 'Sesión iniciada correctamente.',
-      })
+      return
     }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_active')
+      .eq('id', data.user.id)
+      .maybeSingle()
+
+    if (profile?.is_active === false) {
+      await supabase.auth.signOut()
+      setLoading(false)
+      toast.warning('Tu cuenta aún no fue habilitada.', {
+        description: 'El administrador te activará pronto. Volvé a intentarlo más tarde.',
+        duration: 6000,
+      })
+      return
+    }
+
+    setLoading(false)
+    const name = data.user?.email?.split('@')[0] ?? 'usuario'
+    toast.success(`¡Bienvenido, ${name}!`, {
+      description: 'Sesión iniciada correctamente.',
+    })
   }
 
   return (
@@ -34,6 +56,18 @@ export function LoginPage() {
       subtitle="Inicia sesion para entrar al dashboard."
       icon={<IconLogin {...ic.headerSm} aria-hidden />}
     >
+      {pendingActivation && (
+        <div className="mb-4 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <IconClock size={18} stroke={1.5} className="mt-0.5 shrink-0 text-amber-600" aria-hidden />
+          <div>
+            <p className="text-sm font-semibold text-amber-800">Cuenta pendiente de activación</p>
+            <p className="mt-0.5 text-xs text-amber-700">
+              Tu correo fue verificado correctamente. El administrador habilitará tu cuenta pronto.
+            </p>
+          </div>
+        </div>
+      )}
+
       <form className="space-y-4" onSubmit={handleSubmit}>
         <FormField
           label="Email"

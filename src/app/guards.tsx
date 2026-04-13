@@ -8,11 +8,14 @@ export function ProtectedRoute() {
   const { session, loading } = useSession()
   const { data: profile } = useProfileQuery()
 
+  // Solo es inactivo cuando el perfil ya cargó (no undefined) y is_active es false
+  const isInactive = profile !== undefined && profile?.is_active === false
+
   useEffect(() => {
-    if (profile && profile.is_active === false) {
+    if (isInactive) {
       void supabase.auth.signOut()
     }
-  }, [profile])
+  }, [isInactive])
 
   if (loading) {
     return (
@@ -20,12 +23,25 @@ export function ProtectedRoute() {
     )
   }
 
+  // Sesión limpia: redirigir al login.
+  // Si isInactive es true (perfil en caché aún con is_active=false), pasamos el state
+  // para que LoginPage muestre el mensaje de cuenta pendiente.
   if (!session) {
-    return <Navigate to="/login" replace />
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={isInactive ? { pendingActivation: true } : undefined}
+      />
+    )
   }
 
-  if (profile?.is_active === false) {
-    return <Navigate to="/login" replace />
+  // Sesión aún activa pero cuenta inactiva: mostrar pantalla de espera
+  // mientras el signOut (del efecto) se procesa y limpia la sesión.
+  if (isInactive) {
+    return (
+      <p className="bg-brand-canvas p-6 text-sm text-brand-ink-muted">Verificando cuenta...</p>
+    )
   }
 
   return <Outlet />

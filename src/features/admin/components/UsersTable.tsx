@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { IconCheck, IconLoader2, IconPencil, IconUserOff, IconUserCheck, IconX } from '@tabler/icons-react'
+import { IconCheck, IconLoader2, IconPencil, IconX } from '@tabler/icons-react'
 import { useSession } from '../../../hooks/useSession'
 import { useAdminUsersQuery, useUpdateUserRoleMutation, useSetUserActiveMutation } from '../hooks/useAdminUsers'
 import type { Profile } from '../../../types/database'
@@ -41,18 +41,48 @@ function RoleBadge({ role }: { role: string | null }) {
   )
 }
 
-function StatusBadge({ active }: { active: boolean }) {
+function ActiveToggle({
+  userId,
+  isActive,
+  isSelf,
+}: {
+  userId: string
+  isActive: boolean
+  isSelf: boolean
+}) {
+  const { mutate: setActive, isPending } = useSetUserActiveMutation()
+
   return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${
-        active
-          ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
-          : 'bg-red-50 text-red-600 ring-red-200'
-      }`}
-    >
-      <span className={`h-1.5 w-1.5 rounded-full ${active ? 'bg-emerald-500' : 'bg-red-400'}`} />
-      {active ? 'Activo' : 'Inactivo'}
-    </span>
+    <div className="flex items-center gap-2.5">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={isActive}
+        disabled={isPending || isSelf}
+        onClick={() => {
+          if (!isSelf) setActive({ userId, is_active: !isActive })
+        }}
+        title={isSelf ? 'No podés desactivar tu propia cuenta' : isActive ? 'Desactivar usuario' : 'Activar usuario'}
+        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 ${
+          isActive ? 'bg-emerald-500' : 'bg-gray-300'
+        }`}
+      >
+        {isPending ? (
+          <span className="absolute inset-0 flex items-center justify-center">
+            <IconLoader2 size={12} stroke={2} className="animate-spin text-white" />
+          </span>
+        ) : (
+          <span
+            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition-transform duration-200 ${
+              isActive ? 'translate-x-4' : 'translate-x-0'
+            }`}
+          />
+        )}
+      </button>
+      <span className={`text-xs font-medium ${isActive ? 'text-emerald-700' : 'text-gray-400'}`}>
+        {isActive ? 'Activo' : 'Inactivo'}
+      </span>
+    </div>
   )
 }
 
@@ -133,7 +163,6 @@ function RoleEditor({
 
 function UserRow({ user, currentUserId }: { user: Profile; currentUserId: string }) {
   const [editingRole, setEditingRole] = useState(false)
-  const { mutate: setActive, isPending: togglingActive } = useSetUserActiveMutation()
   const isSelf = user.id === currentUserId
 
   const displayName = user.full_name?.trim() || '(sin nombre)'
@@ -142,10 +171,6 @@ function UserRow({ user, currentUserId }: { user: Profile; currentUserId: string
     month: 'short',
     day: 'numeric',
   })
-
-  function handleToggleActive() {
-    setActive({ userId: user.id, is_active: !user.is_active })
-  }
 
   return (
     <tr className="border-b border-brand-border transition hover:bg-brand-primary-ghost/40">
@@ -168,45 +193,21 @@ function UserRow({ user, currentUserId }: { user: Profile; currentUserId: string
         )}
       </td>
       <td className="px-4 py-3">
-        <StatusBadge active={user.is_active} />
+        <ActiveToggle userId={user.id} isActive={user.is_active} isSelf={isSelf} />
       </td>
       <td className="px-4 py-3 text-sm text-brand-ink-muted">{registeredDate}</td>
       <td className="px-4 py-3">
-        <div className="flex items-center gap-2">
-          {!editingRole && (
-            <button
-              type="button"
-              onClick={() => setEditingRole(true)}
-              className="flex items-center gap-1.5 rounded-md border border-brand-border px-2.5 py-1.5 text-xs font-medium text-brand-ink-muted transition hover:border-brand-primary hover:text-brand-primary"
-              title="Editar rol"
-            >
-              <IconPencil size={13} stroke={1.5} />
-              Editar rol
-            </button>
-          )}
-          {!isSelf && (
-            <button
-              type="button"
-              onClick={handleToggleActive}
-              disabled={togglingActive}
-              className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition disabled:opacity-60 ${
-                user.is_active
-                  ? 'border-red-200 text-red-600 hover:bg-red-50'
-                  : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
-              }`}
-              title={user.is_active ? 'Desactivar usuario' : 'Activar usuario'}
-            >
-              {togglingActive ? (
-                <IconLoader2 size={13} stroke={1.5} className="animate-spin" />
-              ) : user.is_active ? (
-                <IconUserOff size={13} stroke={1.5} />
-              ) : (
-                <IconUserCheck size={13} stroke={1.5} />
-              )}
-              {user.is_active ? 'Desactivar' : 'Activar'}
-            </button>
-          )}
-        </div>
+        {!editingRole && (
+          <button
+            type="button"
+            onClick={() => setEditingRole(true)}
+            className="flex items-center gap-1.5 rounded-md border border-brand-border px-2.5 py-1.5 text-xs font-medium text-brand-ink-muted transition hover:border-brand-primary hover:text-brand-primary"
+            title="Editar rol"
+          >
+            <IconPencil size={13} stroke={1.5} />
+            Editar rol
+          </button>
+        )}
       </td>
     </tr>
   )
