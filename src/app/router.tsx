@@ -48,6 +48,15 @@ const TemporadasPage = lazy(() =>
 const CortesPage = lazy(() =>
   import('../features/production/pages/CortesPage').then((m) => ({ default: m.CortesPage })),
 )
+const NuevoCortePage = lazy(() =>
+  import('../features/production/pages/NuevoCortePage').then((m) => ({ default: m.NuevoCortePage })),
+)
+const EditarCortePage = lazy(() =>
+  import('../features/production/pages/EditarCortePage').then((m) => ({ default: m.EditarCortePage })),
+)
+const CorteDetailPage = lazy(() =>
+  import('../features/production/pages/CorteDetailPage').then((m) => ({ default: m.CorteDetailPage })),
+)
 const CosturerosPage = lazy(() =>
   import('../features/production/pages/CosturerosPage').then((m) => ({ default: m.CosturerosPage })),
 )
@@ -88,6 +97,9 @@ export function AppRouter() {
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/produccion/cortes" element={<CortesPage />} />
+            <Route path="/produccion/cortes/nuevo" element={<NuevoCortePage />} />
+            <Route path="/produccion/cortes/:id" element={<CorteDetailPage />} />
+            <Route path="/produccion/cortes/:id/editar" element={<EditarCortePage />} />
             <Route path="/produccion/costureros" element={<CosturerosPage />} />
             <Route path="/produccion/patrones" element={<PatronesPage />} />
             <Route path="/produccion/patrones/nuevo" element={<NuevoPatronPage />} />

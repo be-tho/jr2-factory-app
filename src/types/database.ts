@@ -102,3 +102,44 @@ export interface Patron extends PatronRow {
   articulo_sku: string
   articulo_cover_image_path: string | null
 }
+
+// ─── Cortes Textiles ───────────────────────────────────────────────────────────
+
+export type CorteEstado = 'pendiente' | 'en_proceso' | 'completado' | 'cancelado'
+
+/** Fila cruda de `public.cortes`. */
+export interface CorteRow {
+  id: string
+  numero_corte: string
+  tipo_tela: string
+  cantidad_total: number
+  costureros: string | null
+  estado: CorteEstado
+  fecha: string
+  descripcion: string | null
+  imagen_path: string | null
+  created_at: string
+  updated_at: string
+}
+
+/** Fila de `public.corte_colores`. */
+export interface CorteColor {
+  id: string
+  corte_id: string
+  color: string
+  cantidad: number
+}
+
+/** Artículo embebido dentro de un corte (para listados). */
+export interface CorteArticuloEmbed {
+  articulo_id: string
+  nombre: string
+  codigo: string
+  cover_image_path: string | null
+}
+
+/** Modelo de vista para listados y detalle de cortes (artículos y colores embebidos). */
+export interface Corte extends CorteRow {
+  articulos: CorteArticuloEmbed[]
+  colores: Omit<CorteColor, 'corte_id'>[]
+}
