@@ -1,5 +1,6 @@
 import {
   IconArrowLeft,
+  IconCheck,
   IconExternalLink,
   IconPhoto,
   IconScissors,
@@ -239,7 +240,36 @@ export function CorteForm({ mode, initialData, onSubmit, saving, error }: CorteF
         </Link>
       </div>
 
-      <form onSubmit={(e) => void handleSubmit(e)} className="space-y-6">
+      <form onSubmit={(e) => void handleSubmit(e)} className="relative space-y-6">
+        {/* Loading overlay */}
+        {saving && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-xl bg-white/75 backdrop-blur-[2px]">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-md ring-1 ring-black/8">
+              <svg
+                className="h-7 w-7 animate-spin text-brand-primary"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12" cy="12" r="10"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                />
+                <path
+                  className="opacity-80"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
+              </svg>
+            </div>
+            <p className="text-sm font-semibold text-brand-ink">
+              {mode === 'create' ? 'Creando corte…' : 'Guardando cambios…'}
+            </p>
+            <p className="text-xs text-brand-ink-faint">Por favor esperá un momento</p>
+          </div>
+        )}
         {/* Información básica */}
         <section className={sectionCardClass}>
           <SectionHeader
@@ -522,17 +552,24 @@ export function CorteForm({ mode, initialData, onSubmit, saving, error }: CorteF
           <button
             type="submit"
             disabled={saving || Boolean(imageError)}
-            className="inline-flex justify-center rounded-lg bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex min-w-40 items-center justify-center gap-2 rounded-lg bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {saving
-              ? 'Guardando…'
-              : mode === 'create'
-                ? imageFile
-                  ? 'Crear corte con imagen'
-                  : 'Crear corte'
-                : imageFile
-                  ? 'Guardar con nueva imagen'
-                  : 'Guardar cambios'}
+            {saving ? (
+              <>
+                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                  <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                {mode === 'create' ? 'Creando…' : 'Guardando…'}
+              </>
+            ) : (
+              <>
+                <IconCheck size={15} stroke={2.5} aria-hidden />
+                {mode === 'create'
+                  ? imageFile ? 'Crear corte con imagen' : 'Crear corte'
+                  : imageFile ? 'Guardar con nueva imagen' : 'Guardar cambios'}
+              </>
+            )}
           </button>
         </div>
       </form>

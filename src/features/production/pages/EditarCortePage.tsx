@@ -11,17 +11,17 @@ export function EditarCortePage() {
   const { data: corte, isPending: loading, isError } = useCorteQuery(id)
   const updateMutation = useUpdateCorteMutation()
   const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
 
   async function handleSubmit(input: NewCorteInput, imageFile: File | null) {
     if (!id) return
     setError(null)
+    setSubmitting(true)
     try {
       let imagen_path = input.imagen_path
 
       if (imageFile) {
-        // Upload new image first
         const { path } = await uploadCorteImage(id, imageFile)
-        // Remove old image if it existed
         if (input.imagen_path) {
           await removeCorteImage(input.imagen_path).catch(() => {})
         }
@@ -29,9 +29,12 @@ export function EditarCortePage() {
       }
 
       await updateMutation.mutateAsync({ id, input: { ...input, imagen_path } })
+
+      // No hacemos setSubmitting(false): el componente se desmonta al navegar.
       navigate(`/produccion/cortes/${id}`, { replace: true })
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo actualizar el corte.')
+      setSubmitting(false)
     }
   }
 
@@ -58,7 +61,7 @@ export function EditarCortePage() {
         mode="edit"
         initialData={corte}
         onSubmit={handleSubmit}
-        saving={updateMutation.isPending}
+        saving={submitting}
         error={error}
       />
     </div>

@@ -13,20 +13,22 @@ export function NuevoCortePage() {
   const queryClient = useQueryClient()
   const createMutation = useCreateCorteMutation()
   const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
 
   async function handleSubmit(input: NewCorteInput, imageFile: File | null) {
     setError(null)
+    setSubmitting(true)
     try {
       const corte = await createMutation.mutateAsync(input)
 
-      // Navegar de inmediato — la imagen se sube en segundo plano
+      // Navegar de inmediato — la imagen se sube en segundo plano.
+      // No hacemos setSubmitting(false): el componente se desmonta al navegar.
       navigate(`/produccion/cortes/${corte.id}`, { replace: true })
 
       if (imageFile) {
         uploadCorteImage(corte.id, imageFile)
           .then(async ({ path }) => {
             await patchCorteImagePath(corte.id, path)
-            // Refetch del detalle para que aparezca la imagen
             void queryClient.invalidateQueries({ queryKey: cortesKeys.detail(corte.id) })
           })
           .catch((imgErr: unknown) => {
@@ -37,6 +39,7 @@ export function NuevoCortePage() {
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo crear el corte.')
+      setSubmitting(false)
     }
   }
 
@@ -45,7 +48,7 @@ export function NuevoCortePage() {
       <CorteForm
         mode="create"
         onSubmit={handleSubmit}
-        saving={createMutation.isPending}
+        saving={submitting}
         error={error}
       />
     </div>
