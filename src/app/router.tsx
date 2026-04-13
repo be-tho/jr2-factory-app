@@ -60,6 +60,15 @@ const CorteDetailPage = lazy(() =>
 const CosturerosPage = lazy(() =>
   import('../features/production/pages/CosturerosPage').then((m) => ({ default: m.CosturerosPage })),
 )
+const NuevoCostureroPage = lazy(() =>
+  import('../features/production/pages/NuevoCostureroPage').then((m) => ({ default: m.NuevoCostureroPage })),
+)
+const EditarCostureroPage = lazy(() =>
+  import('../features/production/pages/EditarCostureroPage').then((m) => ({ default: m.EditarCostureroPage })),
+)
+const CostureroDetailPage = lazy(() =>
+  import('../features/production/pages/CostureroDetailPage').then((m) => ({ default: m.CostureroDetailPage })),
+)
 const PatronesPage = lazy(() =>
   import('../features/patterns/pages/PatronesPage').then((m) => ({ default: m.PatronesPage })),
 )
@@ -101,6 +110,9 @@ export function AppRouter() {
             <Route path="/produccion/cortes/:id" element={<CorteDetailPage />} />
             <Route path="/produccion/cortes/:id/editar" element={<EditarCortePage />} />
             <Route path="/produccion/costureros" element={<CosturerosPage />} />
+            <Route path="/produccion/costureros/nuevo" element={<NuevoCostureroPage />} />
+            <Route path="/produccion/costureros/:id" element={<CostureroDetailPage />} />
+            <Route path="/produccion/costureros/:id/editar" element={<EditarCostureroPage />} />
             <Route path="/produccion/patrones" element={<PatronesPage />} />
             <Route path="/produccion/patrones/nuevo" element={<NuevoPatronPage />} />
             <Route path="/produccion/patrones/:id/editar" element={<EditarPatronPage />} />

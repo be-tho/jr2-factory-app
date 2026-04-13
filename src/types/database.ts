@@ -143,3 +143,24 @@ export interface Corte extends CorteRow {
   articulos: CorteArticuloEmbed[]
   colores: Omit<CorteColor, 'corte_id'>[]
 }
+
+// ─── Costureros ───────────────────────────────────────────────────────────────
+
+export type TipoDocumento = 'DNI' | 'CUIL' | 'CUIT'
+
+/** Fila de `public.costureros`. */
+export interface Costurero {
+  id: string
+  nombre_completo: string
+  telefono: string | null
+  email: string | null
+  direccion: string | null
+  tipo_documento: TipoDocumento
+  numero_documento: string
+  /** CBU o alias bancario — para pagos futuros. */
+  cbu_alias: string | null
+  notas: string | null
+  activo: boolean
+  created_at: string
+  updated_at: string
+}
