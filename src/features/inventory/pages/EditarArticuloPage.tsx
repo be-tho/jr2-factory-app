@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { DEFAULT_ARTICLE_IMAGE_PUBLIC_URL, hasStorageCoverImage } from '../../../constants/defaultArticleImage'
 import { FormField } from '../../../components/ui/FormField'
@@ -13,7 +14,8 @@ import {
 } from '../../media/services/storage.service'
 import { useArticuloImagenesQuery } from '../hooks/useArticuloImagenes'
 import { useCategoriasQuery } from '../hooks/useCategorias'
-import { useProductQuery, useUpdateProductMutation } from '../hooks/useProducts'
+import { articuloImagenesKeys } from '../hooks/useArticuloImagenes'
+import { useProductQuery, useUpdateProductMutation, productsKeys } from '../hooks/useProducts'
 import { useTemporadasCatalogQuery } from '../hooks/useTemporadas'
 import {
   createArticuloImagen,
@@ -42,6 +44,7 @@ export function EditarArticuloPage() {
   const coverInputId = useId()
   const coverFileInputRef = useRef<HTMLInputElement>(null)
 
+  const queryClient = useQueryClient()
   const productQ = useProductQuery(id)
   const imagenesQ = useArticuloImagenesQuery(id)
   const categoriasQ = useCategoriasQuery()
@@ -225,6 +228,11 @@ export function EditarArticuloPage() {
     try {
       if (coverImage) {
         await replaceCoverWithNewFile(id, coverImage)
+        // Re-invalidate after image upload so the cache reflects the new path,
+        // not the stale one from the earlier updateMutation.onSuccess flush.
+        void queryClient.invalidateQueries({ queryKey: productsKeys.all })
+        void queryClient.invalidateQueries({ queryKey: productsKeys.detail(id) })
+        void queryClient.invalidateQueries({ queryKey: articuloImagenesKeys.byArticulo(id) })
       }
     } catch (imErr) {
       setSaving(false)

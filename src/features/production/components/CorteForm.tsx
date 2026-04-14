@@ -143,7 +143,7 @@ export function CorteForm({ mode, initialData, onSubmit, saving, error }: CorteF
 
   // ─── Modals ─────────────────────────────────────────────────────────────────
   const [showPicker, setShowPicker] = useState(false)
-  const [imageTarget, setImageTarget] = useState<Product | null>(null)
+  const [imageTarget, setImageTarget] = useState<{ nombre: string; codigo: string; cover_image_path: string | null } | null>(null)
 
   function removeArticulo(id: string) {
     setArticulos((prev) => prev.filter((a) => a.id !== id))
@@ -380,7 +380,7 @@ export function CorteForm({ mode, initialData, onSubmit, saving, error }: CorteF
                       <button
                         type="button"
                         aria-label={`Ver imagen de ${art.name}`}
-                        onClick={() => setImageTarget(art)}
+                        onClick={() => setImageTarget({ nombre: art.name, codigo: art.sku, cover_image_path: art.cover_image_path })}
                         className="group relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-brand-border bg-white transition hover:ring-2 hover:ring-brand-primary/40"
                       >
                         <img
