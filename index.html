@@ -1,10 +1,129 @@
 <!doctype html>
-<html lang="en">
+<html lang="es-AR">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>JR2-MODA</title>
+
+    <!-- ── Identidad y descripción ──────────────────────────────────────── -->
+    <title>JR2 Moda | Sistema de Gestión Operativa</title>
+    <meta name="application-name" content="JR2 Moda" />
+    <meta
+      name="description"
+      content="Plataforma integral de gestión operativa para JR2 Moda. Control de inventario, trazabilidad de producción, administración de costureros y gestión de patrones en tiempo real."
+    />
+    <meta
+      name="keywords"
+      content="JR2 Moda, gestión de fábrica, inventario textil, producción de indumentaria, control de cortes, gestión de costureros, patrones de moldería, software de moda"
+    />
+    <meta name="author" content="JR2 Moda" />
+    <meta name="copyright" content="JR2 Moda © 2025" />
+    <meta name="generator" content="JR2 Factory App" />
+
+    <!-- ── Privacidad: sistema interno, no indexar ───────────────────────── -->
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="googlebot" content="noindex, nofollow" />
+
+    <!-- ── Open Graph — cómo se ve al compartir el link ─────────────────── -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="JR2 Moda" />
+    <meta property="og:url" content="https://app.jr2moda.store" />
+    <meta property="og:title" content="JR2 Moda | Sistema de Gestión Operativa" />
+    <meta
+      property="og:description"
+      content="Plataforma integral de gestión operativa para JR2 Moda. Control de inventario, trazabilidad de producción, administración de costureros y gestión de patrones en tiempo real."
+    />
+    <meta property="og:image" content="https://app.jr2moda.store/icons/icon-512.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="Logotipo JR2 Moda" />
+    <meta property="og:locale" content="es_AR" />
+
+    <!-- ── Twitter / X Card ──────────────────────────────────────────────── -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="JR2 Moda | Sistema de Gestión Operativa" />
+    <meta
+      name="twitter:description"
+      content="Control de inventario, producción y costureros para la fábrica JR2 Moda."
+    />
+    <meta name="twitter:image" content="https://app.jr2moda.store/icons/icon-512.png" />
+
+    <!-- ── PWA / instalación como app de escritorio ──────────────────────── -->
+    <meta name="theme-color" content="#eb3d63" />
+    <meta name="color-scheme" content="light" />
+
+    <!-- iOS / Safari -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="JR2 Moda" />
+    <link rel="apple-touch-icon" href="/icons/icon-180.png" />
+
+    <!-- Windows tile / Edge -->
+    <meta name="msapplication-TileColor" content="#eb3d63" />
+    <meta name="msapplication-TileImage" content="/icons/icon-144.png" />
+    <meta name="msapplication-tooltip" content="JR2 Moda — Gestión de Fábrica" />
+    <meta name="msapplication-starturl" content="/dashboard" />
+
+    <!-- ── Favicons ───────────────────────────────────────────────────────── -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+
+    <!-- ── Datos estructurados: Organización (Schema.org) ────────────────── -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "JR2 Moda",
+      "description": "Empresa de fabricación y comercialización de indumentaria. Especializada en producción de prendas con control integral de inventario, cortes y moldería.",
+      "url": "https://app.jr2moda.store",
+      "logo": "https://app.jr2moda.store/icons/icon-512.png",
+      "image": "https://app.jr2moda.store/icons/icon-512.png",
+      "foundingDate": "2020",
+      "numberOfEmployees": {
+        "@type": "QuantitativeValue",
+        "minValue": 1,
+        "maxValue": 50
+      },
+      "industry": "Fabricación de indumentaria y textiles",
+      "knowsAbout": [
+        "Fabricación de indumentaria",
+        "Diseño textil",
+        "Gestión de producción",
+        "Moldería y patrones",
+        "Control de inventario"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "Administración",
+        "availableLanguage": "Spanish"
+      }
+    }
+    </script>
+
+    <!-- ── Datos estructurados: SoftwareApplication ───────────────────────── -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "JR2 Moda — Sistema de Gestión Operativa",
+      "description": "Sistema web integral para la gestión operativa de JR2 Moda. Módulos de inventario de artículos, control de cortes de producción, administración de costureros, gestión de patrones de moldería y panel de indicadores en tiempo real.",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web, Windows, macOS, iOS, Android",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "ARS"
+      },
+      "featureList": [
+        "Gestión de inventario de artículos de indumentaria",
+        "Control de cortes de producción con trazabilidad",
+        "Administración de costureros con datos fiscales",
+        "Gestión de patrones de moldería digitales",
+        "Dashboard con indicadores clave de producción",
+        "Categorías y temporadas de colecciones",
+        "Control de stock y alertas de reposición"
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>
