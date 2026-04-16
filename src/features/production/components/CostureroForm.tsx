@@ -1,8 +1,6 @@
 import {
   IconArrowLeft,
   IconCheck,
-  IconId,
-  IconMail,
   IconMapPin,
   IconPhone,
   IconUser,

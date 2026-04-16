@@ -11,7 +11,6 @@ import {
   IconX,
 } from '@tabler/icons-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ic } from '../../../lib/tabler'
 import {
   useCostureroQuery,
   useDeleteCostureroMutation,

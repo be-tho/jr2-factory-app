@@ -1,0 +1,18 @@
+# JR2 Moda — SPA routing para Apache
+# Sirve archivos y carpetas que existen directamente (CSS, JS, PNG, etc.)
+# Todo lo demás va a index.html para que React Router maneje las rutas
+
+Options -MultiViews
+RewriteEngine On
+RewriteBase /
+
+# Si es un archivo real que existe → servirlo directo (JS, CSS, PNG, SVG, etc.)
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Si es un directorio real que existe → servirlo directo
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Todo lo demás → index.html (rutas de React Router)
+RewriteRule ^ index.html [QSA,L]

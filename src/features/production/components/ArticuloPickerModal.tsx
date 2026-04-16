@@ -26,7 +26,7 @@ export function ArticuloPickerModal({ selected, onConfirm, onClose }: ArticuloPi
   const { data: allProducts = [], isPending } = useProductsQuery()
   const [query, setQuery] = useState('')
   const [picking, setPicking] = useState<Set<string>>(new Set(selected.map((p) => p.id)))
-  const [imageTarget, setImageTarget] = useState<Product | null>(null)
+  const [imageTarget, setImageTarget] = useState<{ nombre: string; codigo: string; cover_image_path: string | null } | null>(null)
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -174,7 +174,7 @@ export function ArticuloPickerModal({ selected, onConfirm, onClose }: ArticuloPi
                           aria-label={`Ver imagen de ${product.name}`}
                           onClick={(e) => {
                             e.preventDefault()
-                            setImageTarget(product)
+                            setImageTarget({ nombre: product.name, codigo: product.sku, cover_image_path: product.cover_image_path })
                           }}
                           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-brand-ink-faint transition hover:bg-brand-blush/30 hover:text-brand-primary"
                         >

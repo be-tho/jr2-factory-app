@@ -78,7 +78,16 @@ export async function prepareProductImageFileForStorage(file: File): Promise<Fil
     }
 
     const safeBase = sanitizeFileName(baseNameWithoutExtension(file.name))
-    return new File([blob], `${safeBase}.webp`, { type: 'image/webp' })
+    // canvas.toBlob can fall back to PNG on iOS Safari (no WebP encoding support).
+    // Use the blob's actual type so Content-Type stored in Supabase matches the real bytes.
+    const actualType = blob.type && blob.type !== '' ? blob.type : 'image/webp'
+    const extMap: Record<string, string> = {
+      'image/webp': 'webp',
+      'image/png': 'png',
+      'image/jpeg': 'jpg',
+    }
+    const ext = extMap[actualType] ?? 'webp'
+    return new File([blob], `${safeBase}.${ext}`, { type: actualType })
   } finally {
     bitmap.close()
   }
