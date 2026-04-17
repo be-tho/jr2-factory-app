@@ -12,6 +12,7 @@ import {
   IconRuler,
   IconScissors,
   IconTag,
+  IconTruck,
   IconUser,
   IconUsers,
   IconX,
@@ -161,6 +162,11 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
           </div>
         </NavCollapsible>
       </div>
+
+      <NavLink to="/envios" className={itemClass} onClick={onNavigate}>
+        <IconTruck {...ic.nav} aria-hidden />
+        Envíos
+      </NavLink>
 
       {profile?.role === 'admin' && (
         <NavLink to="/usuarios" className={itemClass} onClick={onNavigate}>
