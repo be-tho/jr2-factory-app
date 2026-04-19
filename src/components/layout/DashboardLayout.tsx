@@ -24,7 +24,8 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { ic } from '../../lib/tabler'
 import { supabase } from '../../lib/supabase/client'
 import { useSession } from '../../hooks/useSession'
-import { useAvatarUrl, useProfileQuery } from '../../features/account/hooks/useProfile'
+import { ProfileAvatarImage } from '../../features/account/components/ProfileAvatarImage'
+import { useProfileQuery } from '../../features/account/hooks/useProfile'
 import { PageTransition } from './PageTransition'
 
 const menuEase = [0.22, 1, 0.36, 1] as const
@@ -192,7 +193,6 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
 function SidebarUserCard() {
   const { session } = useSession()
   const { data: profile } = useProfileQuery()
-  const { data: avatarUrl } = useAvatarUrl(profile?.avatar_path)
   const displayName =
     profile?.full_name?.trim() || session?.user.email?.split('@')[0] || 'Usuario'
   const email = session?.user.email ?? ''
@@ -209,13 +209,13 @@ function SidebarUserCard() {
       className="flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors duration-150 hover:bg-brand-primary-ghost"
     >
       <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full border border-brand-border bg-brand-primary-ghost">
-        {avatarUrl ? (
-          <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-xs font-bold text-brand-primary">
-            {initials || <IconUser size={14} stroke={1.5} />}
-          </div>
-        )}
+        <ProfileAvatarImage
+          storagePath={profile?.avatar_path}
+          alt={displayName}
+          className="h-full w-full"
+          initials={initials}
+          iconSize={14}
+        />
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-[#3d3b4f]">{displayName}</p>

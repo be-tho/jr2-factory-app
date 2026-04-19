@@ -6,6 +6,7 @@ import {
 } from '../../../constants/defaultArticleImage'
 import type { Product } from '../../../types/database'
 import { getProductImagePublicUrl } from '../../media/services/storage.service'
+import { cn } from '../../../lib/utils'
 import { effectiveSaleUnitPrice, formatARS, resolvedCartUnitPrice } from '../lib/pricing'
 
 type VentaProductCardProps = {
@@ -31,7 +32,7 @@ export function VentaProductCard({ product, quantityInCart, onAdd }: VentaProduc
   const disabled = !product.activo || stock <= 0
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-brand-surface ring-1 ring-brand-border transition hover:shadow-lg hover:ring-brand-blush-deep">
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-brand-surface shadow-[0_6px_28px_-18px_rgba(44,40,41,0.2)] ring-1 ring-brand-border transition hover:shadow-[0_16px_40px_-24px_rgba(235,61,99,0.28)] hover:ring-brand-blush-deep/70">
       {!product.activo && (
         <span className="absolute left-3 top-3 z-10 rounded-full bg-brand-ink/75 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
           Inactivo
@@ -74,7 +75,7 @@ export function VentaProductCard({ product, quantityInCart, onAdd }: VentaProduc
           type="button"
           disabled={disabled}
           onClick={onAdd}
-          className="mt-auto inline-flex items-center justify-center gap-2 rounded-xl bg-brand-primary py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-auto inline-flex items-center justify-center gap-2 rounded-xl bg-brand-primary py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-primary/25 transition hover:bg-brand-primary-hover hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
         >
           <IconShoppingCart size={18} stroke={2} aria-hidden />
           {disabled ? (stock <= 0 ? 'Sin stock' : 'No disponible') : 'Agregar'}
@@ -91,6 +92,7 @@ export function CartLineRow({
   onDec,
   onInc,
   onRemove,
+  className,
 }: {
   line: import('../store/cartStore').CartLine
   product?: import('../../../types/database').Product
@@ -98,6 +100,7 @@ export function CartLineRow({
   onDec: () => void
   onInc: () => void
   onRemove: () => void
+  className?: string
 }) {
   const unit = resolvedCartUnitPrice(line, product)
   const sub = line.cantidad * unit
@@ -105,7 +108,12 @@ export function CartLineRow({
   const fuenteLabel =
     fuente === 'manual' ? 'Manual' : fuente === 'promo' ? 'Promo' : 'Lista'
   return (
-    <div className="flex gap-3 rounded-xl border border-brand-border-subtle bg-white p-3">
+    <div
+      className={cn(
+        'flex gap-3 rounded-xl border border-brand-border-subtle bg-white p-3 shadow-[0_2px_16px_-10px_rgba(44,40,41,0.12)] ring-1 ring-black/3',
+        className,
+      )}
+    >
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-brand-ink">{line.nombre}</p>
         <p className="font-mono text-xs text-brand-ink-faint">{line.sku}</p>

@@ -14,7 +14,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { FormField } from '../../../components/ui/FormField'
 import { useSession } from '../../../hooks/useSession'
-import { useAvatarUrl, useProfileQuery, useUpdateProfileMutation } from '../hooks/useProfile'
+import { ProfileAvatarImage } from '../components/ProfileAvatarImage'
+import { useProfileQuery, useUpdateProfileMutation } from '../hooks/useProfile'
 import {
   uploadAvatar,
   validateAvatarFile,
@@ -171,8 +172,6 @@ export function CuentaPage() {
     CARGO_OPTIONS.find((o) => o.value === (profile?.role ?? ''))?.label ??
     profile?.role ??
     null
-  const { data: signedAvatarUrl } = useAvatarUrl(profile?.avatar_path)
-  const avatarUrl = avatarPreview ?? signedAvatarUrl ?? null
   const initials = displayName
     .split(' ')
     .filter(Boolean)
@@ -212,17 +211,15 @@ export function CuentaPage() {
               {/* Avatar */}
               <div className="relative -mt-10 shrink-0">
                 <div className="h-20 w-20 overflow-hidden rounded-full border-4 border-white bg-brand-primary-ghost shadow-md">
-                  {avatarUrl ? (
-                    <img
-                      src={avatarUrl}
-                      alt={displayName}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-xl font-bold text-brand-primary">
-                      {initials || <IconUser size={28} stroke={1.5} />}
-                    </div>
-                  )}
+                  <ProfileAvatarImage
+                    storagePath={profile?.avatar_path}
+                    previewUrl={avatarPreview}
+                    alt={displayName}
+                    className="h-full w-full"
+                    initials={initials}
+                    initialsClassName="text-xl"
+                    iconSize={28}
+                  />
                 </div>
                 {isEditing && (
                   <label

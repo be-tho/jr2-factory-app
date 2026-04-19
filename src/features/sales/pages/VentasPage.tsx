@@ -1,11 +1,23 @@
-import { IconSearch, IconShoppingCart } from '@tabler/icons-react'
-import { useMemo, useState } from 'react'
+import {
+  IconChevronLeft,
+  IconChevronRight,
+  IconPackage,
+  IconSearch,
+  IconShoppingCart,
+} from '@tabler/icons-react'
+import { motion, useReducedMotion } from 'framer-motion'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { ic } from '../../../lib/tabler'
 import { useProductsQuery } from '../../inventory/hooks/useProducts'
 import { VentasCartModal } from '../components/VentasCartModal'
 import { VentaProductCard } from '../components/VentaProductCard'
 import { useCartStore } from '../store/cartStore'
+
+const PAGE_SIZE = 8
+
+const searchInputClass =
+  'w-full rounded-2xl border-2 border-brand-border bg-brand-surface py-3 pl-11 pr-4 text-sm text-brand-ink shadow-sm outline-none transition placeholder:text-brand-ink-faint focus:border-brand-primary focus:ring-4 focus:ring-brand-blush/35'
 
 function normalize(str: string): string {
   return str
@@ -15,13 +27,80 @@ function normalize(str: string): string {
     .trim()
 }
 
+function CatalogPagination({
+  page,
+  totalPages,
+  totalItems,
+  onPageChange,
+}: {
+  page: number
+  totalPages: number
+  totalItems: number
+  onPageChange: (p: number) => void
+}) {
+  const start = totalItems === 0 ? 0 : (page - 1) * PAGE_SIZE + 1
+  const end = Math.min(page * PAGE_SIZE, totalItems)
+
+  return (
+    <nav
+      className="flex flex-col gap-4 border-t border-brand-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between"
+      aria-label="Paginación del catálogo"
+    >
+      <p className="text-center text-sm text-brand-ink-muted sm:text-left">
+        {totalItems === 0 ? (
+          'Sin resultados'
+        ) : (
+          <>
+            Mostrando{' '}
+            <span className="font-semibold tabular-nums text-brand-ink">
+              {start}–{end}
+            </span>{' '}
+            de <span className="font-semibold tabular-nums text-brand-ink">{totalItems}</span>
+          </>
+        )}
+      </p>
+
+      <div className="flex items-center justify-center gap-2 sm:justify-end">
+        <button
+          type="button"
+          disabled={page <= 1}
+          onClick={() => onPageChange(page - 1)}
+          className="inline-flex items-center gap-1 rounded-xl border border-brand-border bg-brand-surface px-3 py-2 text-sm font-semibold text-brand-ink shadow-sm transition hover:border-brand-border-strong hover:bg-brand-canvas disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <IconChevronLeft size={18} stroke={2} aria-hidden />
+          Anterior
+        </button>
+
+        <span className="min-w-28 text-center text-sm tabular-nums text-brand-ink-muted">
+          Página <span className="font-semibold text-brand-ink">{page}</span> / {totalPages}
+        </span>
+
+        <button
+          type="button"
+          disabled={page >= totalPages}
+          onClick={() => onPageChange(page + 1)}
+          className="inline-flex items-center gap-1 rounded-xl border border-brand-border bg-brand-surface px-3 py-2 text-sm font-semibold text-brand-ink shadow-sm transition hover:border-brand-border-strong hover:bg-brand-canvas disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Siguiente
+          <IconChevronRight size={18} stroke={2} aria-hidden />
+        </button>
+      </div>
+    </nav>
+  )
+}
+
 export function VentasPage() {
+  const reduceMotion = useReducedMotion()
+  const catalogRef = useRef<HTMLElement>(null)
+  const skipScrollRef = useRef(true)
+
   const { data: products = [], isPending: loading } = useProductsQuery()
   const lines = useCartStore((s) => s.lines)
   const addProduct = useCartStore((s) => s.addProduct)
 
   const [search, setSearch] = useState('')
   const [cartOpen, setCartOpen] = useState(false)
+  const [page, setPage] = useState(1)
 
   const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products])
 
@@ -34,6 +113,29 @@ export function VentasPage() {
       return hay.includes(q)
     })
   }, [products, search])
+
+  const totalPages = Math.max(1, Math.ceil(ventaProducts.length / PAGE_SIZE))
+
+  useEffect(() => {
+    setPage(1)
+  }, [search])
+
+  useEffect(() => {
+    setPage((p) => Math.min(p, totalPages))
+  }, [totalPages])
+
+  const pageProducts = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE
+    return ventaProducts.slice(start, start + PAGE_SIZE)
+  }, [ventaProducts, page])
+
+  useEffect(() => {
+    if (skipScrollRef.current) {
+      skipScrollRef.current = false
+      return
+    }
+    catalogRef.current?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' })
+  }, [page, reduceMotion])
 
   const qtyByArticulo = useMemo(() => {
     const m = new Map<string, number>()
@@ -49,76 +151,151 @@ export function VentasPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-2xl font-bold tracking-tight text-brand-ink">Ventas</h1>
-          <p className="mt-1 text-sm text-brand-ink-muted">
-            Catálogo para registrar ventas; tocá el carrito para revisar el pedido y cerrar en checkout.
-          </p>
-        </div>
-        <div className="flex shrink-0 justify-end sm:pt-0.5">
-          <button
-            type="button"
-            onClick={() => setCartOpen(true)}
-            aria-label={
-              cartBadgeCount > 0 ? `Abrir carrito, ${cartBadgeCount} unidades` : 'Abrir carrito'
-            }
-            className="relative inline-flex h-11 w-11 items-center justify-center rounded-xl border border-brand-border-strong bg-brand-surface text-brand-primary shadow-sm ring-1 ring-black/5 transition hover:border-brand-primary/40 hover:bg-brand-primary-ghost active:scale-[0.98]"
-          >
-            <IconShoppingCart {...ic.header} aria-hidden />
-            {cartBadgeCount > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-primary px-1 text-[11px] font-bold leading-none text-white shadow-sm tabular-nums">
-                {cartBadgeCount > 99 ? '99+' : cartBadgeCount}
-              </span>
-            )}
-          </button>
-        </div>
-      </div>
-
-      <div className="relative max-w-md">
-        <IconSearch
-          size={15}
-          stroke={1.5}
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-brand-ink-faint"
+    <motion.div
+      initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] as const }}
+      className="mx-auto max-w-6xl"
+    >
+      {/* Franja marca + hero */}
+      <div className="relative overflow-hidden rounded-3xl border border-brand-border bg-brand-surface shadow-[0_20px_50px_-28px_rgba(235,61,99,0.22)] ring-1 ring-black/4">
+        <div
+          className="h-1.5 w-full bg-linear-to-r from-brand-primary via-brand-blush-deep to-brand-primary"
           aria-hidden
         />
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar por nombre, SKU, categoría…"
-          className="w-full rounded-lg border border-brand-border-strong bg-brand-surface py-2 pl-9 pr-3 text-sm text-brand-ink outline-none transition placeholder:text-brand-ink-faint focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50"
-        />
+        <div className="flex flex-col gap-6 p-6 sm:flex-row sm:items-start sm:justify-between sm:p-8">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-primary-ghost text-brand-primary shadow-sm ring-1 ring-brand-blush/35">
+                <IconPackage {...ic.headerSm} aria-hidden />
+              </span>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-brand-ink md:text-3xl">Ventas</h1>
+                <p className="mt-1 max-w-xl text-sm leading-relaxed text-brand-ink-muted">
+                  Catálogo para armar pedidos. Abrí el carrito cuando quieras revisar cantidades y seguí al checkout para
+                  cerrar la venta.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
+            <button
+              type="button"
+              onClick={() => setCartOpen(true)}
+              aria-label={
+                cartBadgeCount > 0 ? `Abrir carrito, ${cartBadgeCount} unidades` : 'Abrir carrito de compras'
+              }
+              className="relative inline-flex h-12 items-center justify-center gap-2 rounded-2xl border-2 border-brand-border-strong bg-brand-surface px-5 text-sm font-semibold text-brand-primary shadow-md transition hover:border-brand-primary/50 hover:bg-brand-primary-ghost hover:shadow-lg active:scale-[0.99] sm:min-w-48"
+            >
+              <IconShoppingCart {...ic.inline} aria-hidden />
+              <span>Carrito</span>
+              {cartBadgeCount > 0 && (
+                <span className="absolute -right-1.5 -top-1.5 flex h-6 min-w-6 items-center justify-center rounded-full bg-brand-primary px-1.5 text-[11px] font-bold leading-none text-white shadow-md tabular-nums">
+                  {cartBadgeCount > 99 ? '99+' : cartBadgeCount}
+                </span>
+              )}
+            </button>
+            <p className="text-center text-[11px] text-brand-ink-faint sm:text-right">
+              Desde {PAGE_SIZE} artículos por página
+            </p>
+          </div>
+        </div>
       </div>
 
-      {loading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-72 animate-pulse rounded-2xl bg-brand-border" />
-          ))}
+      {/* Búsqueda */}
+      <div className="mt-8">
+        <label htmlFor="ventas-buscar" className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-brand-ink-faint">
+          Buscar en catálogo
+        </label>
+        <div className="relative max-w-xl">
+          <IconSearch
+            size={18}
+            stroke={1.5}
+            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-brand-ink-faint"
+            aria-hidden
+          />
+          <input
+            id="ventas-buscar"
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Nombre, SKU, categoría o temporada…"
+            className={searchInputClass}
+            autoComplete="off"
+          />
         </div>
-      ) : ventaProducts.length === 0 ? (
-        <div className="rounded-xl border-2 border-dashed border-brand-border py-16 text-center">
-          <p className="font-semibold text-brand-ink">No hay artículos para mostrar</p>
-          <p className="mt-1 text-sm text-brand-ink-faint">
-            {search ? 'Probá otra búsqueda.' : 'No hay artículos activos en inventario.'}
-          </p>
+      </div>
+
+      {/* Catálogo */}
+      <section
+        ref={catalogRef}
+        aria-labelledby="ventas-catalogo-heading"
+        className="mt-10 rounded-3xl border border-brand-border-subtle bg-brand-canvas/40 p-5 shadow-inner ring-1 ring-black/3 sm:p-8"
+      >
+        <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 id="ventas-catalogo-heading" className="text-sm font-bold uppercase tracking-[0.14em] text-brand-ink-faint">
+              Artículos activos
+            </h2>
+            {!loading && (
+              <p className="mt-1 text-sm text-brand-ink-muted">
+                {ventaProducts.length === 0
+                  ? 'No hay coincidencias con tu búsqueda.'
+                  : `${ventaProducts.length} resultado${ventaProducts.length !== 1 ? 's' : ''}`}
+              </p>
+            )}
+          </div>
         </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {ventaProducts.map((p) => (
-            <VentaProductCard
-              key={p.id}
-              product={p}
-              quantityInCart={qtyByArticulo.get(p.id) ?? 0}
-              onAdd={() => handleAdd(p)}
-            />
-          ))}
-        </div>
-      )}
+
+        {loading ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: PAGE_SIZE }).map((_, i) => (
+              <div key={i} className="overflow-hidden rounded-2xl bg-brand-surface ring-1 ring-brand-border">
+                <div className="aspect-4/3 animate-pulse bg-brand-border" />
+                <div className="space-y-3 p-4">
+                  <div className="h-4 max-w-[90%] animate-pulse rounded bg-brand-border" />
+                  <div className="h-3 w-1/3 animate-pulse rounded bg-brand-border" />
+                  <div className="h-9 w-full animate-pulse rounded-xl bg-brand-border" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : ventaProducts.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-brand-border-strong bg-brand-surface/90 px-8 py-16 text-center ring-1 ring-black/3">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-primary-ghost text-brand-primary">
+              <IconSearch size={28} stroke={1.5} aria-hidden />
+            </div>
+            <p className="font-semibold text-brand-ink">No hay artículos para mostrar</p>
+            <p className="mt-2 text-sm text-brand-ink-muted">
+              {search ? 'Probá otra búsqueda o borrá el filtro.' : 'No hay artículos activos en inventario.'}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {pageProducts.map((p) => (
+                <VentaProductCard
+                  key={p.id}
+                  product={p}
+                  quantityInCart={qtyByArticulo.get(p.id) ?? 0}
+                  onAdd={() => handleAdd(p)}
+                />
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <CatalogPagination
+                page={page}
+                totalPages={totalPages}
+                totalItems={ventaProducts.length}
+                onPageChange={setPage}
+              />
+            )}
+          </>
+        )}
+      </section>
 
       <VentasCartModal open={cartOpen} onClose={() => setCartOpen(false)} productById={productById} />
-    </div>
+    </motion.div>
   )
 }
