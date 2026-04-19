@@ -36,6 +36,8 @@ const ROUTE_TITLES: Array<{ pattern: RegExp | string; title: string }> = [
   { pattern: /^\/envios\/[^/]+\/editar$/, title: 'Editar dirección de envío' },
   { pattern: /^\/envios\/[^/]+$/, title: 'Detalle envío' },
   { pattern: '/envios', title: 'Envíos' },
+  { pattern: '/ventas/checkout', title: 'Checkout venta' },
+  { pattern: '/ventas', title: 'Ventas' },
   { pattern: '/usuarios', title: 'Usuarios' },
 ]
 
@@ -150,6 +152,12 @@ const ClienteEnvioDetailPage = lazy(() =>
 const EditarClienteEnvioPage = lazy(() =>
   import('../features/envios/pages/EditarClienteEnvioPage').then((m) => ({ default: m.EditarClienteEnvioPage })),
 )
+const VentasPage = lazy(() =>
+  import('../features/sales/pages/VentasPage').then((m) => ({ default: m.VentasPage })),
+)
+const VentasCheckoutPage = lazy(() =>
+  import('../features/sales/pages/VentasCheckoutPage').then((m) => ({ default: m.VentasCheckoutPage })),
+)
 
 function RouteFallback() {
   return (
@@ -198,6 +206,8 @@ export function AppRouter() {
             <Route path="/envios/nuevo" element={<NuevoClienteEnvioPage />} />
             <Route path="/envios/:id/editar" element={<EditarClienteEnvioPage />} />
             <Route path="/envios/:id" element={<ClienteEnvioDetailPage />} />
+            <Route path="/ventas/checkout" element={<VentasCheckoutPage />} />
+            <Route path="/ventas" element={<VentasPage />} />
             <Route path="/cuenta" element={<CuentaPage />} />
             <Route element={<AdminRoute />}>
               <Route path="/usuarios" element={<AdminUsersPage />} />

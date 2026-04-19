@@ -193,3 +193,30 @@ export interface ClienteEnvio {
   created_at: string
   updated_at: string
 }
+
+// ─── Ventas (órdenes registradas en checkout) ───────────────────────────────
+
+export type MedioPagoVenta = 'efectivo' | 'transferencia'
+
+/** `public.ordenes_venta` — cabecera de venta desde la sección Ventas. */
+export interface OrdenVentaRow {
+  id: string
+  cliente_nombre: string
+  cliente_telefono: string | null
+  medio_pago: MedioPagoVenta
+  total: number
+  estado: string
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+
+/** `public.ordenes_venta_items` — líneas con precio snapshot. */
+export interface OrdenVentaItemRow {
+  id: string
+  orden_id: string
+  articulo_id: string
+  cantidad: number
+  precio_unitario: number
+  subtotal: number
+}

@@ -11,6 +11,7 @@ import {
   IconPackage,
   IconRuler,
   IconScissors,
+  IconShoppingCart,
   IconTag,
   IconTruck,
   IconUser,
@@ -166,6 +167,11 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
       <NavLink to="/envios" className={itemClass} onClick={onNavigate}>
         <IconTruck {...ic.nav} aria-hidden />
         Envíos
+      </NavLink>
+
+      <NavLink to="/ventas" className={itemClass} onClick={onNavigate}>
+        <IconShoppingCart {...ic.nav} aria-hidden />
+        Ventas
       </NavLink>
 
       {profile?.role === 'admin' && (
