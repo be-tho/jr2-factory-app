@@ -1,8 +1,13 @@
 import { supabase } from '../../../lib/supabase/client'
 import { isProvinciaArgentina, type ProvinciaArgentina } from '../../../lib/argentina-provincias'
 import type { ClienteEnvio } from '../../../types/database'
+import { CTC_GOOGLE_MAPS_EMBED_URL, CTC_GOOGLE_MAPS_URL } from '../lib/ctc-campus'
 
 const TABLE = 'clientes_envio'
+
+function parseCatalogo(v: unknown): 'ctc' | null {
+  return v === 'ctc' ? 'ctc' : null
+}
 
 function parseClienteEnvio(raw: unknown): ClienteEnvio | null {
   if (!raw || typeof raw !== 'object') return null
@@ -29,6 +34,10 @@ function parseClienteEnvio(raw: unknown): ClienteEnvio | null {
     maps_embed_url: typeof r.maps_embed_url === 'string' ? r.maps_embed_url : null,
     zonas_envio,
     notas: typeof r.notas === 'string' ? r.notas : null,
+    telefono: typeof r.telefono === 'string' ? r.telefono : null,
+    horario_atencion: typeof r.horario_atencion === 'string' ? r.horario_atencion : null,
+    observaciones: typeof r.observaciones === 'string' ? r.observaciones : null,
+    catalogo_origen: parseCatalogo(r.catalogo_origen),
     activo: typeof r.activo === 'boolean' ? r.activo : true,
     created_at: typeof r.created_at === 'string' ? r.created_at : new Date().toISOString(),
     updated_at: typeof r.updated_at === 'string' ? r.updated_at : new Date().toISOString(),
@@ -44,10 +53,14 @@ export interface ClienteEnvioInput {
   maps_embed_url?: string | null
   zonas_envio: string
   notas?: string | null
+  telefono?: string | null
+  horario_atencion?: string | null
+  observaciones?: string | null
   activo?: boolean
 }
 
-export async function listClientesEnvio(): Promise<{ data: ClienteEnvio[]; error: Error | null }> {
+/** Todos los registros: direcciones propias + catálogo CTC. */
+export async function listAllClientesEnvio(): Promise<{ data: ClienteEnvio[]; error: Error | null }> {
   const { data, error } = await supabase
     .from(TABLE)
     .select('*')
@@ -78,6 +91,10 @@ export async function createClienteEnvio(
       maps_embed_url: input.maps_embed_url?.trim() || null,
       zonas_envio: input.zonas_envio.trim(),
       notas: input.notas?.trim() || null,
+      telefono: input.telefono?.trim() || null,
+      horario_atencion: input.horario_atencion?.trim() || null,
+      observaciones: input.observaciones?.trim() || null,
+      catalogo_origen: null,
       activo: input.activo ?? true,
     })
     .select('*')
@@ -91,6 +108,15 @@ export async function updateClienteEnvio(
   id: string,
   input: ClienteEnvioInput,
 ): Promise<{ data: ClienteEnvio | null; error: Error | null }> {
+  const { data: existing, error: fetchErr } = await getClienteEnvioById(id)
+  if (fetchErr) return { data: null, error: fetchErr }
+  if (!existing) return { data: null, error: new Error('No se encontró el registro.') }
+
+  /** Catálogo CTC: una sola ubicación; link e iframe iguales para todas las filas (`ctc-campus`). */
+  const isCtc = existing.catalogo_origen === 'ctc'
+  const maps_url = isCtc ? CTC_GOOGLE_MAPS_URL : input.maps_url.trim()
+  const maps_embed_url = isCtc ? CTC_GOOGLE_MAPS_EMBED_URL : input.maps_embed_url?.trim() || null
+
   const { data, error } = await supabase
     .from(TABLE)
     .update({
@@ -98,10 +124,13 @@ export async function updateClienteEnvio(
       direccion: input.direccion.trim(),
       localidad: input.localidad?.trim() || null,
       provincia: input.provincia,
-      maps_url: input.maps_url.trim(),
-      maps_embed_url: input.maps_embed_url?.trim() || null,
+      maps_url,
+      maps_embed_url,
       zonas_envio: input.zonas_envio.trim(),
       notas: input.notas?.trim() || null,
+      telefono: input.telefono?.trim() || null,
+      horario_atencion: input.horario_atencion?.trim() || null,
+      observaciones: input.observaciones?.trim() || null,
       activo: input.activo ?? true,
     })
     .eq('id', id)

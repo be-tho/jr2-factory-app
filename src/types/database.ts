@@ -181,6 +181,14 @@ export interface ClienteEnvio {
   /** A dónde envía el cliente (texto libre: provincias, interior, CABA, etc.). */
   zonas_envio: string
   notas: string | null
+  /** Contacto en boca de atención / operador. */
+  telefono: string | null
+  /** Horario de atención (texto libre). */
+  horario_atencion: string | null
+  /** Texto libre: p. ej. nave y módulo en CTC. */
+  observaciones: string | null
+  /** `ctc` = fila del directorio CTC sembrada en DB; `null` = dirección creada en la app. */
+  catalogo_origen: 'ctc' | null
   activo: boolean
   created_at: string
   updated_at: string

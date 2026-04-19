@@ -2,6 +2,7 @@ import {
   IconEdit,
   IconEye,
   IconMapPin,
+  IconPhone,
   IconPlus,
   IconSearch,
   IconTrash,
@@ -95,13 +96,17 @@ export function EnviosPage() {
         r.nombre_empresa.toLowerCase().includes(q) ||
         r.direccion.toLowerCase().includes(q) ||
         r.zonas_envio.toLowerCase().includes(q) ||
-        r.localidad?.toLowerCase().includes(q)
+        r.localidad?.toLowerCase().includes(q) ||
+        r.telefono?.toLowerCase().includes(q) ||
+        r.observaciones?.toLowerCase().includes(q) ||
+        r.horario_atencion?.toLowerCase().includes(q)
 
       return matchFiltro && matchProv && matchSearch
     })
   }, [rows, filtro, provinciaFiltro, search])
 
   const activos = rows.filter((r) => r.activo).length
+  const ctcCount = rows.filter((r) => r.catalogo_origen === 'ctc').length
 
   return (
     <div className="space-y-6">
@@ -114,7 +119,7 @@ export function EnviosPage() {
             <h1 className="text-2xl font-bold tracking-tight text-[#3d3b4f]">Envíos</h1>
           </div>
           <p className="mt-1.5 text-sm text-[#6e6b7b]">
-            {loading ? '…' : `${activos} activo${activos !== 1 ? 's' : ''} de ${rows.length} direcciones`}
+            {loading ? '…' : `${rows.length} transportes · ${activos} activos${ctcCount ? ` · ${ctcCount} CTC` : ''}`}
           </p>
         </div>
         <Link
@@ -215,16 +220,43 @@ export function EnviosPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-sm font-semibold text-brand-ink">{r.nombre_empresa}</p>
+                    {r.catalogo_origen === 'ctc' && (
+                      <span className="rounded-full bg-brand-primary-ghost px-2 py-0.5 text-[11px] font-semibold text-brand-primary ring-1 ring-brand-primary/20">
+                        CTC
+                      </span>
+                    )}
                     {!r.activo && (
                       <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500 ring-1 ring-gray-200">
                         Inactivo
                       </span>
                     )}
                   </div>
-                  <p className="mt-0.5 text-xs text-brand-ink-muted">
-                    {[r.direccion, r.localidad, r.provincia].filter(Boolean).join(' · ')}
-                  </p>
-                  <p className="mt-1 line-clamp-2 text-xs text-brand-ink-faint">Envíos: {r.zonas_envio}</p>
+                  {r.catalogo_origen === 'ctc' ? (
+                    <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5">
+                      {r.observaciones && (
+                        <p className="text-xs text-brand-ink-muted">
+                          <IconMapPin size={12} className="mr-0.5 inline -mt-px text-brand-primary" aria-hidden />
+                          {r.observaciones}
+                        </p>
+                      )}
+                      {r.telefono && (
+                        <p className="text-xs text-brand-ink-faint">
+                          <IconPhone size={12} className="mr-0.5 inline -mt-px" aria-hidden />
+                          {r.telefono}
+                        </p>
+                      )}
+                      {r.horario_atencion && (
+                        <p className="text-xs text-brand-ink-faint">{r.horario_atencion}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      <p className="mt-0.5 text-xs text-brand-ink-muted">
+                        {[r.direccion, r.localidad, r.provincia].filter(Boolean).join(' · ')}
+                      </p>
+                      <p className="mt-1 line-clamp-2 text-xs text-brand-ink-faint">Envíos: {r.zonas_envio}</p>
+                    </>
+                  )}
                 </div>
                 <div className="flex shrink-0 items-center gap-1 self-end sm:self-center">
                   <button

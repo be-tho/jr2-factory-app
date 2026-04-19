@@ -1,4 +1,4 @@
-import { IconArrowLeft, IconCheck, IconMapPin, IconTruck } from '@tabler/icons-react'
+import { IconArrowLeft, IconCheck, IconExternalLink, IconMapPin, IconTruck } from '@tabler/icons-react'
 import { type FormEvent, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FormField } from '../../../components/ui/FormField'
@@ -11,6 +11,7 @@ import { isGoogleMapsEmbedUrl } from '../../../lib/maps-embed'
 import { ic } from '../../../lib/tabler'
 import type { ClienteEnvio } from '../../../types/database'
 import type { ClienteEnvioInput } from '../services/clientesEnvio.service'
+import { CTC_GOOGLE_MAPS_EMBED_URL, CTC_GOOGLE_MAPS_URL } from '../lib/ctc-campus'
 
 const selectClass =
   'w-full rounded-lg border border-brand-border-strong bg-brand-surface px-3 py-2 text-brand-ink outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50'
@@ -51,6 +52,8 @@ function normalizeMapsUrl(raw: string): string {
 }
 
 export function ClienteEnvioForm({ mode, initialData, onSubmit, saving, error }: ClienteEnvioFormProps) {
+  const isCtcCatalog = initialData?.catalogo_origen === 'ctc'
+
   const [nombreEmpresa, setNombreEmpresa] = useState(initialData?.nombre_empresa ?? '')
   const [direccion, setDireccion] = useState(initialData?.direccion ?? '')
   const [localidad, setLocalidad] = useState(initialData?.localidad ?? '')
@@ -61,6 +64,9 @@ export function ClienteEnvioForm({ mode, initialData, onSubmit, saving, error }:
   })
   const [mapsUrl, setMapsUrl] = useState(initialData?.maps_url ?? '')
   const [mapsEmbedUrl, setMapsEmbedUrl] = useState(initialData?.maps_embed_url ?? '')
+  const [telefono, setTelefono] = useState(initialData?.telefono ?? '')
+  const [horarioAtencion, setHorarioAtencion] = useState(initialData?.horario_atencion ?? '')
+  const [observaciones, setObservaciones] = useState(initialData?.observaciones ?? '')
   const [zonasEnvio, setZonasEnvio] = useState(initialData?.zonas_envio ?? '')
   const [notas, setNotas] = useState(initialData?.notas ?? '')
   const [activo, setActivo] = useState(initialData?.activo ?? true)
@@ -89,22 +95,30 @@ export function ClienteEnvioForm({ mode, initialData, onSubmit, saving, error }:
     if (!direccion.trim()) errs.direccion = 'La dirección es obligatoria.'
     if (!zonasEnvio.trim()) errs.zonasEnvio = 'Indicá a dónde envía el cliente (zonas, provincias, etc.).'
 
-    const urlNormalized = normalizeMapsUrl(mapsUrl)
-    if (!mapsUrl.trim()) {
-      errs.mapsUrl = 'El link de Google Maps es obligatorio.'
-    } else {
-      try {
-        const u = new URL(urlNormalized)
-        if (u.protocol !== 'http:' && u.protocol !== 'https:') errs.mapsUrl = 'Usá un link http o https válido.'
-      } catch {
-        errs.mapsUrl = 'No es un link válido. Pegá la URL que copiás de Google Maps (Compartir).'
-      }
-    }
+    let urlNormalized: string
+    let embedTrim: string | null
 
-    const embedTrim = mapsEmbedUrl.trim()
-    if (embedTrim && !isGoogleMapsEmbedUrl(embedTrim)) {
-      errs.mapsEmbedUrl =
-        'Si completás el embed, tiene que ser la URL del iframe de Google Maps (https://www.google.com/maps/embed?…).'
+    if (isCtcCatalog) {
+      urlNormalized = CTC_GOOGLE_MAPS_URL
+      embedTrim = CTC_GOOGLE_MAPS_EMBED_URL
+    } else {
+      urlNormalized = normalizeMapsUrl(mapsUrl)
+      if (!mapsUrl.trim()) {
+        errs.mapsUrl = 'El link de Google Maps es obligatorio.'
+      } else {
+        try {
+          const u = new URL(urlNormalized)
+          if (u.protocol !== 'http:' && u.protocol !== 'https:') errs.mapsUrl = 'Usá un link http o https válido.'
+        } catch {
+          errs.mapsUrl = 'No es un link válido. Pegá la URL que copiás de Google Maps (Compartir).'
+        }
+      }
+
+      embedTrim = mapsEmbedUrl.trim() || null
+      if (embedTrim && !isGoogleMapsEmbedUrl(embedTrim)) {
+        errs.mapsEmbedUrl =
+          'Si completás el embed, tiene que ser la URL del iframe de Google Maps (https://www.google.com/maps/embed?… o maps.google.com/…).'
+      }
     }
 
     if (Object.keys(errs).length) {
@@ -119,7 +133,10 @@ export function ClienteEnvioForm({ mode, initialData, onSubmit, saving, error }:
       localidad: localidad.trim() || null,
       provincia,
       maps_url: urlNormalized,
-      maps_embed_url: embedTrim || null,
+      maps_embed_url: embedTrim,
+      telefono: telefono.trim() || null,
+      horario_atencion: horarioAtencion.trim() || null,
+      observaciones: observaciones.trim() || null,
       zonas_envio: zonasEnvio.trim(),
       notas: notas.trim() || null,
       activo,
@@ -221,42 +238,115 @@ export function ClienteEnvioForm({ mode, initialData, onSubmit, saving, error }:
               error={fieldErrors.direccion}
             />
           </div>
+          <FormField
+            label="Teléfono de contacto"
+            value={telefono}
+            onChange={(e) => setTelefono(e.target.value)}
+            placeholder="Ej: (011) 1234-5678, WhatsApp…"
+            disabled={saving}
+          />
+          <FormField
+            label="Horario de atención"
+            value={horarioAtencion}
+            onChange={(e) => setHorarioAtencion(e.target.value)}
+            placeholder="Ej: Lun. a Vie. 8 a 17 hs."
+            disabled={saving}
+          />
+          <div className="sm:col-span-2">
+            <FormField
+              label="Observaciones"
+              value={observaciones}
+              onChange={(e) => setObservaciones(e.target.value)}
+              placeholder="Ej: Nave B módulo 40 (CTC), referencia en planta…"
+              disabled={saving}
+            />
+          </div>
+          <p className="sm:col-span-2 text-xs text-brand-ink-faint">
+            Teléfono, horario y observaciones son opcionales; sirven para operadores del CTC o datos de contacto en boca.
+          </p>
         </SectionCard>
 
         <SectionCard title="Google Maps" icon={<IconMapPin size={14} stroke={1.5} />}>
-          <div className="sm:col-span-2">
-            <FormField
-              label="Link de Google Maps *"
-              value={mapsUrl}
-              onChange={(e) => {
-                setMapsUrl(e.target.value)
-                clearErr('mapsUrl')
-              }}
-              placeholder="https://maps.app.goo.gl/… o https://www.google.com/maps/…"
-              disabled={saving}
-              error={fieldErrors.mapsUrl}
-            />
-            <p className="mt-1.5 text-xs text-brand-ink-faint">
-              Es el link que compartís por WhatsApp (Compartir → Copiar enlace). Es la referencia principal.
-            </p>
-          </div>
-          <div className="sm:col-span-2">
-            <FormField
-              label="URL del embed (opcional)"
-              value={mapsEmbedUrl}
-              onChange={(e) => {
-                setMapsEmbedUrl(e.target.value)
-                clearErr('mapsEmbedUrl')
-              }}
-              placeholder="https://www.google.com/maps/embed?pb=…"
-              disabled={saving}
-              error={fieldErrors.mapsEmbedUrl}
-            />
-            <p className="mt-1.5 text-xs text-brand-ink-faint">
-              Solo para ver el mapa embebido en esta app. En Google Maps: Compartir → Insertar mapa → copiar solo el{' '}
-              <code className="rounded bg-brand-canvas px-1 text-[11px]">src</code> del iframe.
-            </p>
-          </div>
+          {isCtcCatalog ? (
+            <div className="sm:col-span-2 space-y-3">
+              <p className="text-sm leading-relaxed text-brand-ink-muted">
+                En el catálogo CTC todas las empresas comparten el mismo{' '}
+                <strong className="font-semibold text-brand-ink">link de Maps</strong> y el mismo{' '}
+                <strong className="font-semibold text-brand-ink">iframe</strong> (campus Pergamino 3751). Coinciden con lo
+                que ves en Envíos → panel CTC y se guardan siempre igual en la base al editar esta fila.
+              </p>
+              <div className="rounded-lg border border-brand-border-subtle bg-brand-canvas px-3 py-3 text-xs">
+                <p className="font-semibold uppercase tracking-wide text-brand-ink-faint">maps_url</p>
+                <p className="mt-1 break-all font-mono text-brand-ink">{CTC_GOOGLE_MAPS_URL}</p>
+                <p className="mt-3 font-semibold uppercase tracking-wide text-brand-ink-faint">maps_embed_url</p>
+                <p className="mt-1 break-all font-mono text-brand-ink">{CTC_GOOGLE_MAPS_EMBED_URL}</p>
+              </div>
+              <a
+                href={CTC_GOOGLE_MAPS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-brand-border-strong bg-white px-3 py-2 text-sm font-semibold text-brand-ink transition hover:bg-brand-canvas"
+              >
+                Abrir Maps del campus
+                <IconExternalLink size={15} stroke={2} aria-hidden />
+              </a>
+            </div>
+          ) : (
+            <>
+              <div className="sm:col-span-2 flex flex-col gap-2">
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => {
+                    setMapsUrl(CTC_GOOGLE_MAPS_URL)
+                    setMapsEmbedUrl(CTC_GOOGLE_MAPS_EMBED_URL)
+                    clearErr('mapsUrl')
+                    clearErr('mapsEmbedUrl')
+                  }}
+                  className="inline-flex w-fit items-center gap-2 rounded-lg border border-brand-primary/35 bg-brand-primary-ghost px-3 py-2 text-sm font-semibold text-brand-primary transition hover:bg-brand-primary/15 disabled:opacity-50"
+                >
+                  <IconMapPin size={16} stroke={1.5} aria-hidden />
+                  Usar mapa del CTC (Pergamino 3751)
+                </button>
+                <p className="text-xs text-brand-ink-faint">
+                  Rellena el mismo link y embed que usa el campus CTC para todas las empresas del listado.
+                </p>
+              </div>
+              <div className="sm:col-span-2">
+                <FormField
+                  label="Link de Google Maps *"
+                  value={mapsUrl}
+                  onChange={(e) => {
+                    setMapsUrl(e.target.value)
+                    clearErr('mapsUrl')
+                  }}
+                  placeholder="https://maps.app.goo.gl/… o https://www.google.com/maps/…"
+                  disabled={saving}
+                  error={fieldErrors.mapsUrl}
+                />
+                <p className="mt-1.5 text-xs text-brand-ink-faint">
+                  Es el link que compartís por WhatsApp (Compartir → Copiar enlace). Es la referencia principal.
+                </p>
+              </div>
+              <div className="sm:col-span-2">
+                <FormField
+                  label="URL del embed (opcional)"
+                  value={mapsEmbedUrl}
+                  onChange={(e) => {
+                    setMapsEmbedUrl(e.target.value)
+                    clearErr('mapsEmbedUrl')
+                  }}
+                  placeholder="https://www.google.com/maps/embed?pb=…"
+                  disabled={saving}
+                  error={fieldErrors.mapsEmbedUrl}
+                />
+                <p className="mt-1.5 text-xs text-brand-ink-faint">
+                  Solo para ver el mapa embebido en esta app. En Google Maps: Compartir → Insertar mapa → copiar solo el{' '}
+                  <code className="rounded bg-brand-canvas px-1 text-[11px]">src</code> del iframe.
+                </p>
+              </div>
+            </>
+          )}
         </SectionCard>
 
         <section className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/4">
