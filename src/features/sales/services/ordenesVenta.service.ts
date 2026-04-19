@@ -264,6 +264,12 @@ export async function marcarOrdenVentaPagada(
     .maybeSingle()
 
   if (e1) return { data: null, error: new Error(e1.message) }
-  const row = upd ? parseOrdenRow(upd as Record<string, unknown>) : null
+  if (!upd) {
+    return {
+      data: null,
+      error: new Error('No se pudo actualizar la orden. Si el problema sigue, revisá permisos en la base de datos.'),
+    }
+  }
+  const row = parseOrdenRow(upd as Record<string, unknown>)
   return { data: row, error: null }
 }
