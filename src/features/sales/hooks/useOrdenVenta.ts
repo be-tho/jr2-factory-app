@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import type { OrdenVentaEstado } from '../../../types/database'
 import {
   createOrdenVenta,
+  deleteOrdenVentaPendiente,
   getOrdenVentaWithItems,
   listOrdenesVentaByEstado,
   marcarOrdenVentaPagada,
@@ -96,6 +97,24 @@ export function useMarcarOrdenPagadaMutation() {
     },
     onError: (e) => {
       toast.error(e instanceof Error ? e.message : 'No se pudo marcar como pagada.')
+    },
+  })
+}
+
+export function useDeleteOrdenVentaPendienteMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await deleteOrdenVentaPendiente(id)
+      if (error) throw error
+    },
+    onSuccess: (_void, id) => {
+      void queryClient.invalidateQueries({ queryKey: ordenesVentaKeys.all })
+      void queryClient.removeQueries({ queryKey: ordenesVentaKeys.detail(id) })
+      toast.success('Orden eliminada')
+    },
+    onError: (e) => {
+      toast.error(e instanceof Error ? e.message : 'No se pudo eliminar la orden.')
     },
   })
 }

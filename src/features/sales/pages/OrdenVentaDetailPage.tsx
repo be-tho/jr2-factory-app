@@ -14,7 +14,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams, useLocation } from 'react-router-dom'
 import type { MedioPagoVenta, Product } from '../../../types/database'
 import { useProductsQuery } from '../../inventory/hooks/useProducts'
+import { OrdenDeleteConfirmDialog } from '../components/OrdenDeleteConfirmDialog'
 import {
+  useDeleteOrdenVentaPendienteMutation,
   useMarcarOrdenPagadaMutation,
   useOrdenVentaDetailQuery,
   useUpdateOrdenVentaMutation,
@@ -103,6 +105,7 @@ export function OrdenVentaDetailPage() {
   const { data: products = [], isPending: loadingProducts } = useProductsQuery()
   const updateMutation = useUpdateOrdenVentaMutation()
   const pagarMutation = useMarcarOrdenPagadaMutation()
+  const deleteMutation = useDeleteOrdenVentaPendienteMutation()
 
   const [nombre, setNombre] = useState('')
   const [telefono, setTelefono] = useState('')
@@ -110,6 +113,7 @@ export function OrdenVentaDetailPage() {
   const [lines, setLines] = useState<DraftLine[]>([])
   const [formError, setFormError] = useState<string | null>(null)
   const [payOpen, setPayOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
   const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products])
 
@@ -229,6 +233,16 @@ export function OrdenVentaDetailPage() {
       onSuccess: () => {
         setPayOpen(false)
         navigate(`/ventas/historial/${id}`, { replace: true })
+      },
+    })
+  }
+
+  function handleDeleteOrden() {
+    if (!id) return
+    deleteMutation.mutate(id, {
+      onSuccess: () => {
+        setDeleteOpen(false)
+        navigate('/ventas/ordenes', { replace: true })
       },
     })
   }
@@ -532,9 +546,18 @@ export function OrdenVentaDetailPage() {
                     type="button"
                     onClick={() => setPayOpen(true)}
                     disabled={pagarMutation.isPending}
-                    className="inline-flex w-full items-center justify-center rounded-2xl border-2 border-green-600 bg-green-50 px-5 py-3.5 text-sm font-semibold text-green-800 transition hover:bg-green-100 disabled:opacity-60"
+                    className="inline-flex w-full cursor-pointer items-center justify-center rounded-2xl border-2 border-green-600 bg-green-50 px-5 py-3.5 text-sm font-semibold text-green-800 transition hover:bg-green-100 disabled:opacity-60"
                   >
                     Marcar como pagado
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeleteOpen(true)}
+                    disabled={deleteMutation.isPending}
+                    className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-5 py-3 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-60"
+                  >
+                    <IconTrash size={18} stroke={1.5} aria-hidden />
+                    Eliminar orden (no cobrada)
                   </button>
                 </div>
               ) : (
@@ -554,6 +577,15 @@ export function OrdenVentaDetailPage() {
           loading={pagarMutation.isPending}
           onCancel={() => setPayOpen(false)}
           onConfirm={handleMarcarPagado}
+        />
+      )}
+
+      {deleteOpen && ordenActualizada && (
+        <OrdenDeleteConfirmDialog
+          clienteNombre={ordenActualizada.cliente_nombre}
+          loading={deleteMutation.isPending}
+          onCancel={() => setDeleteOpen(false)}
+          onConfirm={handleDeleteOrden}
         />
       )}
     </motion.div>

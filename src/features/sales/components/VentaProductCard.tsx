@@ -32,7 +32,12 @@ export function VentaProductCard({ product, quantityInCart, onAdd }: VentaProduc
   const disabled = !product.activo || stock <= 0
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-brand-surface shadow-[0_6px_28px_-18px_rgba(44,40,41,0.2)] ring-1 ring-brand-border transition hover:shadow-[0_16px_40px_-24px_rgba(235,61,99,0.28)] hover:ring-brand-blush-deep/70">
+    <div
+      className={cn(
+        'group relative flex flex-col overflow-hidden rounded-2xl bg-brand-surface shadow-[0_6px_28px_-18px_rgba(44,40,41,0.2)] ring-1 ring-brand-border transition hover:shadow-[0_16px_40px_-24px_rgba(235,61,99,0.28)] hover:ring-brand-blush-deep/70',
+        disabled ? 'cursor-not-allowed' : 'cursor-pointer',
+      )}
+    >
       {!product.activo && (
         <span className="absolute left-3 top-3 z-10 rounded-full bg-brand-ink/75 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
           Inactivo
@@ -75,7 +80,7 @@ export function VentaProductCard({ product, quantityInCart, onAdd }: VentaProduc
           type="button"
           disabled={disabled}
           onClick={onAdd}
-          className="mt-auto inline-flex items-center justify-center gap-2 rounded-xl bg-brand-primary py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-primary/25 transition hover:bg-brand-primary-hover hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-auto inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-brand-primary py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-primary/25 transition hover:bg-brand-primary-hover hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
         >
           <IconShoppingCart size={18} stroke={2} aria-hidden />
           {disabled ? (stock <= 0 ? 'Sin stock' : 'No disponible') : 'Agregar'}
@@ -130,7 +135,7 @@ export function CartLineRow({
             type="button"
             aria-label="Menos"
             onClick={onDec}
-            className="rounded-md p-1.5 text-brand-ink-muted hover:bg-white hover:text-brand-ink"
+            className="cursor-pointer rounded-md p-1.5 text-brand-ink-muted hover:bg-white hover:text-brand-ink"
           >
             <IconMinus size={14} stroke={2} />
           </button>
@@ -140,13 +145,13 @@ export function CartLineRow({
             aria-label="Más"
             disabled={line.cantidad >= maxStock}
             onClick={onInc}
-            className="rounded-md p-1.5 text-brand-ink-muted hover:bg-white hover:text-brand-ink disabled:opacity-40"
+            className="cursor-pointer rounded-md p-1.5 text-brand-ink-muted hover:bg-white hover:text-brand-ink disabled:cursor-not-allowed disabled:opacity-40"
           >
             <IconPlus size={14} stroke={2} />
           </button>
         </div>
         <p className="text-sm font-semibold text-brand-ink">{formatARS(sub)}</p>
-        <button type="button" onClick={onRemove} className="text-xs font-medium text-red-600 hover:underline">
+        <button type="button" onClick={onRemove} className="cursor-pointer text-xs font-medium text-red-600 hover:underline">
           Quitar
         </button>
       </div>

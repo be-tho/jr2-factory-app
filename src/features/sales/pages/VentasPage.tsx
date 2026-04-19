@@ -118,7 +118,7 @@ export function VentasPage() {
               aria-label={
                 cartBadgeCount > 0 ? `Abrir carrito, ${cartBadgeCount} unidades` : 'Abrir carrito de compras'
               }
-              className="relative inline-flex h-12 items-center justify-center gap-2 rounded-2xl border-2 border-brand-border-strong bg-brand-surface px-5 text-sm font-semibold text-brand-primary shadow-md transition hover:border-brand-primary/50 hover:bg-brand-primary-ghost hover:shadow-lg active:scale-[0.99] sm:min-w-48"
+              className="relative inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-brand-border-strong bg-brand-surface px-5 text-sm font-semibold text-brand-primary shadow-md transition hover:border-brand-primary/50 hover:bg-brand-primary-ghost hover:shadow-lg active:scale-[0.99] sm:min-w-48"
             >
               <IconShoppingCart {...ic.inline} aria-hidden />
               <span>Carrito</span>
