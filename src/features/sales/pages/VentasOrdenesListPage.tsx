@@ -1,12 +1,13 @@
-import { IconClipboardList, IconHistory, IconReceipt, IconSearch } from '@tabler/icons-react'
+import { IconClipboardList, IconHistory, IconReceipt, IconSearch, IconTrash } from '@tabler/icons-react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { SimplePagination } from '../../../components/ui/SimplePagination'
 import { ic } from '../../../lib/tabler'
-import type { OrdenVentaEstado } from '../../../types/database'
+import type { OrdenVentaEstado, OrdenVentaRow } from '../../../types/database'
+import { OrdenDeleteConfirmDialog } from '../components/OrdenDeleteConfirmDialog'
 import { formatARS } from '../lib/pricing'
-import { useOrdenesVentaListQuery } from '../hooks/useOrdenVenta'
+import { useDeleteOrdenVentaPendienteMutation, useOrdenesVentaListQuery } from '../hooks/useOrdenVenta'
 
 const PAGE_SIZE = 12
 
@@ -36,8 +37,10 @@ export function VentasHistorialVentasPage() {
 export function VentasOrdenesListPage({ estado }: VentasOrdenesListPageProps) {
   const reduceMotion = useReducedMotion()
   const { data: rows = [], isPending: loading } = useOrdenesVentaListQuery(estado)
+  const deleteMutation = useDeleteOrdenVentaPendienteMutation()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  const [deleteTarget, setDeleteTarget] = useState<OrdenVentaRow | null>(null)
 
   const historial = estado === 'pagado'
 
@@ -166,10 +169,10 @@ export function VentasOrdenesListPage({ estado }: VentasOrdenesListPageProps) {
           <>
             <ul className="space-y-3">
               {pageRows.map((r) => (
-                <li key={r.id}>
+                <li key={r.id} className="flex overflow-hidden rounded-2xl border border-brand-border bg-brand-surface shadow-sm ring-1 ring-black/3 transition hover:border-brand-primary/35 hover:bg-brand-primary-ghost/40">
                   <Link
                     to={`${detailBase}/${r.id}`}
-                    className="flex flex-col gap-3 rounded-2xl border border-brand-border bg-brand-surface p-4 shadow-sm ring-1 ring-black/3 transition hover:border-brand-primary/35 hover:bg-brand-primary-ghost/40 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                    className="flex min-w-0 flex-1 flex-col gap-3 p-4 transition sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                   >
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold text-brand-ink">{r.cliente_nombre}</p>
@@ -193,6 +196,16 @@ export function VentasOrdenesListPage({ estado }: VentasOrdenesListPageProps) {
                       <span className="text-xs font-semibold text-brand-primary">Ver detalle →</span>
                     </div>
                   </Link>
+                  {!historial && (
+                    <button
+                      type="button"
+                      aria-label={`Eliminar orden de ${r.cliente_nombre}`}
+                      onClick={() => setDeleteTarget(r)}
+                      className="flex shrink-0 items-center justify-center border-l border-brand-border px-4 text-brand-ink-faint transition hover:bg-red-50 hover:text-red-600"
+                    >
+                      <IconTrash size={20} stroke={1.5} aria-hidden />
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
@@ -210,6 +223,19 @@ export function VentasOrdenesListPage({ estado }: VentasOrdenesListPageProps) {
           </>
         )}
       </section>
+
+      {deleteTarget && (
+        <OrdenDeleteConfirmDialog
+          clienteNombre={deleteTarget.cliente_nombre}
+          loading={deleteMutation.isPending}
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={() => {
+            deleteMutation.mutate(deleteTarget.id, {
+              onSuccess: () => setDeleteTarget(null),
+            })
+          }}
+        />
+      )}
     </motion.div>
   )
 }

@@ -45,7 +45,7 @@ export function SimplePagination({
           type="button"
           disabled={page <= 1}
           onClick={() => onPageChange(page - 1)}
-          className="inline-flex items-center gap-1 rounded-xl border border-brand-border bg-brand-surface px-3 py-2 text-sm font-semibold text-brand-ink shadow-sm transition hover:border-brand-border-strong hover:bg-brand-canvas disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex cursor-pointer items-center gap-1 rounded-xl border border-brand-border bg-brand-surface px-3 py-2 text-sm font-semibold text-brand-ink shadow-sm transition hover:border-brand-border-strong hover:bg-brand-canvas disabled:cursor-not-allowed disabled:opacity-40"
         >
           <IconChevronLeft size={18} stroke={2} aria-hidden />
           Anterior
@@ -59,7 +59,7 @@ export function SimplePagination({
           type="button"
           disabled={page >= totalPages}
           onClick={() => onPageChange(page + 1)}
-          className="inline-flex items-center gap-1 rounded-xl border border-brand-border bg-brand-surface px-3 py-2 text-sm font-semibold text-brand-ink shadow-sm transition hover:border-brand-border-strong hover:bg-brand-canvas disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex cursor-pointer items-center gap-1 rounded-xl border border-brand-border bg-brand-surface px-3 py-2 text-sm font-semibold text-brand-ink shadow-sm transition hover:border-brand-border-strong hover:bg-brand-canvas disabled:cursor-not-allowed disabled:opacity-40"
         >
           Siguiente
           <IconChevronRight size={18} stroke={2} aria-hidden />

@@ -264,6 +264,26 @@ export async function marcarOrdenVentaPagada(
     .maybeSingle()
 
   if (e1) return { data: null, error: new Error(e1.message) }
-  const row = upd ? parseOrdenRow(upd as Record<string, unknown>) : null
+  if (!upd) {
+    return {
+      data: null,
+      error: new Error('No se pudo actualizar la orden. Si el problema sigue, revisá permisos en la base de datos.'),
+    }
+  }
+  const row = parseOrdenRow(upd as Record<string, unknown>)
   return { data: row, error: null }
+}
+
+/** Solo órdenes pendientes (p. ej. cliente que no paga). Los ítems se borran en cascada. */
+export async function deleteOrdenVentaPendiente(id: string): Promise<{ error: Error | null }> {
+  const existing = await getOrdenVentaWithItems(id)
+  if (existing.error) return { error: existing.error }
+  if (!existing.data) return { error: new Error('No se encontró la orden.') }
+  if (existing.data.orden.estado !== 'pendiente') {
+    return { error: new Error('Solo se pueden eliminar órdenes pendientes de cobro.') }
+  }
+
+  const { error } = await supabase.from(TABLE_ORDEN).delete().eq('id', id).eq('estado', 'pendiente')
+  if (error) return { error: new Error(error.message) }
+  return { error: null }
 }
