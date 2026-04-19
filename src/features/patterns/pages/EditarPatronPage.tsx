@@ -6,10 +6,15 @@ import {
   IconUpload,
   IconX,
 } from '@tabler/icons-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ic } from '../../../lib/tabler'
-import { usePatronQuery, useUpdatePatronMutation } from '../hooks/usePatrones'
+import { useProductsQuery } from '../../inventory/hooks/useProducts'
+import {
+  useArticulosConPatronQuery,
+  usePatronQuery,
+  useUpdatePatronMutation,
+} from '../hooks/usePatrones'
 
 const MAX_BYTES = 50 * 1024 * 1024
 
@@ -23,8 +28,11 @@ export function EditarPatronPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { data: patron, isPending: loading, isError, error } = usePatronQuery(id)
+  const { data: articulos = [], isPending: loadingArticulos } = useProductsQuery()
+  const { data: articulosConPatron = [], isPending: loadingOcupados } = useArticulosConPatronQuery()
   const updateMutation = useUpdatePatronMutation()
 
+  const [articuloId, setArticuloId] = useState('')
   const [nombre, setNombre] = useState('')
   const [descripcion, setDescripcion] = useState('')
   const [newFile, setNewFile] = useState<File | null>(null)
@@ -35,10 +43,19 @@ export function EditarPatronPage() {
 
   useEffect(() => {
     if (patron) {
+      setArticuloId(patron.articulo_id)
       setNombre(patron.nombre)
       setDescripcion(patron.descripcion ?? '')
     }
   }, [patron])
+
+  const articulosDisponibles = useMemo(
+    () => articulos.filter((a) => !articulosConPatron.includes(a.id) || a.id === patron?.articulo_id),
+    [articulos, articulosConPatron, patron?.articulo_id],
+  )
+
+  const articuloSeleccionado = articulos.find((a) => a.id === articuloId) ?? null
+  const cargandoArticulos = loadingArticulos || loadingOcupados
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = e.target.files?.[0] ?? null
@@ -67,13 +84,18 @@ export function EditarPatronPage() {
     e.preventDefault()
     setFormError(null)
     if (!patron) return
+    if (!articuloId) { setFormError('Seleccioná un artículo.'); return }
     if (!nombre.trim()) { setFormError('El nombre del patrón es requerido.'); return }
 
     updateMutation.mutate(
       {
         id: patron.id,
-        input: { nombre: nombre.trim(), descripcion: descripcion.trim() || null, file: newFile },
-        currentStoragePath: patron.storage_path,
+        input: {
+          nombre: nombre.trim(),
+          descripcion: descripcion.trim() || null,
+          articulo_id: articuloId,
+          file: newFile ?? undefined,
+        },
       },
       { onSuccess: () => navigate(`/produccion/patrones/${patron.id}`, { replace: true }) },
     )
@@ -129,13 +151,41 @@ export function EditarPatronPage() {
           </span>
           <h1 className="text-2xl font-bold tracking-tight text-[#3d3b4f]">Editar patrón</h1>
         </div>
-        <p className="mt-1.5 text-sm text-[#6e6b7b]">
-          Artículo: <span className="font-medium text-brand-ink">{patron.articulo_nombre}</span>
-        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-black/4 space-y-5">
+
+          {/* Artículo */}
+          <div>
+            <label htmlFor="articulo" className="block text-sm font-semibold text-[#3d3b4f]">
+              Artículo vinculado <span className="text-red-500">*</span>
+            </label>
+            <p className="mt-0.5 text-xs text-brand-ink-faint">
+              Podés cambiar el artículo; solo aparecen los que no tienen otro patrón (y el actual).
+            </p>
+            <select
+              id="articulo"
+              value={articuloId}
+              onChange={(e) => setArticuloId(e.target.value)}
+              disabled={cargandoArticulos}
+              className="mt-2 w-full rounded-lg border border-[#e8e4f0] bg-[#f8f7fa] px-3 py-2 text-sm text-[#3d3b4f] outline-none transition focus:border-brand-primary focus:bg-white focus:ring-2 focus:ring-brand-blush/50 disabled:opacity-60 sm:max-w-md"
+            >
+              <option value="">
+                {cargandoArticulos ? 'Cargando…' : articulosDisponibles.length === 0 ? 'Sin artículos disponibles' : 'Elegí un artículo…'}
+              </option>
+              {articulosDisponibles.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name} — {a.sku}
+                </option>
+              ))}
+            </select>
+            {articuloSeleccionado && (
+              <p className="mt-1.5 text-xs text-brand-ink-faint">
+                Categoría: {articuloSeleccionado.category || '—'} · Temporada: {articuloSeleccionado.temporada || '—'}
+              </p>
+            )}
+          </div>
 
           {/* Nombre */}
           <div>
