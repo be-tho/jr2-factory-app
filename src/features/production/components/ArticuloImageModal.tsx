@@ -40,7 +40,7 @@ export function ArticuloImageModal({ articulo, onClose }: ArticuloImageModalProp
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-modal-scrim"
         onClick={onClose}
         aria-hidden
       />

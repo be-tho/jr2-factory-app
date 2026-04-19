@@ -5,7 +5,7 @@ import {
   createClienteEnvio,
   deleteClienteEnvio,
   getClienteEnvioById,
-  listClientesEnvio,
+  listAllClientesEnvio,
   toggleClienteEnvioActivo,
   updateClienteEnvio,
   type ClienteEnvioInput,
@@ -14,7 +14,7 @@ import {
 export const clientesEnvioKeys = {
   all: ['clientes_envio'] as const,
   lists: () => [...clientesEnvioKeys.all, 'list'] as const,
-  list: () => [...clientesEnvioKeys.lists()] as const,
+  list: () => [...clientesEnvioKeys.lists(), 'all'] as const,
   details: () => [...clientesEnvioKeys.all, 'detail'] as const,
   detail: (id: string) => [...clientesEnvioKeys.details(), id] as const,
 }
@@ -23,7 +23,7 @@ export function useClientesEnvioQuery() {
   return useQuery({
     queryKey: clientesEnvioKeys.list(),
     queryFn: async (): Promise<ClienteEnvio[]> => {
-      const { data, error } = await listClientesEnvio()
+      const { data, error } = await listAllClientesEnvio()
       if (error) throw error
       return data
     },

@@ -4,6 +4,9 @@ import {
   IconBuildingFactory2,
   IconCalendar,
   IconChevronDown,
+  IconClipboardList,
+  IconCreditCard,
+  IconHistory,
   IconLayoutDashboard,
   IconStack,
   IconLogout,
@@ -11,6 +14,8 @@ import {
   IconPackage,
   IconRuler,
   IconScissors,
+  IconShoppingBag,
+  IconShoppingCart,
   IconTag,
   IconTruck,
   IconUser,
@@ -23,7 +28,8 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { ic } from '../../lib/tabler'
 import { supabase } from '../../lib/supabase/client'
 import { useSession } from '../../hooks/useSession'
-import { useAvatarUrl, useProfileQuery } from '../../features/account/hooks/useProfile'
+import { ProfileAvatarImage } from '../../features/account/components/ProfileAvatarImage'
+import { useProfileQuery } from '../../features/account/hooks/useProfile'
 import { PageTransition } from './PageTransition'
 
 const menuEase = [0.22, 1, 0.36, 1] as const
@@ -64,6 +70,7 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
   const [inventarioOpen, setInventarioOpen] = useState(() =>
     location.pathname.startsWith('/inventario'),
   )
+  const [ventasOpen, setVentasOpen] = useState(() => location.pathname.startsWith('/ventas'))
   const { data: profile } = useProfileQuery()
 
   const itemClass = ({ isActive }: { isActive: boolean }) =>
@@ -168,6 +175,48 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
         Envíos
       </NavLink>
 
+      <div>
+        <button
+          type="button"
+          className={`flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-base font-bold transition-colors duration-150 ${
+            location.pathname.startsWith('/ventas')
+              ? 'bg-brand-primary-subtle text-brand-primary'
+              : 'text-brand-ink-muted hover:bg-brand-primary-ghost hover:text-brand-primary'
+          }`}
+          aria-expanded={ventasOpen}
+          onClick={() => setVentasOpen((o) => !o)}
+        >
+          <IconShoppingCart {...ic.nav} aria-hidden />
+          <span className="min-w-0 flex-1">Ventas</span>
+          <IconChevronDown
+            aria-hidden
+            size={16}
+            stroke={1.5}
+            className={`shrink-0 text-brand-ink-faint transition-transform duration-200 ease-out ${ventasOpen ? 'rotate-180' : ''}`}
+          />
+        </button>
+        <NavCollapsible open={ventasOpen}>
+          <div className="mt-1 flex flex-col gap-0.5">
+            <NavLink to="/ventas" end className={subItemClass} onClick={onNavigate}>
+              <IconShoppingBag {...ic.navSub} aria-hidden />
+              Catálogo
+            </NavLink>
+            <NavLink to="/ventas/checkout" className={subItemClass} onClick={onNavigate}>
+              <IconCreditCard {...ic.navSub} aria-hidden />
+              Checkout
+            </NavLink>
+            <NavLink to="/ventas/ordenes" className={subItemClass} onClick={onNavigate}>
+              <IconClipboardList {...ic.navSub} aria-hidden />
+              Órdenes
+            </NavLink>
+            <NavLink to="/ventas/historial" className={subItemClass} onClick={onNavigate}>
+              <IconHistory {...ic.navSub} aria-hidden />
+              Historial
+            </NavLink>
+          </div>
+        </NavCollapsible>
+      </div>
+
       {profile?.role === 'admin' && (
         <NavLink to="/usuarios" className={itemClass} onClick={onNavigate}>
           <IconUsers {...ic.nav} aria-hidden />
@@ -186,7 +235,6 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
 function SidebarUserCard() {
   const { session } = useSession()
   const { data: profile } = useProfileQuery()
-  const { data: avatarUrl } = useAvatarUrl(profile?.avatar_path)
   const displayName =
     profile?.full_name?.trim() || session?.user.email?.split('@')[0] || 'Usuario'
   const email = session?.user.email ?? ''
@@ -203,13 +251,13 @@ function SidebarUserCard() {
       className="flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors duration-150 hover:bg-brand-primary-ghost"
     >
       <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full border border-brand-border bg-brand-primary-ghost">
-        {avatarUrl ? (
-          <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-xs font-bold text-brand-primary">
-            {initials || <IconUser size={14} stroke={1.5} />}
-          </div>
-        )}
+        <ProfileAvatarImage
+          storagePath={profile?.avatar_path}
+          alt={displayName}
+          className="h-full w-full"
+          initials={initials}
+          iconSize={14}
+        />
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-[#3d3b4f]">{displayName}</p>
@@ -329,7 +377,7 @@ export function DashboardLayout() {
                 <motion.button
                   key="mobile-drawer-backdrop"
                   type="button"
-                  className="fixed inset-0 z-50 cursor-default border-0 bg-brand-ink/40 p-0 backdrop-blur-[2px] sm:hidden"
+                  className="fixed inset-0 z-50 cursor-default border-0 bg-modal-scrim p-0 sm:hidden"
                   aria-label="Cerrar menú"
                   initial={reduceMotion ? false : { opacity: 0 }}
                   animate={{ opacity: 1 }}

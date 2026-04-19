@@ -2,6 +2,7 @@ import {
   IconEdit,
   IconEye,
   IconMapPin,
+  IconPhone,
   IconPlus,
   IconSearch,
   IconTrash,
@@ -9,8 +10,9 @@ import {
   IconX,
   IconCheck,
 } from '@tabler/icons-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { SimplePagination } from '../../../components/ui/SimplePagination'
 import { PROVINCIAS_ARGENTINA } from '../../../lib/argentina-provincias'
 import { ic } from '../../../lib/tabler'
 import {
@@ -21,6 +23,8 @@ import {
 import type { ClienteEnvio } from '../../../types/database'
 
 type FiltroActivo = 'activos' | 'todos' | 'inactivos'
+
+const PAGE_SIZE = 12
 
 function DeleteDialog({
   row,
@@ -34,7 +38,7 @@ function DeleteDialog({
   loading: boolean
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-modal-scrim p-4">
       <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
         <h3 className="text-base font-bold text-brand-ink">¿Eliminar esta dirección?</h3>
         <p className="mt-2 text-sm text-brand-ink-muted">
@@ -80,6 +84,7 @@ export function EnviosPage() {
   const [search, setSearch] = useState('')
   const [provinciaFiltro, setProvinciaFiltro] = useState<string>('')
   const [filtro, setFiltro] = useState<FiltroActivo>('activos')
+  const [page, setPage] = useState(1)
   const [deleteTarget, setDeleteTarget] = useState<ClienteEnvio | null>(null)
 
   const filtered = useMemo(() => {
@@ -95,13 +100,32 @@ export function EnviosPage() {
         r.nombre_empresa.toLowerCase().includes(q) ||
         r.direccion.toLowerCase().includes(q) ||
         r.zonas_envio.toLowerCase().includes(q) ||
-        r.localidad?.toLowerCase().includes(q)
+        r.localidad?.toLowerCase().includes(q) ||
+        r.telefono?.toLowerCase().includes(q) ||
+        r.observaciones?.toLowerCase().includes(q) ||
+        r.horario_atencion?.toLowerCase().includes(q)
 
       return matchFiltro && matchProv && matchSearch
     })
   }, [rows, filtro, provinciaFiltro, search])
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+
+  useEffect(() => {
+    setPage(1)
+  }, [search, provinciaFiltro, filtro])
+
+  useEffect(() => {
+    setPage((p) => Math.min(p, totalPages))
+  }, [totalPages])
+
+  const pageRows = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE
+    return filtered.slice(start, start + PAGE_SIZE)
+  }, [filtered, page])
+
   const activos = rows.filter((r) => r.activo).length
+  const ctcCount = rows.filter((r) => r.catalogo_origen === 'ctc').length
 
   return (
     <div className="space-y-6">
@@ -114,7 +138,7 @@ export function EnviosPage() {
             <h1 className="text-2xl font-bold tracking-tight text-[#3d3b4f]">Envíos</h1>
           </div>
           <p className="mt-1.5 text-sm text-[#6e6b7b]">
-            {loading ? '…' : `${activos} activo${activos !== 1 ? 's' : ''} de ${rows.length} direcciones`}
+            {loading ? '…' : `${rows.length} transportes · ${activos} activos${ctcCount ? ` · ${ctcCount} CTC` : ''}`}
           </p>
         </div>
         <Link
@@ -177,7 +201,7 @@ export function EnviosPage() {
 
       {loading ? (
         <div className="space-y-3">
-          {[1, 2, 3, 4].map((i) => (
+          {Array.from({ length: PAGE_SIZE }).map((_, i) => (
             <div key={i} className="h-24 animate-pulse rounded-xl bg-brand-border" />
           ))}
         </div>
@@ -207,7 +231,7 @@ export function EnviosPage() {
       ) : (
         <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/4">
           <ul className="divide-y divide-brand-border-subtle">
-            {filtered.map((r) => (
+            {pageRows.map((r) => (
               <li key={r.id} className="flex flex-col gap-3 px-5 py-4 transition hover:bg-[#faf9fb] sm:flex-row sm:items-center sm:gap-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-primary-ghost text-brand-primary">
                   <IconMapPin size={20} stroke={1.5} aria-hidden />
@@ -215,16 +239,43 @@ export function EnviosPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-sm font-semibold text-brand-ink">{r.nombre_empresa}</p>
+                    {r.catalogo_origen === 'ctc' && (
+                      <span className="rounded-full bg-brand-primary-ghost px-2 py-0.5 text-[11px] font-semibold text-brand-primary ring-1 ring-brand-primary/20">
+                        CTC
+                      </span>
+                    )}
                     {!r.activo && (
                       <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500 ring-1 ring-gray-200">
                         Inactivo
                       </span>
                     )}
                   </div>
-                  <p className="mt-0.5 text-xs text-brand-ink-muted">
-                    {[r.direccion, r.localidad, r.provincia].filter(Boolean).join(' · ')}
-                  </p>
-                  <p className="mt-1 line-clamp-2 text-xs text-brand-ink-faint">Envíos: {r.zonas_envio}</p>
+                  {r.catalogo_origen === 'ctc' ? (
+                    <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5">
+                      {r.observaciones && (
+                        <p className="text-xs text-brand-ink-muted">
+                          <IconMapPin size={12} className="mr-0.5 inline -mt-px text-brand-primary" aria-hidden />
+                          {r.observaciones}
+                        </p>
+                      )}
+                      {r.telefono && (
+                        <p className="text-xs text-brand-ink-faint">
+                          <IconPhone size={12} className="mr-0.5 inline -mt-px" aria-hidden />
+                          {r.telefono}
+                        </p>
+                      )}
+                      {r.horario_atencion && (
+                        <p className="text-xs text-brand-ink-faint">{r.horario_atencion}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      <p className="mt-0.5 text-xs text-brand-ink-muted">
+                        {[r.direccion, r.localidad, r.provincia].filter(Boolean).join(' · ')}
+                      </p>
+                      <p className="mt-1 line-clamp-2 text-xs text-brand-ink-faint">Envíos: {r.zonas_envio}</p>
+                    </>
+                  )}
                 </div>
                 <div className="flex shrink-0 items-center gap-1 self-end sm:self-center">
                   <button
@@ -266,6 +317,18 @@ export function EnviosPage() {
               </li>
             ))}
           </ul>
+          {totalPages > 1 && (
+            <div className="px-5 pb-5">
+              <SimplePagination
+                page={page}
+                totalPages={totalPages}
+                totalItems={filtered.length}
+                pageSize={PAGE_SIZE}
+                onPageChange={setPage}
+                ariaLabel="Paginación de direcciones de envío"
+              />
+            </div>
+          )}
         </div>
       )}
 

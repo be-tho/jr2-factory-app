@@ -181,7 +181,47 @@ export interface ClienteEnvio {
   /** A dónde envía el cliente (texto libre: provincias, interior, CABA, etc.). */
   zonas_envio: string
   notas: string | null
+  /** Contacto en boca de atención / operador. */
+  telefono: string | null
+  /** Horario de atención (texto libre). */
+  horario_atencion: string | null
+  /** Texto libre: p. ej. nave y módulo en CTC. */
+  observaciones: string | null
+  /** `ctc` = fila del directorio CTC sembrada en DB; `null` = dirección creada en la app. */
+  catalogo_origen: 'ctc' | null
   activo: boolean
   created_at: string
   updated_at: string
+}
+
+// ─── Ventas (órdenes registradas en checkout) ───────────────────────────────
+
+export type MedioPagoVenta = 'efectivo' | 'transferencia'
+
+/** Pendiente = editable / a cobrar; pagado = historial cerrado. */
+export type OrdenVentaEstado = 'pendiente' | 'pagado'
+
+/** `public.ordenes_venta` — cabecera de venta desde la sección Ventas. */
+export interface OrdenVentaRow {
+  id: string
+  cliente_nombre: string
+  cliente_telefono: string | null
+  medio_pago: MedioPagoVenta
+  total: number
+  estado: OrdenVentaEstado
+  /** Fecha en que se marcó como pagada (historial definitivo). */
+  pagado_at: string | null
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+
+/** `public.ordenes_venta_items` — líneas con precio snapshot. */
+export interface OrdenVentaItemRow {
+  id: string
+  orden_id: string
+  articulo_id: string
+  cantidad: number
+  precio_unitario: number
+  subtotal: number
 }

@@ -126,6 +126,8 @@ export type NewPatronInput = {
 export type UpdatePatronInput = {
   nombre: string
   descripcion?: string | null
+  /** Artículo vinculado (si cambia sin archivo nuevo, se mueve el archivo en el bucket). */
+  articulo_id: string
   /** Si se provee, reemplaza el archivo actual. */
   file?: File | null
 }
@@ -133,6 +135,21 @@ export type UpdatePatronInput = {
 function getFileExtension(name: string): string {
   const i = name.lastIndexOf('.')
   return i > 0 ? name.slice(i).toLowerCase() : ''
+}
+
+function pathTailAfterArticuloFolder(storagePath: string): string {
+  const i = storagePath.indexOf('/')
+  return i >= 0 ? storagePath.slice(i + 1) : storagePath
+}
+
+async function copyPatronFileInBucket(fromPath: string, toPath: string): Promise<void> {
+  const { data: blob, error: dlErr } = await supabase.storage.from(BUCKET).download(fromPath)
+  if (dlErr || !blob) throw new Error(dlErr?.message ?? 'No se pudo leer el archivo actual.')
+  const { error: upErr } = await supabase.storage.from(BUCKET).upload(toPath, blob, {
+    upsert: false,
+    contentType: blob.type || 'application/octet-stream',
+  })
+  if (upErr) throw new Error(upErr.message)
 }
 
 async function uploadPatronFile(articuloId: string, file: File): Promise<string> {
@@ -185,22 +202,43 @@ export async function createPatron(input: NewPatronInput): Promise<{ data: Patro
 export async function updatePatron(
   id: string,
   input: UpdatePatronInput,
-  currentStoragePath: string,
 ): Promise<{ data: Patron | null; error: Error | null }> {
-  let newStoragePath = currentStoragePath
+  const { data: existingRow, error: fetchErr } = await supabase
+    .from(TABLE)
+    .select('articulo_id, storage_path')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (fetchErr) return { data: null, error: new Error(fetchErr.message) }
+  if (!existingRow) return { data: null, error: new Error('No se encontró el patrón.') }
+
+  const prevArticuloId = String((existingRow as { articulo_id: unknown }).articulo_id ?? '')
+  const prevStoragePath = String((existingRow as { storage_path: unknown }).storage_path ?? '')
+  const targetArticuloId = input.articulo_id.trim()
+
+  if (!targetArticuloId) return { data: null, error: new Error('Seleccioná un artículo.') }
+
+  const { data: conflicto } = await supabase
+    .from(TABLE)
+    .select('id')
+    .eq('articulo_id', targetArticuloId)
+    .neq('id', id)
+    .maybeSingle()
+
+  if (conflicto)
+    return { data: null, error: new Error('Ese artículo ya tiene otro patrón asignado.') }
+
+  let newStoragePath = prevStoragePath
   let newFileName: string | undefined
   let newFileSize: number | undefined
   let newFileType: string | undefined
+  let uploadedTempPath: string | null = null
+  let copiedTempPath: string | null = null
 
   if (input.file) {
-    // Get articulo_id to build correct path
-    const { data: existing } = await supabase.from(TABLE).select('articulo_id').eq('id', id).maybeSingle()
-    const articuloId = (existing as Record<string, unknown> | null)?.articulo_id as string | undefined
-
-    if (!articuloId) return { data: null, error: new Error('No se encontró el patrón.') }
-
     try {
-      newStoragePath = await uploadPatronFile(articuloId, input.file)
+      newStoragePath = await uploadPatronFile(targetArticuloId, input.file)
+      uploadedTempPath = newStoragePath
     } catch (e) {
       return { data: null, error: e instanceof Error ? e : new Error('Error al subir el archivo.') }
     }
@@ -208,11 +246,21 @@ export async function updatePatron(
     newFileName = input.file.name
     newFileSize = input.file.size
     newFileType = getFileExtension(input.file.name) || undefined
+  } else if (targetArticuloId !== prevArticuloId) {
+    const tail = pathTailAfterArticuloFolder(prevStoragePath)
+    newStoragePath = `${targetArticuloId}/${tail}`
+    try {
+      await copyPatronFileInBucket(prevStoragePath, newStoragePath)
+      copiedTempPath = newStoragePath
+    } catch (e) {
+      return { data: null, error: e instanceof Error ? e : new Error('No se pudo mover el archivo al nuevo artículo.') }
+    }
   }
 
   const updateRow: Record<string, unknown> = {
     nombre: input.nombre.trim(),
     descripcion: input.descripcion?.trim() || null,
+    articulo_id: targetArticuloId,
     storage_path: newStoragePath,
   }
   if (newFileName !== undefined) {
@@ -229,13 +277,15 @@ export async function updatePatron(
     .single()
 
   if (error) {
-    if (input.file) await supabase.storage.from(BUCKET).remove([newStoragePath]).catch(() => {})
+    if (uploadedTempPath) await supabase.storage.from(BUCKET).remove([uploadedTempPath]).catch(() => {})
+    if (copiedTempPath) await supabase.storage.from(BUCKET).remove([copiedTempPath]).catch(() => {})
     return { data: null, error: new Error(error.message) }
   }
 
-  // Remove old file only after DB update succeeded
-  if (input.file && newStoragePath !== currentStoragePath) {
-    await supabase.storage.from(BUCKET).remove([currentStoragePath]).catch(() => {})
+  const replacedOldPath =
+    newStoragePath !== prevStoragePath && prevStoragePath.length > 0 ? prevStoragePath : null
+  if (replacedOldPath) {
+    await supabase.storage.from(BUCKET).remove([replacedOldPath]).catch(() => {})
   }
 
   return { data: rowToPatron(data), error: null }

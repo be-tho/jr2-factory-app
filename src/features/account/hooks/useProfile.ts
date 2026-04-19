@@ -38,9 +38,11 @@ export function useAvatarUrl(storagePath: string | null | undefined) {
     queryKey: profileKeys.avatar(storagePath ?? ''),
     queryFn: () => getAvatarSignedUrl(storagePath!),
     enabled: Boolean(storagePath),
-    staleTime: 1000 * 60 * 55,   // 55 min — renueva antes de que expire
-    gcTime: 1000 * 60 * 60,      // mantiene en caché 1 hora
+    staleTime: 1000 * 60 * 55, // 55 min — renueva antes de que expire la signed URL (≈60 min)
+    gcTime: 1000 * 60 * 60,
     retry: 1,
+    /** Al volver a la pestaña, nueva signed URL si la anterior está al límite. */
+    refetchOnWindowFocus: true,
   })
 }
 

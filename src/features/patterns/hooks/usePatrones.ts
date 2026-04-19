@@ -79,16 +79,8 @@ export function useCreatePatronMutation() {
 export function useUpdatePatronMutation() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async ({
-      id,
-      input,
-      currentStoragePath,
-    }: {
-      id: string
-      input: UpdatePatronInput
-      currentStoragePath: string
-    }) => {
-      const { data, error } = await updatePatron(id, input, currentStoragePath)
+    mutationFn: async ({ id, input }: { id: string; input: UpdatePatronInput }) => {
+      const { data, error } = await updatePatron(id, input)
       if (error) throw error
       if (!data) throw new Error('No se pudo actualizar el patrón.')
       return data

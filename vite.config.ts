@@ -13,8 +13,9 @@ export default defineConfig({
       /* Registro manual en `main.tsx` (`virtual:pwa-register`); no inyectar otro script en index.html. */
       injectRegister: false,
       /* Permite probar SW + manifiesto en `npm run dev` (localhost es contexto seguro). */
+      /** En dev, SW + Workbox interceptan también imágenes cross-origin (p. ej. Storage) y pueden romper cargas firmadas. Probá la PWA con `preview`. */
       devOptions: {
-        enabled: true,
+        enabled: false,
         type: 'module',
       },
       /* Iconos en la raíz de public/; no precachear PNG en el SW (el navegador los pide vía manifiesto). */
@@ -61,17 +62,9 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Solo cachea assets estáticos del build; las llamadas a Supabase
-        // siempre van a la red para no servir datos desactualizados.
         globPatterns: ['**/*.{js,css,html,ico,svg,woff2}'],
         navigateFallback: '/index.html',
-        runtimeCaching: [
-          {
-            // Supabase API → siempre red, sin caché
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-            handler: 'NetworkOnly',
-          },
-        ],
+        /** Sin rutas runtime extra: Storage/API Supabase son cross-origin; no interceptarlas con Workbox evita fallos típicos con URLs firmadas. */
       },
     }),
   ],

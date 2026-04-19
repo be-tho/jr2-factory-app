@@ -2,10 +2,13 @@ import {
   IconArrowLeft,
   IconBrandWhatsapp,
   IconCheck,
+  IconClock,
   IconCopy,
   IconEdit,
   IconExternalLink,
   IconMapPin,
+  IconNotes,
+  IconPhone,
   IconTruck,
   IconX,
 } from '@tabler/icons-react'
@@ -88,6 +91,11 @@ export function ClienteEnvioDetailPage() {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-bold tracking-tight text-[#3d3b4f]">{row.nombre_empresa}</h1>
+              {row.catalogo_origen === 'ctc' && (
+                <span className="rounded-full bg-brand-primary-ghost px-2.5 py-0.5 text-[11px] font-semibold text-brand-primary ring-1 ring-brand-primary/25">
+                  Catálogo CTC
+                </span>
+              )}
               <span
                 className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ${
                   row.activo
@@ -179,6 +187,36 @@ export function ClienteEnvioDetailPage() {
         </a>
       </div>
 
+      {(row.telefono || row.horario_atencion || row.observaciones) && (
+        <div className="overflow-hidden rounded-xl bg-white p-5 shadow-sm ring-1 ring-black/4">
+          <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-brand-ink-faint">
+            <IconPhone size={13} stroke={1.5} aria-hidden />
+            Contacto y ubicación en campus
+          </h2>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <InfoBlock label="Teléfono" value={row.telefono ?? '—'} />
+            <div>
+              <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-brand-ink-faint">
+                <IconClock size={12} stroke={1.5} aria-hidden />
+                Horario de atención
+              </p>
+              <p className="mt-0.5 text-sm font-medium text-brand-ink whitespace-pre-wrap">
+                {row.horario_atencion ?? '—'}
+              </p>
+            </div>
+            <div className="sm:col-span-2 lg:col-span-1">
+              <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-brand-ink-faint">
+                <IconNotes size={12} stroke={1.5} aria-hidden />
+                Observaciones (CTC / planta)
+              </p>
+              <p className="mt-0.5 text-sm font-medium text-brand-ink whitespace-pre-wrap">
+                {row.observaciones ?? '—'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="space-y-4 overflow-hidden rounded-xl bg-white p-5 shadow-sm ring-1 ring-black/4">
           <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-brand-ink-faint">
@@ -248,7 +286,11 @@ export function ClienteEnvioDetailPage() {
         <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-medium text-brand-ink">Eliminar dirección</p>
-            <p className="mt-0.5 text-xs text-brand-ink-faint">Permanente. No afecta datos históricos fuera de esta tabla.</p>
+            <p className="mt-0.5 text-xs text-brand-ink-faint">
+              {row.catalogo_origen === 'ctc'
+                ? 'Permanente: la empresa desaparece también del directorio CTC en Envíos.'
+                : 'Permanente. No afecta datos históricos fuera de esta tabla.'}
+            </p>
           </div>
           {confirmDelete ? (
             <div className="flex flex-wrap items-center gap-2">
