@@ -12,6 +12,7 @@ import {
   IconRuler,
   IconScissors,
   IconTag,
+  IconTruck,
   IconUser,
   IconUsers,
   IconX,
@@ -66,14 +67,14 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
   const { data: profile } = useProfileQuery()
 
   const itemClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-2.5 rounded-md px-3 py-2.5 text-base font-bold transition ${
+    `flex items-center gap-2.5 rounded-md px-3 py-2.5 text-base font-bold transition-colors duration-150 ${
       isActive
         ? 'bg-brand-primary text-brand-on-primary shadow-sm'
         : 'text-brand-ink-muted hover:bg-brand-primary-subtle hover:text-brand-primary'
     }`
 
   const subItemClass = ({ isActive }: { isActive: boolean }) =>
-    `ml-2 flex items-center gap-2 rounded-md border-l-2 py-2.5 pl-3 pr-2 text-base transition ${
+    `ml-2 flex items-center gap-2 rounded-md border-l-2 py-2.5 pl-3 pr-2 text-base transition-colors duration-150 ${
       isActive
         ? 'border-brand-primary bg-brand-primary-subtle font-bold text-brand-primary'
         : 'border-transparent font-bold text-brand-ink-muted hover:border-brand-border hover:bg-brand-primary-ghost hover:text-brand-primary'
@@ -89,7 +90,7 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
       <div>
         <button
           type="button"
-          className={`flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-base font-bold transition ${
+          className={`flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-base font-bold transition-colors duration-150 ${
             location.pathname.startsWith('/produccion')
               ? 'bg-brand-primary-subtle text-brand-primary'
               : 'text-brand-ink-muted hover:bg-brand-primary-ghost hover:text-brand-primary'
@@ -103,7 +104,7 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
             aria-hidden
             size={16}
             stroke={1.5}
-            className={`shrink-0 text-brand-ink-faint transition-transform ${produccionOpen ? 'rotate-180' : ''}`}
+            className={`shrink-0 text-brand-ink-faint transition-transform duration-200 ease-out ${produccionOpen ? 'rotate-180' : ''}`}
           />
         </button>
         <NavCollapsible open={produccionOpen}>
@@ -127,7 +128,7 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
       <div>
         <button
           type="button"
-          className={`flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-base font-bold transition ${
+          className={`flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-base font-bold transition-colors duration-150 ${
             location.pathname.startsWith('/inventario')
               ? 'bg-brand-primary-subtle text-brand-primary'
               : 'text-brand-ink-muted hover:bg-brand-primary-ghost hover:text-brand-primary'
@@ -141,7 +142,7 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
             aria-hidden
             size={16}
             stroke={1.5}
-            className={`shrink-0 text-brand-ink-faint transition-transform ${inventarioOpen ? 'rotate-180' : ''}`}
+            className={`shrink-0 text-brand-ink-faint transition-transform duration-200 ease-out ${inventarioOpen ? 'rotate-180' : ''}`}
           />
         </button>
         <NavCollapsible open={inventarioOpen}>
@@ -161,6 +162,11 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
           </div>
         </NavCollapsible>
       </div>
+
+      <NavLink to="/envios" className={itemClass} onClick={onNavigate}>
+        <IconTruck {...ic.nav} aria-hidden />
+        Envíos
+      </NavLink>
 
       {profile?.role === 'admin' && (
         <NavLink to="/usuarios" className={itemClass} onClick={onNavigate}>
@@ -194,7 +200,7 @@ function SidebarUserCard() {
   return (
     <NavLink
       to="/cuenta"
-      className="flex items-center gap-2.5 rounded-lg px-2 py-2 transition hover:bg-brand-primary-ghost"
+      className="flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors duration-150 hover:bg-brand-primary-ghost"
     >
       <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full border border-brand-border bg-brand-primary-ghost">
         {avatarUrl ? (
@@ -215,7 +221,6 @@ function SidebarUserCard() {
 
 export function DashboardLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const location = useLocation()
   const reduceMotion = useReducedMotion()
 
   useEffect(() => {
@@ -251,13 +256,13 @@ export function DashboardLayout() {
             <BrandLogo size="md" showText subtitle="Panel interno" />
           </div>
           <div className="flex flex-1 flex-col overflow-y-auto p-3">
-            <SidebarNav key={location.pathname} />
+            <SidebarNav />
           </div>
           <div className="border-t border-brand-border p-3 space-y-1">
             <SidebarUserCard />
             <button
               type="button"
-              className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-semibold text-brand-ink-muted transition hover:bg-red-50 hover:text-red-700"
+              className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-semibold text-brand-ink-muted transition-colors duration-150 hover:bg-red-50 hover:text-red-700"
               onClick={handleLogout}
             >
               <IconLogout {...ic.nav} aria-hidden />
@@ -272,19 +277,48 @@ export function DashboardLayout() {
               <BrandLogo size="sm" showText subtitle="Panel interno" className="min-w-0" />
               <button
                 type="button"
-                className="inline-flex items-center gap-2 rounded-md border border-brand-primary-hover bg-brand-primary px-3 py-2 text-sm font-bold text-brand-on-primary shadow-sm transition hover:bg-brand-primary-hover"
+                className="inline-flex items-center gap-2 rounded-md border border-brand-primary-hover bg-brand-primary px-3 py-2 text-sm font-bold text-brand-on-primary shadow-sm transition-colors duration-150 hover:bg-brand-primary-hover active:scale-95"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
                 aria-expanded={mobileMenuOpen}
                 aria-controls="mobile-dashboard-nav"
                 onClick={() => setMobileMenuOpen((o) => !o)}
               >
-                <IconMenu2 size={18} stroke={1.5} aria-hidden />
-                Menú
-                <IconChevronDown
-                  aria-hidden
-                  size={16}
-                  stroke={1.5}
-                  className={`text-brand-on-primary/85 transition-transform duration-200 ${mobileMenuOpen ? 'rotate-180' : ''}`}
-                />
+                <span className="relative flex h-[18px] w-[18px] shrink-0 items-center justify-center overflow-hidden">
+                  <AnimatePresence mode="wait" initial={false}>
+                    {mobileMenuOpen ? (
+                      <motion.span
+                        key="icon-x"
+                        initial={{ rotate: 90, opacity: 0, scale: 0.7 }}
+                        animate={{ rotate: 0, opacity: 1, scale: 1 }}
+                        exit={{ rotate: -90, opacity: 0, scale: 0.7 }}
+                        transition={{ duration: 0.18, ease: menuEase }}
+                        className="absolute"
+                      >
+                        <IconX size={18} stroke={2} aria-hidden />
+                      </motion.span>
+                    ) : (
+                      <motion.span
+                        key="icon-menu"
+                        initial={{ rotate: -90, opacity: 0, scale: 0.7 }}
+                        animate={{ rotate: 0, opacity: 1, scale: 1 }}
+                        exit={{ rotate: 90, opacity: 0, scale: 0.7 }}
+                        transition={{ duration: 0.18, ease: menuEase }}
+                        className="absolute"
+                      >
+                        <IconMenu2 size={18} stroke={1.5} aria-hidden />
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </span>
+                <motion.span
+                  key={mobileMenuOpen ? 'label-close' : 'label-open'}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.15, ease: menuEase }}
+                >
+                  {mobileMenuOpen ? 'Cerrar' : 'Menú'}
+                </motion.span>
               </button>
             </div>
           </header>
@@ -325,7 +359,8 @@ export function DashboardLayout() {
                     </div>
                     <button
                       type="button"
-                      className="rounded-md p-2 text-brand-ink-muted transition hover:bg-brand-blush/60 hover:text-brand-ink"
+                      className="rounded-md p-2 text-brand-ink-muted transition-colors duration-150 hover:bg-brand-blush/60 hover:text-brand-ink"
+                      style={{ WebkitTapHighlightColor: 'transparent' }}
                       aria-label="Cerrar menú"
                       onClick={() => setMobileMenuOpen(false)}
                     >
@@ -334,12 +369,13 @@ export function DashboardLayout() {
                   </div>
                   <div className="flex flex-1 flex-col overflow-y-auto p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
                     <SidebarNav
-                      key={location.pathname}
-                      onNavigate={() => setMobileMenuOpen(false)}
+                      onNavigate={() => {
+                        setTimeout(() => setMobileMenuOpen(false), 80)
+                      }}
                     />
                     <button
                       type="button"
-                      className="mt-6 flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-base font-bold text-brand-ink-muted transition hover:bg-red-50 hover:text-red-700"
+                      className="mt-6 flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-base font-bold text-brand-ink-muted transition-colors duration-150 hover:bg-red-50 hover:text-red-700"
                       onClick={handleLogout}
                     >
                       <IconLogout {...ic.nav} aria-hidden />

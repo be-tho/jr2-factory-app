@@ -164,3 +164,24 @@ export interface Costurero {
   created_at: string
   updated_at: string
 }
+
+// ─── Envíos / direcciones cliente ─────────────────────────────────────────────
+
+/** `public.clientes_envio` — dirección, Maps y zonas de cobertura para logística. */
+export interface ClienteEnvio {
+  id: string
+  nombre_empresa: string
+  direccion: string
+  localidad: string | null
+  provincia: string
+  /** Link principal para compartir (WhatsApp, etc.). */
+  maps_url: string
+  /** Opcional: URL del `src` del iframe de Google Maps, solo para vista previa en la app. */
+  maps_embed_url: string | null
+  /** A dónde envía el cliente (texto libre: provincias, interior, CABA, etc.). */
+  zonas_envio: string
+  notas: string | null
+  activo: boolean
+  created_at: string
+  updated_at: string
+}

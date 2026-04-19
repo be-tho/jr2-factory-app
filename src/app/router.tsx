@@ -32,6 +32,10 @@ const ROUTE_TITLES: Array<{ pattern: RegExp | string; title: string }> = [
   { pattern: '/inventario/temporadas/nueva', title: 'Nueva Temporada' },
   { pattern: '/inventario/temporadas', title: 'Temporadas' },
   { pattern: '/cuenta', title: 'Mi Cuenta' },
+  { pattern: '/envios/nuevo', title: 'Nueva dirección de envío' },
+  { pattern: /^\/envios\/[^/]+\/editar$/, title: 'Editar dirección de envío' },
+  { pattern: /^\/envios\/[^/]+$/, title: 'Detalle envío' },
+  { pattern: '/envios', title: 'Envíos' },
   { pattern: '/usuarios', title: 'Usuarios' },
 ]
 
@@ -134,6 +138,18 @@ const EditarPatronPage = lazy(() =>
 const AdminUsersPage = lazy(() =>
   import('../features/admin/pages/AdminUsersPage').then((m) => ({ default: m.AdminUsersPage })),
 )
+const EnviosPage = lazy(() =>
+  import('../features/envios/pages/EnviosPage').then((m) => ({ default: m.EnviosPage })),
+)
+const NuevoClienteEnvioPage = lazy(() =>
+  import('../features/envios/pages/NuevoClienteEnvioPage').then((m) => ({ default: m.NuevoClienteEnvioPage })),
+)
+const ClienteEnvioDetailPage = lazy(() =>
+  import('../features/envios/pages/ClienteEnvioDetailPage').then((m) => ({ default: m.ClienteEnvioDetailPage })),
+)
+const EditarClienteEnvioPage = lazy(() =>
+  import('../features/envios/pages/EditarClienteEnvioPage').then((m) => ({ default: m.EditarClienteEnvioPage })),
+)
 
 function RouteFallback() {
   return (
@@ -178,6 +194,10 @@ export function AppRouter() {
             <Route path="/inventario/temporadas" element={<TemporadasPage />} />
             <Route path="/inventario/temporadas/nueva" element={<NuevaTemporadaPage />} />
             <Route path="/inventario/temporadas/:id/editar" element={<EditarTemporadaPage />} />
+            <Route path="/envios" element={<EnviosPage />} />
+            <Route path="/envios/nuevo" element={<NuevoClienteEnvioPage />} />
+            <Route path="/envios/:id/editar" element={<EditarClienteEnvioPage />} />
+            <Route path="/envios/:id" element={<ClienteEnvioDetailPage />} />
             <Route path="/cuenta" element={<CuentaPage />} />
             <Route element={<AdminRoute />}>
               <Route path="/usuarios" element={<AdminUsersPage />} />
