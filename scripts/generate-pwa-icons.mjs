@@ -9,7 +9,7 @@ import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = resolve(__dirname, '..')
-const outDir = resolve(root, 'public', 'icons')
+const outDir = resolve(root, 'public')
 
 mkdirSync(outDir, { recursive: true })
 
@@ -89,4 +89,4 @@ for (const { name, size, svg } of icons) {
   console.log(`  ✓ ${name} (${size}×${size})`)
 }
 
-console.log('\n¡Iconos generados en public/icons/!')
+console.log('\n¡Iconos generados en public/ (raíz, junto al resto de assets estáticos)!')
