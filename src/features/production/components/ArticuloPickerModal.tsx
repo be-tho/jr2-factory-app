@@ -74,7 +74,7 @@ export function ArticuloPickerModal({ selected, onConfirm, onClose }: ArticuloPi
         className="fixed inset-0 z-40 flex items-center justify-center p-4"
       >
         {/* Backdrop */}
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} aria-hidden />
+        <div className="absolute inset-0 bg-modal-scrim" onClick={onClose} aria-hidden />
 
         {/* Panel */}
         <div className="relative z-10 flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-brand-surface shadow-2xl ring-1 ring-brand-border" style={{ maxHeight: '85vh' }}>

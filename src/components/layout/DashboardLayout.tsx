@@ -4,6 +4,9 @@ import {
   IconBuildingFactory2,
   IconCalendar,
   IconChevronDown,
+  IconClipboardList,
+  IconCreditCard,
+  IconHistory,
   IconLayoutDashboard,
   IconStack,
   IconLogout,
@@ -11,6 +14,7 @@ import {
   IconPackage,
   IconRuler,
   IconScissors,
+  IconShoppingBag,
   IconShoppingCart,
   IconTag,
   IconTruck,
@@ -66,6 +70,7 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
   const [inventarioOpen, setInventarioOpen] = useState(() =>
     location.pathname.startsWith('/inventario'),
   )
+  const [ventasOpen, setVentasOpen] = useState(() => location.pathname.startsWith('/ventas'))
   const { data: profile } = useProfileQuery()
 
   const itemClass = ({ isActive }: { isActive: boolean }) =>
@@ -170,10 +175,47 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
         Envíos
       </NavLink>
 
-      <NavLink to="/ventas" className={itemClass} onClick={onNavigate}>
-        <IconShoppingCart {...ic.nav} aria-hidden />
-        Ventas
-      </NavLink>
+      <div>
+        <button
+          type="button"
+          className={`flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-base font-bold transition-colors duration-150 ${
+            location.pathname.startsWith('/ventas')
+              ? 'bg-brand-primary-subtle text-brand-primary'
+              : 'text-brand-ink-muted hover:bg-brand-primary-ghost hover:text-brand-primary'
+          }`}
+          aria-expanded={ventasOpen}
+          onClick={() => setVentasOpen((o) => !o)}
+        >
+          <IconShoppingCart {...ic.nav} aria-hidden />
+          <span className="min-w-0 flex-1">Ventas</span>
+          <IconChevronDown
+            aria-hidden
+            size={16}
+            stroke={1.5}
+            className={`shrink-0 text-brand-ink-faint transition-transform duration-200 ease-out ${ventasOpen ? 'rotate-180' : ''}`}
+          />
+        </button>
+        <NavCollapsible open={ventasOpen}>
+          <div className="mt-1 flex flex-col gap-0.5">
+            <NavLink to="/ventas" end className={subItemClass} onClick={onNavigate}>
+              <IconShoppingBag {...ic.navSub} aria-hidden />
+              Catálogo
+            </NavLink>
+            <NavLink to="/ventas/checkout" className={subItemClass} onClick={onNavigate}>
+              <IconCreditCard {...ic.navSub} aria-hidden />
+              Checkout
+            </NavLink>
+            <NavLink to="/ventas/ordenes" className={subItemClass} onClick={onNavigate}>
+              <IconClipboardList {...ic.navSub} aria-hidden />
+              Órdenes
+            </NavLink>
+            <NavLink to="/ventas/historial" className={subItemClass} onClick={onNavigate}>
+              <IconHistory {...ic.navSub} aria-hidden />
+              Historial
+            </NavLink>
+          </div>
+        </NavCollapsible>
+      </div>
 
       {profile?.role === 'admin' && (
         <NavLink to="/usuarios" className={itemClass} onClick={onNavigate}>
@@ -335,7 +377,7 @@ export function DashboardLayout() {
                 <motion.button
                   key="mobile-drawer-backdrop"
                   type="button"
-                  className="fixed inset-0 z-50 cursor-default border-0 bg-brand-ink/40 p-0 backdrop-blur-[2px] sm:hidden"
+                  className="fixed inset-0 z-50 cursor-default border-0 bg-modal-scrim p-0 sm:hidden"
                   aria-label="Cerrar menú"
                   initial={reduceMotion ? false : { opacity: 0 }}
                   animate={{ opacity: 1 }}

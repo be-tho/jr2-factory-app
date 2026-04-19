@@ -37,6 +37,10 @@ const ROUTE_TITLES: Array<{ pattern: RegExp | string; title: string }> = [
   { pattern: /^\/envios\/[^/]+$/, title: 'Detalle envío' },
   { pattern: '/envios', title: 'Envíos' },
   { pattern: '/ventas/checkout', title: 'Checkout venta' },
+  { pattern: /^\/ventas\/historial\/[^/]+$/, title: 'Detalle venta (historial)' },
+  { pattern: '/ventas/historial', title: 'Historial de ventas' },
+  { pattern: /^\/ventas\/ordenes\/[^/]+$/, title: 'Editar orden de venta' },
+  { pattern: '/ventas/ordenes', title: 'Órdenes de venta' },
   { pattern: '/ventas', title: 'Ventas' },
   { pattern: '/usuarios', title: 'Usuarios' },
 ]
@@ -158,6 +162,15 @@ const VentasPage = lazy(() =>
 const VentasCheckoutPage = lazy(() =>
   import('../features/sales/pages/VentasCheckoutPage').then((m) => ({ default: m.VentasCheckoutPage })),
 )
+const VentasOrdenesActivasPage = lazy(() =>
+  import('../features/sales/pages/VentasOrdenesListPage').then((m) => ({ default: m.VentasOrdenesActivasPage })),
+)
+const VentasHistorialVentasPage = lazy(() =>
+  import('../features/sales/pages/VentasOrdenesListPage').then((m) => ({ default: m.VentasHistorialVentasPage })),
+)
+const OrdenVentaDetailPage = lazy(() =>
+  import('../features/sales/pages/OrdenVentaDetailPage').then((m) => ({ default: m.OrdenVentaDetailPage })),
+)
 
 function RouteFallback() {
   return (
@@ -207,6 +220,10 @@ export function AppRouter() {
             <Route path="/envios/:id/editar" element={<EditarClienteEnvioPage />} />
             <Route path="/envios/:id" element={<ClienteEnvioDetailPage />} />
             <Route path="/ventas/checkout" element={<VentasCheckoutPage />} />
+            <Route path="/ventas/historial/:id" element={<OrdenVentaDetailPage />} />
+            <Route path="/ventas/historial" element={<VentasHistorialVentasPage />} />
+            <Route path="/ventas/ordenes/:id" element={<OrdenVentaDetailPage />} />
+            <Route path="/ventas/ordenes" element={<VentasOrdenesActivasPage />} />
             <Route path="/ventas" element={<VentasPage />} />
             <Route path="/cuenta" element={<CuentaPage />} />
             <Route element={<AdminRoute />}>

@@ -198,6 +198,9 @@ export interface ClienteEnvio {
 
 export type MedioPagoVenta = 'efectivo' | 'transferencia'
 
+/** Pendiente = editable / a cobrar; pagado = historial cerrado. */
+export type OrdenVentaEstado = 'pendiente' | 'pagado'
+
 /** `public.ordenes_venta` — cabecera de venta desde la sección Ventas. */
 export interface OrdenVentaRow {
   id: string
@@ -205,7 +208,9 @@ export interface OrdenVentaRow {
   cliente_telefono: string | null
   medio_pago: MedioPagoVenta
   total: number
-  estado: string
+  estado: OrdenVentaEstado
+  /** Fecha en que se marcó como pagada (historial definitivo). */
+  pagado_at: string | null
   created_by: string
   created_at: string
   updated_at: string

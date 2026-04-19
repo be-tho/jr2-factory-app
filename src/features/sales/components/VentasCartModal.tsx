@@ -65,7 +65,7 @@ export function VentasCartModal({ open, onClose, productById }: VentasCartModalP
     <div className="fixed inset-0 z-[200] flex items-end justify-center p-0 sm:items-center sm:p-4">
       <motion.div
         {...backdropMotion}
-        className="absolute inset-0 bg-brand-ink/50 backdrop-blur-[3px]"
+        className="absolute inset-0 bg-modal-scrim"
         onClick={onClose}
         role="presentation"
         aria-hidden

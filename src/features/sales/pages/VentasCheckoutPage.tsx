@@ -235,7 +235,7 @@ export function VentasCheckoutPage() {
         onSuccess: () => {
           if (warnings.length > 0) toast.message(warnings.join(' · '), { duration: 6000 })
           clear()
-          navigate('/ventas', { replace: true })
+          navigate('/ventas/ordenes', { replace: true })
         },
       },
     )

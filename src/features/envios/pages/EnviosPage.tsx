@@ -38,7 +38,7 @@ function DeleteDialog({
   loading: boolean
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-modal-scrim p-4">
       <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
         <h3 className="text-base font-bold text-brand-ink">¿Eliminar esta dirección?</h3>
         <p className="mt-2 text-sm text-brand-ink-muted">
