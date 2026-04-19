@@ -10,8 +10,9 @@ import {
   IconX,
   IconCheck,
 } from '@tabler/icons-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { SimplePagination } from '../../../components/ui/SimplePagination'
 import { PROVINCIAS_ARGENTINA } from '../../../lib/argentina-provincias'
 import { ic } from '../../../lib/tabler'
 import {
@@ -22,6 +23,8 @@ import {
 import type { ClienteEnvio } from '../../../types/database'
 
 type FiltroActivo = 'activos' | 'todos' | 'inactivos'
+
+const PAGE_SIZE = 12
 
 function DeleteDialog({
   row,
@@ -81,6 +84,7 @@ export function EnviosPage() {
   const [search, setSearch] = useState('')
   const [provinciaFiltro, setProvinciaFiltro] = useState<string>('')
   const [filtro, setFiltro] = useState<FiltroActivo>('activos')
+  const [page, setPage] = useState(1)
   const [deleteTarget, setDeleteTarget] = useState<ClienteEnvio | null>(null)
 
   const filtered = useMemo(() => {
@@ -104,6 +108,21 @@ export function EnviosPage() {
       return matchFiltro && matchProv && matchSearch
     })
   }, [rows, filtro, provinciaFiltro, search])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+
+  useEffect(() => {
+    setPage(1)
+  }, [search, provinciaFiltro, filtro])
+
+  useEffect(() => {
+    setPage((p) => Math.min(p, totalPages))
+  }, [totalPages])
+
+  const pageRows = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE
+    return filtered.slice(start, start + PAGE_SIZE)
+  }, [filtered, page])
 
   const activos = rows.filter((r) => r.activo).length
   const ctcCount = rows.filter((r) => r.catalogo_origen === 'ctc').length
@@ -182,7 +201,7 @@ export function EnviosPage() {
 
       {loading ? (
         <div className="space-y-3">
-          {[1, 2, 3, 4].map((i) => (
+          {Array.from({ length: PAGE_SIZE }).map((_, i) => (
             <div key={i} className="h-24 animate-pulse rounded-xl bg-brand-border" />
           ))}
         </div>
@@ -212,7 +231,7 @@ export function EnviosPage() {
       ) : (
         <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/4">
           <ul className="divide-y divide-brand-border-subtle">
-            {filtered.map((r) => (
+            {pageRows.map((r) => (
               <li key={r.id} className="flex flex-col gap-3 px-5 py-4 transition hover:bg-[#faf9fb] sm:flex-row sm:items-center sm:gap-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-primary-ghost text-brand-primary">
                   <IconMapPin size={20} stroke={1.5} aria-hidden />
@@ -298,6 +317,18 @@ export function EnviosPage() {
               </li>
             ))}
           </ul>
+          {totalPages > 1 && (
+            <div className="px-5 pb-5">
+              <SimplePagination
+                page={page}
+                totalPages={totalPages}
+                totalItems={filtered.length}
+                pageSize={PAGE_SIZE}
+                onPageChange={setPage}
+                ariaLabel="Paginación de direcciones de envío"
+              />
+            </div>
+          )}
         </div>
       )}
 

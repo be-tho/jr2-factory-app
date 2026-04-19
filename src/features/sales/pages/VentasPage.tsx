@@ -1,20 +1,15 @@
-import {
-  IconChevronLeft,
-  IconChevronRight,
-  IconPackage,
-  IconSearch,
-  IconShoppingCart,
-} from '@tabler/icons-react'
+import { IconPackage, IconSearch, IconShoppingCart } from '@tabler/icons-react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { SimplePagination } from '../../../components/ui/SimplePagination'
 import { ic } from '../../../lib/tabler'
 import { useProductsQuery } from '../../inventory/hooks/useProducts'
 import { VentasCartModal } from '../components/VentasCartModal'
 import { VentaProductCard } from '../components/VentaProductCard'
 import { useCartStore } from '../store/cartStore'
 
-const PAGE_SIZE = 8
+const PAGE_SIZE = 12
 
 const searchInputClass =
   'w-full rounded-2xl border-2 border-brand-border bg-brand-surface py-3 pl-11 pr-4 text-sm text-brand-ink shadow-sm outline-none transition placeholder:text-brand-ink-faint focus:border-brand-primary focus:ring-4 focus:ring-brand-blush/35'
@@ -25,68 +20,6 @@ function normalize(str: string): string {
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')
     .trim()
-}
-
-function CatalogPagination({
-  page,
-  totalPages,
-  totalItems,
-  onPageChange,
-}: {
-  page: number
-  totalPages: number
-  totalItems: number
-  onPageChange: (p: number) => void
-}) {
-  const start = totalItems === 0 ? 0 : (page - 1) * PAGE_SIZE + 1
-  const end = Math.min(page * PAGE_SIZE, totalItems)
-
-  return (
-    <nav
-      className="flex flex-col gap-4 border-t border-brand-border-subtle pt-6 sm:flex-row sm:items-center sm:justify-between"
-      aria-label="Paginación del catálogo"
-    >
-      <p className="text-center text-sm text-brand-ink-muted sm:text-left">
-        {totalItems === 0 ? (
-          'Sin resultados'
-        ) : (
-          <>
-            Mostrando{' '}
-            <span className="font-semibold tabular-nums text-brand-ink">
-              {start}–{end}
-            </span>{' '}
-            de <span className="font-semibold tabular-nums text-brand-ink">{totalItems}</span>
-          </>
-        )}
-      </p>
-
-      <div className="flex items-center justify-center gap-2 sm:justify-end">
-        <button
-          type="button"
-          disabled={page <= 1}
-          onClick={() => onPageChange(page - 1)}
-          className="inline-flex items-center gap-1 rounded-xl border border-brand-border bg-brand-surface px-3 py-2 text-sm font-semibold text-brand-ink shadow-sm transition hover:border-brand-border-strong hover:bg-brand-canvas disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <IconChevronLeft size={18} stroke={2} aria-hidden />
-          Anterior
-        </button>
-
-        <span className="min-w-28 text-center text-sm tabular-nums text-brand-ink-muted">
-          Página <span className="font-semibold text-brand-ink">{page}</span> / {totalPages}
-        </span>
-
-        <button
-          type="button"
-          disabled={page >= totalPages}
-          onClick={() => onPageChange(page + 1)}
-          className="inline-flex items-center gap-1 rounded-xl border border-brand-border bg-brand-surface px-3 py-2 text-sm font-semibold text-brand-ink shadow-sm transition hover:border-brand-border-strong hover:bg-brand-canvas disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Siguiente
-          <IconChevronRight size={18} stroke={2} aria-hidden />
-        </button>
-      </div>
-    </nav>
-  )
 }
 
 export function VentasPage() {
@@ -196,7 +129,7 @@ export function VentasPage() {
               )}
             </button>
             <p className="text-center text-[11px] text-brand-ink-faint sm:text-right">
-              Desde {PAGE_SIZE} artículos por página
+              {PAGE_SIZE} artículos por página
             </p>
           </div>
         </div>
@@ -284,11 +217,13 @@ export function VentasPage() {
             </div>
 
             {totalPages > 1 && (
-              <CatalogPagination
+              <SimplePagination
                 page={page}
                 totalPages={totalPages}
                 totalItems={ventaProducts.length}
+                pageSize={PAGE_SIZE}
                 onPageChange={setPage}
+                ariaLabel="Paginación del catálogo de ventas"
               />
             )}
           </>
