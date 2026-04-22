@@ -221,6 +221,10 @@ export interface OrdenVentaItemRow {
   id: string
   orden_id: string
   articulo_id: string
+  /** Snapshot del nombre del artículo al momento de la venta (nullable para registros anteriores). */
+  nombre_articulo: string | null
+  /** Snapshot del SKU del artículo al momento de la venta (nullable para registros anteriores). */
+  sku_articulo: string | null
   cantidad: number
   precio_unitario: number
   subtotal: number

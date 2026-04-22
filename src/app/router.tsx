@@ -37,6 +37,7 @@ const ROUTE_TITLES: Array<{ pattern: RegExp | string; title: string }> = [
   { pattern: /^\/envios\/[^/]+$/, title: 'Detalle envío' },
   { pattern: '/envios', title: 'Envíos' },
   { pattern: '/ventas/checkout', title: 'Checkout venta' },
+  { pattern: /^\/ventas\/comprobante\/[^/]+$/, title: 'Comprobante de venta' },
   { pattern: /^\/ventas\/historial\/[^/]+$/, title: 'Detalle venta (historial)' },
   { pattern: '/ventas/historial', title: 'Historial de ventas' },
   { pattern: /^\/ventas\/ordenes\/[^/]+$/, title: 'Editar orden de venta' },
@@ -171,6 +172,9 @@ const VentasHistorialVentasPage = lazy(() =>
 const OrdenVentaDetailPage = lazy(() =>
   import('../features/sales/pages/OrdenVentaDetailPage').then((m) => ({ default: m.OrdenVentaDetailPage })),
 )
+const ComprobanteVentaPage = lazy(() =>
+  import('../features/sales/pages/ComprobanteVentaPage').then((m) => ({ default: m.ComprobanteVentaPage })),
+)
 
 function RouteFallback() {
   return (
@@ -220,6 +224,7 @@ export function AppRouter() {
             <Route path="/envios/:id/editar" element={<EditarClienteEnvioPage />} />
             <Route path="/envios/:id" element={<ClienteEnvioDetailPage />} />
             <Route path="/ventas/checkout" element={<VentasCheckoutPage />} />
+            <Route path="/ventas/comprobante/:id" element={<ComprobanteVentaPage />} />
             <Route path="/ventas/historial/:id" element={<OrdenVentaDetailPage />} />
             <Route path="/ventas/historial" element={<VentasHistorialVentasPage />} />
             <Route path="/ventas/ordenes/:id" element={<OrdenVentaDetailPage />} />
