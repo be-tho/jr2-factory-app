@@ -2,7 +2,7 @@
 
 /* JR2 — paleta marca centrada en primary #EB3D63 (derivados en la misma tonalidad) */
 @theme {
-  --font-sans: 'Google Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
 
   --color-brand-canvas: #fcf8f9;
   --color-brand-surface: #ffffff;
