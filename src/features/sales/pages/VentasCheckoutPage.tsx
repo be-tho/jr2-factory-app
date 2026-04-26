@@ -14,6 +14,7 @@ import { toast } from 'sonner'
 import type { MedioPagoVenta, Product } from '../../../types/database'
 import { useProductsQuery } from '../../inventory/hooks/useProducts'
 import { useCreateOrdenVentaMutation } from '../hooks/useOrdenVenta'
+import type { CreateOrdenVentaItemInput } from '../services/ordenesVenta.service'
 import {
   formatARS,
   type PrecioFuenteVenta,
@@ -174,12 +175,7 @@ export function VentasCheckoutPage() {
 
   const { items, total, warnings } = useMemo(() => {
     const w: string[] = []
-    const out: {
-      articulo_id: string
-      cantidad: number
-      precio_unitario: number
-      subtotal: number
-    }[] = []
+    const out: CreateOrdenVentaItemInput[] = []
     let sum = 0
 
     for (const line of lines) {
@@ -202,6 +198,8 @@ export function VentasCheckoutPage() {
       sum += subtotal
       out.push({
         articulo_id: line.articulo_id,
+        nombre_articulo: p.name,
+        sku_articulo: p.sku,
         cantidad: qty,
         precio_unitario: unit,
         subtotal,
@@ -232,10 +230,10 @@ export function VentasCheckoutPage() {
         items,
       },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
           if (warnings.length > 0) toast.message(warnings.join(' · '), { duration: 6000 })
           clear()
-          navigate('/ventas/ordenes', { replace: true })
+          navigate(`/ventas/comprobante/${data.id}`, { replace: true, state: { fromCheckout: true } })
         },
       },
     )

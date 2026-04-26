@@ -5,6 +5,27 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+          if (id.includes('recharts') || id.includes('victory') || id.includes('d3-')) {
+            return 'recharts'
+          }
+          if (id.includes('framer-motion')) {
+            return 'framer'
+          }
+          if (id.includes('@tabler/icons-react')) {
+            return 'icons'
+          }
+          if (id.includes('@supabase')) {
+            return 'supabase'
+          }
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     tailwindcss(),

@@ -8,6 +8,8 @@ const APP_NAME = 'JR2-MODA'
 const ROUTE_TITLES: Array<{ pattern: RegExp | string; title: string }> = [
   { pattern: '/login', title: 'Ingresar' },
   { pattern: '/registro', title: 'Registro' },
+  { pattern: '/recuperar-password', title: 'Recuperar password' },
+  { pattern: '/actualizar-password', title: 'Actualizar password' },
   { pattern: '/dashboard', title: 'Dashboard' },
   { pattern: /^\/produccion\/cortes\/[^/]+\/editar$/, title: 'Editar Corte' },
   { pattern: /^\/produccion\/cortes\/[^/]+$/, title: 'Detalle Corte' },
@@ -37,6 +39,7 @@ const ROUTE_TITLES: Array<{ pattern: RegExp | string; title: string }> = [
   { pattern: /^\/envios\/[^/]+$/, title: 'Detalle envío' },
   { pattern: '/envios', title: 'Envíos' },
   { pattern: '/ventas/checkout', title: 'Checkout venta' },
+  { pattern: /^\/ventas\/comprobante\/[^/]+$/, title: 'Comprobante de venta' },
   { pattern: /^\/ventas\/historial\/[^/]+$/, title: 'Detalle venta (historial)' },
   { pattern: '/ventas/historial', title: 'Historial de ventas' },
   { pattern: /^\/ventas\/ordenes\/[^/]+$/, title: 'Editar orden de venta' },
@@ -74,6 +77,12 @@ const LoginPage = lazy(() =>
 )
 const RegisterPage = lazy(() =>
   import('../features/auth/pages/RegisterPage').then((m) => ({ default: m.RegisterPage })),
+)
+const ForgotPasswordPage = lazy(() =>
+  import('../features/auth/pages/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage })),
+)
+const UpdatePasswordPage = lazy(() =>
+  import('../features/auth/pages/UpdatePasswordPage').then((m) => ({ default: m.UpdatePasswordPage })),
 )
 const ArticuloDetailPage = lazy(() =>
   import('../features/inventory/pages/ArticuloDetailPage').then((m) => ({ default: m.ArticuloDetailPage })),
@@ -171,6 +180,9 @@ const VentasHistorialVentasPage = lazy(() =>
 const OrdenVentaDetailPage = lazy(() =>
   import('../features/sales/pages/OrdenVentaDetailPage').then((m) => ({ default: m.OrdenVentaDetailPage })),
 )
+const ComprobanteVentaPage = lazy(() =>
+  import('../features/sales/pages/ComprobanteVentaPage').then((m) => ({ default: m.ComprobanteVentaPage })),
+)
 
 function RouteFallback() {
   return (
@@ -188,7 +200,10 @@ export function AppRouter() {
         <Route element={<PublicRoute />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/registro" element={<RegisterPage />} />
+          <Route path="/recuperar-password" element={<ForgotPasswordPage />} />
         </Route>
+
+        <Route path="/actualizar-password" element={<UpdatePasswordPage />} />
 
         <Route element={<ProtectedRoute />}>
           <Route element={<DashboardLayout />}>
@@ -220,6 +235,7 @@ export function AppRouter() {
             <Route path="/envios/:id/editar" element={<EditarClienteEnvioPage />} />
             <Route path="/envios/:id" element={<ClienteEnvioDetailPage />} />
             <Route path="/ventas/checkout" element={<VentasCheckoutPage />} />
+            <Route path="/ventas/comprobante/:id" element={<ComprobanteVentaPage />} />
             <Route path="/ventas/historial/:id" element={<OrdenVentaDetailPage />} />
             <Route path="/ventas/historial" element={<VentasHistorialVentasPage />} />
             <Route path="/ventas/ordenes/:id" element={<OrdenVentaDetailPage />} />

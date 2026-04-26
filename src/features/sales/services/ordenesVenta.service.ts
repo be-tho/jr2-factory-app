@@ -6,6 +6,8 @@ const TABLE_ITEMS = 'ordenes_venta_items'
 
 export type CreateOrdenVentaItemInput = {
   articulo_id: string
+  nombre_articulo?: string | null
+  sku_articulo?: string | null
   cantidad: number
   precio_unitario: number
   subtotal: number
@@ -89,6 +91,8 @@ function parseItemRow(raw: Record<string, unknown>): OrdenVentaItemRow | null {
     id,
     orden_id,
     articulo_id,
+    nombre_articulo: typeof raw.nombre_articulo === 'string' ? raw.nombre_articulo : null,
+    sku_articulo: typeof raw.sku_articulo === 'string' ? raw.sku_articulo : null,
     cantidad: Math.max(1, Math.floor(num(raw.cantidad))),
     precio_unitario: num(raw.precio_unitario),
     subtotal: num(raw.subtotal),
@@ -171,6 +175,8 @@ export async function createOrdenVenta(
   const rows = input.items.map((i) => ({
     orden_id: ordenId,
     articulo_id: i.articulo_id,
+    nombre_articulo: i.nombre_articulo ?? null,
+    sku_articulo: i.sku_articulo ?? null,
     cantidad: i.cantidad,
     precio_unitario: i.precio_unitario,
     subtotal: i.subtotal,
@@ -227,6 +233,8 @@ export async function updateOrdenVenta(
   const rows = input.items.map((i) => ({
     orden_id: id,
     articulo_id: i.articulo_id,
+    nombre_articulo: i.nombre_articulo ?? null,
+    sku_articulo: i.sku_articulo ?? null,
     cantidad: i.cantidad,
     precio_unitario: i.precio_unitario,
     subtotal: i.subtotal,

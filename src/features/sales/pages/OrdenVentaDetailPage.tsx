@@ -5,6 +5,7 @@ import {
   IconCreditCard,
   IconLoader2,
   IconPlus,
+  IconPrinter,
   IconTrash,
   IconUser,
 } from '@tabler/icons-react'
@@ -140,6 +141,8 @@ export function OrdenVentaDetailPage() {
     let sum = 0
     const out: {
       articulo_id: string
+      nombre_articulo: string | null
+      sku_articulo: string | null
       cantidad: number
       precio_unitario: number
       subtotal: number
@@ -150,8 +153,11 @@ export function OrdenVentaDetailPage() {
       const qty = Math.max(1, Math.floor(l.cantidad))
       const subtotal = qty * unit
       sum += subtotal
+      const p = productById.get(l.articulo_id)
       out.push({
         articulo_id: l.articulo_id,
+        nombre_articulo: p?.name ?? null,
+        sku_articulo: p?.sku ?? null,
         cantidad: qty,
         precio_unitario: unit,
         subtotal,
@@ -159,7 +165,7 @@ export function OrdenVentaDetailPage() {
     }
 
     return { total: sum, itemsPayload: out }
-  }, [lines])
+  }, [lines, productById])
 
   function setArticulo(lineKey: string, articuloId: string) {
     const p = productById.get(articuloId)
@@ -323,6 +329,13 @@ export function OrdenVentaDetailPage() {
             )}
           </p>
         </div>
+        <Link
+          to={`/ventas/comprobante/${id}`}
+          className="inline-flex items-center gap-2 rounded-xl border border-brand-border bg-brand-surface px-4 py-2.5 text-sm font-semibold text-brand-ink-muted shadow-sm transition hover:border-brand-primary hover:bg-brand-primary-ghost hover:text-brand-primary"
+        >
+          <IconPrinter size={16} stroke={1.5} aria-hidden />
+          Ver comprobante
+        </Link>
       </div>
 
       <form onSubmit={handleSave} className="grid gap-8 lg:grid-cols-[1fr_min(380px,100%)] lg:items-start lg:gap-10">

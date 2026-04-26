@@ -2,7 +2,7 @@
 
 /* JR2 — paleta marca centrada en primary #EB3D63 (derivados en la misma tonalidad) */
 @theme {
-  --font-sans: 'Google Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
 
   --color-brand-canvas: #fcf8f9;
   --color-brand-surface: #ffffff;
@@ -34,5 +34,32 @@
   body {
     @apply bg-brand-canvas text-brand-ink antialiased;
     font-family: var(--font-sans);
+  }
+}
+
+@media print {
+  /* Hide dashboard chrome so only the receipt prints */
+  aside,
+  header,
+  [role='banner'],
+  [role='navigation'],
+  [aria-label='Cerrar menú'] {
+    display: none !important;
+  }
+
+  /* Remove extra spacing from main area */
+  main {
+    padding: 0 !important;
+  }
+
+  /* Clean white background */
+  body {
+    background: white !important;
+  }
+
+  /* Hide animated elements that don't print well */
+  [data-framer-motion] {
+    animation: none !important;
+    transform: none !important;
   }
 }

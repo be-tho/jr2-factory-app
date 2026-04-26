@@ -114,6 +114,15 @@ export function LoginPage() {
         </button>
       </form>
 
+      <div className="mt-4 text-center">
+        <Link
+          to="/recuperar-password"
+          className="text-sm font-medium text-brand-ink underline decoration-brand-primary/60 underline-offset-2 transition hover:text-brand-primary-hover"
+        >
+          Olvide mi password
+        </Link>
+      </div>
+
       <p className="mt-6 text-center text-sm text-brand-ink-muted">
         No tienes cuenta?{' '}
         <Link
