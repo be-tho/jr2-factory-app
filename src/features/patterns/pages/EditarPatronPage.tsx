@@ -2,6 +2,7 @@ import {
   IconArrowLeft,
   IconFile,
   IconLoader2,
+  IconPhoto,
   IconRuler,
   IconUpload,
   IconX,
@@ -10,6 +11,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ic } from '../../../lib/tabler'
 import { useProductsQuery } from '../../inventory/hooks/useProducts'
+import { getPatternImagePublicUrl } from '../services/patrones.service'
 import {
   useArticulosConPatronQuery,
   usePatronQuery,
@@ -36,10 +38,14 @@ export function EditarPatronPage() {
   const [nombre, setNombre] = useState('')
   const [descripcion, setDescripcion] = useState('')
   const [newFile, setNewFile] = useState<File | null>(null)
+  const [newImage, setNewImage] = useState<File | null>(null)
+  const [removeCurrentImage, setRemoveCurrentImage] = useState(false)
   const [fileError, setFileError] = useState<string | null>(null)
+  const [imageError, setImageError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (patron) {
@@ -56,6 +62,8 @@ export function EditarPatronPage() {
 
   const articuloSeleccionado = articulos.find((a) => a.id === articuloId) ?? null
   const cargandoArticulos = loadingArticulos || loadingOcupados
+  const currentImageUrl =
+    patron?.image_path && patron.image_path.length > 0 ? getPatternImagePublicUrl(patron.image_path) : null
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = e.target.files?.[0] ?? null
@@ -80,6 +88,22 @@ export function EditarPatronPage() {
     setNewFile(dropped)
   }
 
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const selected = e.target.files?.[0] ?? null
+    setImageError(null)
+    if (!selected) return
+    if (!selected.type.startsWith('image/')) {
+      setImageError('Seleccioná una imagen válida.')
+      return
+    }
+    if (selected.size > 8 * 1024 * 1024) {
+      setImageError(`La imagen supera el límite de 8 MB (${formatFileSize(selected.size)}).`)
+      return
+    }
+    setNewImage(selected)
+    setRemoveCurrentImage(false)
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setFormError(null)
@@ -95,6 +119,8 @@ export function EditarPatronPage() {
           descripcion: descripcion.trim() || null,
           articulo_id: articuloId,
           file: newFile ?? undefined,
+          image: newImage ?? undefined,
+          remove_image: removeCurrentImage,
         },
       },
       { onSuccess: () => navigate(`/produccion/patrones/${patron.id}`, { replace: true }) },
@@ -278,6 +304,75 @@ export function EditarPatronPage() {
             )}
 
             {fileError && <p className="mt-2 text-xs text-red-600">{fileError}</p>}
+          </div>
+
+          {/* Image replacement */}
+          <div>
+            <p className="block text-sm font-semibold text-[#3d3b4f]">Foto del patrón</p>
+            <p className="mt-0.5 text-xs text-brand-ink-faint">
+              Podés mantener la actual, reemplazarla o quitarla.
+            </p>
+
+            {currentImageUrl && !newImage && !removeCurrentImage && (
+              <div className="mt-2 overflow-hidden rounded-lg ring-1 ring-[#e8e4f0]">
+                <img src={currentImageUrl} alt={patron.nombre} className="h-40 w-full object-cover" />
+              </div>
+            )}
+
+            {newImage ? (
+              <div className="mt-2 flex items-center gap-3 rounded-lg border border-brand-primary/30 bg-brand-primary-ghost px-4 py-3">
+                <IconPhoto size={18} stroke={1.5} className="shrink-0 text-brand-primary" aria-hidden />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-brand-primary">Nueva foto (reemplazará la actual)</p>
+                  <p className="truncate font-mono text-sm font-medium text-brand-ink">{newImage.name}</p>
+                  <p className="text-xs text-brand-ink-faint">{formatFileSize(newImage.size)}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setNewImage(null); if (imageInputRef.current) imageInputRef.current.value = '' }}
+                  className="shrink-0 rounded-md p-1 text-brand-ink-faint transition hover:bg-brand-blush/40 hover:text-brand-ink"
+                  aria-label="Quitar nueva imagen"
+                >
+                  <IconX size={16} stroke={2} aria-hidden />
+                </button>
+              </div>
+            ) : (
+              <div className="mt-2 rounded-xl border-2 border-dashed border-[#e8e4f0] bg-[#f8f7fa] px-4 py-5">
+                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-brand-ink-faint">
+                  Reemplazar foto
+                </p>
+                <button
+                  type="button"
+                  onClick={() => imageInputRef.current?.click()}
+                  className="inline-flex items-center gap-2 rounded-lg border border-[#e8e4f0] bg-white px-3 py-2 text-sm font-semibold text-brand-ink-muted transition hover:bg-[#f8f7fa] hover:text-brand-ink"
+                >
+                  <IconPhoto size={16} stroke={1.5} aria-hidden />
+                  Seleccionar imagen
+                </button>
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  className="sr-only"
+                  onChange={handleImageChange}
+                  accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
+                />
+                <p className="mt-2 text-xs text-brand-ink-faint">Formatos: JPG, PNG, WebP, GIF, SVG (máx. 8 MB).</p>
+              </div>
+            )}
+
+            {currentImageUrl && !newImage && (
+              <label className="mt-2 inline-flex items-center gap-2 text-sm text-brand-ink-muted">
+                <input
+                  type="checkbox"
+                  checked={removeCurrentImage}
+                  onChange={(e) => setRemoveCurrentImage(e.target.checked)}
+                  className="h-4 w-4 rounded border-[#d7d2e3] text-brand-primary focus:ring-brand-primary"
+                />
+                Quitar foto actual
+              </label>
+            )}
+
+            {imageError && <p className="mt-2 text-xs text-red-600">{imageError}</p>}
           </div>
         </div>
 

@@ -2,6 +2,7 @@ import {
   IconArrowLeft,
   IconFile,
   IconLoader2,
+  IconPhoto,
   IconRuler,
   IconUpload,
   IconX,
@@ -33,10 +34,13 @@ export function NuevoPatronPage() {
   const [nombre, setNombre] = useState('')
   const [descripcion, setDescripcion] = useState('')
   const [file, setFile] = useState<File | null>(null)
+  const [image, setImage] = useState<File | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
+  const [imageError, setImageError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
 
   const articulosDisponibles = articulos.filter((a) => !articulosConPatron.includes(a.id))
   const articuloSeleccionado = articulos.find((a) => a.id === articuloId) ?? null
@@ -80,9 +84,24 @@ export function NuevoPatronPage() {
     if (!file) { setFormError('Adjuntá el archivo del patrón.'); return }
 
     createMutation.mutate(
-      { articulo_id: articuloId, nombre: nombre.trim(), descripcion: descripcion.trim() || null, file },
+      { articulo_id: articuloId, nombre: nombre.trim(), descripcion: descripcion.trim() || null, file, image },
       { onSuccess: (data) => navigate(`/produccion/patrones/${data.id}`, { replace: true }) },
     )
+  }
+
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const selected = e.target.files?.[0] ?? null
+    setImageError(null)
+    if (!selected) return
+    if (!selected.type.startsWith('image/')) {
+      setImageError('Seleccioná un archivo de imagen válido.')
+      return
+    }
+    if (selected.size > 8 * 1024 * 1024) {
+      setImageError(`La imagen supera el límite de 8 MB (${formatFileSize(selected.size)}).`)
+      return
+    }
+    setImage(selected)
   }
 
   const isLoading = loadingArticulos || loadingOcupados
@@ -230,6 +249,56 @@ export function NuevoPatronPage() {
             {fileError && (
               <p className="mt-2 text-xs text-red-600">{fileError}</p>
             )}
+          </div>
+
+          {/* Pattern image upload */}
+          <div>
+            <p className="block text-sm font-semibold text-[#3d3b4f]">Foto del patrón (opcional)</p>
+            <p className="mt-0.5 text-xs text-brand-ink-faint">
+              Esta imagen es propia del patrón y no depende del artículo.
+            </p>
+
+            {image ? (
+              <div className="mt-3 flex items-center gap-3 rounded-lg bg-[#f8f7fa] px-4 py-3 ring-1 ring-[#e8e4f0]">
+                <IconPhoto size={20} stroke={1.5} className="shrink-0 text-brand-ink-faint" aria-hidden />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-mono text-sm font-medium text-brand-ink">{image.name}</p>
+                  <p className="text-xs text-brand-ink-faint">{formatFileSize(image.size)}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setImage(null); if (imageInputRef.current) imageInputRef.current.value = '' }}
+                  className="shrink-0 rounded-md p-1 text-brand-ink-faint transition hover:bg-[#e8e4f0] hover:text-brand-ink"
+                  aria-label="Quitar imagen"
+                >
+                  <IconX size={16} stroke={2} aria-hidden />
+                </button>
+              </div>
+            ) : (
+              <div className="mt-3 rounded-xl border-2 border-dashed border-[#e8e4f0] bg-[#f8f7fa] px-4 py-5">
+                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-brand-ink-faint">
+                  Cargar foto
+                </p>
+                <button
+                  type="button"
+                  onClick={() => imageInputRef.current?.click()}
+                  className="inline-flex items-center gap-2 rounded-lg border border-[#e8e4f0] bg-white px-3 py-2 text-sm font-semibold text-brand-ink-muted transition hover:bg-[#f8f7fa] hover:text-brand-ink"
+                >
+                  <IconPhoto size={16} stroke={1.5} aria-hidden />
+                  Seleccionar imagen
+                </button>
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  className="sr-only"
+                  onChange={handleImageChange}
+                  accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
+                />
+                <p className="mt-2 text-xs text-brand-ink-faint">Formatos: JPG, PNG, WebP, GIF, SVG (máx. 8 MB).</p>
+              </div>
+            )}
+
+            {imageError && <p className="mt-2 text-xs text-red-600">{imageError}</p>}
           </div>
         </div>
 

@@ -88,6 +88,7 @@ export interface PatronRow {
   nombre: string
   descripcion: string | null
   storage_path: string
+  image_path: string | null
   file_name: string
   file_size: number | null
   file_type: string | null

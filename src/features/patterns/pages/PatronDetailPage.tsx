@@ -11,14 +11,9 @@ import {
 } from '@tabler/icons-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import {
-  DEFAULT_ARTICLE_IMAGE_PUBLIC_URL,
-  hasStorageCoverImage,
-} from '../../../constants/defaultArticleImage'
 import { ic } from '../../../lib/tabler'
-import { getProductImagePublicUrl } from '../../media/services/storage.service'
 import { useDeletePatronMutation, usePatronQuery } from '../hooks/usePatrones'
-import { downloadPatronFile } from '../services/patrones.service'
+import { downloadPatronFile, getPatternImagePublicUrl } from '../services/patrones.service'
 
 function formatFileSize(bytes: number | null): string {
   if (bytes == null) return '—'
@@ -37,9 +32,10 @@ export function PatronDetailPage() {
   const [downloadError, setDownloadError] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
-  const storagePath = patron?.articulo_cover_image_path ?? null
-  const hasFile = hasStorageCoverImage(storagePath)
-  const coverSrc = hasFile ? getProductImagePublicUrl(storagePath) : DEFAULT_ARTICLE_IMAGE_PUBLIC_URL
+  const coverSrc =
+    patron?.image_path && patron.image_path.length > 0
+      ? getPatternImagePublicUrl(patron.image_path)
+      : null
 
   const imgRef = useRef<HTMLImageElement>(null)
   const [imgLoaded, setImgLoaded] = useState(false)
@@ -166,17 +162,23 @@ export function PatronDetailPage() {
 
       {/* Main content */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Cover image (from article) */}
-        <div className={`aspect-4/3 overflow-hidden rounded-xl ${hasFile ? 'bg-brand-canvas' : 'bg-white'} ring-1 ring-brand-border`}>
-          <img
-            ref={imgRef}
-            src={coverSrc}
-            alt={patron.articulo_nombre}
-            loading="lazy"
-            decoding="async"
-            onLoad={() => setImgLoaded(true)}
-            className={`h-full w-full transition-opacity duration-300 ${hasFile ? 'object-cover' : 'object-contain p-6'} ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
-          />
+        {/* Cover image */}
+        <div className="aspect-4/3 overflow-hidden rounded-xl ring-1 ring-brand-border">
+          {coverSrc ? (
+            <img
+              ref={imgRef}
+              src={coverSrc}
+              alt={patron.nombre}
+              loading="lazy"
+              decoding="async"
+              onLoad={() => setImgLoaded(true)}
+              className={`h-full w-full object-cover transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-[#f8f7fa] text-sm font-medium text-brand-ink-faint">
+              Sin foto de patrón
+            </div>
+          )}
         </div>
 
         {/* Details card */}

@@ -3,30 +3,28 @@ import type { Patron } from '../../../types/database'
 
 const TABLE = 'patrones'
 const BUCKET = 'patrones'
+const PATTERN_IMAGES_BUCKET = 'patrones-imagenes'
+const PATTERN_IMAGES_PREFIX = 'covers'
 const MAX_BYTES = 50 * 1024 * 1024 // 50 MB
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024 // 8 MB
+const ALLOWED_IMAGE_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/svg+xml',
+])
 
 const PATRON_SELECT = `
   *,
   articulos (
     nombre,
-    codigo,
-    articulo_imagenes ( storage_path, es_principal, orden )
+    codigo
   )
 `.trim()
 
 function sanitizeFileName(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 120) || 'patron'
-}
-
-function pickCoverStoragePath(
-  imagenes: { storage_path: string; es_principal: boolean; orden: number }[] | null,
-): string | null {
-  if (!imagenes?.length) return null
-  const sorted = [...imagenes].sort((a, b) => {
-    if (a.es_principal !== b.es_principal) return a.es_principal ? -1 : 1
-    return a.orden - b.orden
-  })
-  return sorted[0]?.storage_path ?? null
 }
 
 function rowToPatron(raw: unknown): Patron | null {
@@ -37,6 +35,7 @@ function rowToPatron(raw: unknown): Patron | null {
   const articulo_id = r.articulo_id
   const nombre = r.nombre
   const storage_path = r.storage_path
+  const image_path = r.image_path
   const file_name = r.file_name
 
   if (
@@ -44,6 +43,7 @@ function rowToPatron(raw: unknown): Patron | null {
     typeof articulo_id !== 'string' ||
     typeof nombre !== 'string' ||
     typeof storage_path !== 'string' ||
+    (image_path !== null && typeof image_path !== 'string') ||
     typeof file_name !== 'string'
   ) {
     return null
@@ -59,10 +59,6 @@ function rowToPatron(raw: unknown): Patron | null {
   const art = r.articulos as Record<string, unknown> | null
   const articulo_nombre = art && typeof art.nombre === 'string' ? art.nombre : ''
   const articulo_sku = art && typeof art.codigo === 'string' ? art.codigo : ''
-  const imagenes = art && Array.isArray(art.articulo_imagenes)
-    ? (art.articulo_imagenes as { storage_path: string; es_principal: boolean; orden: number }[])
-    : null
-  const articulo_cover_image_path = pickCoverStoragePath(imagenes)
 
   return {
     id,
@@ -70,6 +66,7 @@ function rowToPatron(raw: unknown): Patron | null {
     nombre,
     descripcion,
     storage_path,
+    image_path: typeof image_path === 'string' ? image_path : null,
     file_name,
     file_size,
     file_type,
@@ -78,7 +75,7 @@ function rowToPatron(raw: unknown): Patron | null {
     updated_at,
     articulo_nombre,
     articulo_sku,
-    articulo_cover_image_path,
+    articulo_cover_image_path: null,
   }
 }
 
@@ -121,6 +118,7 @@ export type NewPatronInput = {
   nombre: string
   descripcion?: string | null
   file: File
+  image?: File | null
 }
 
 export type UpdatePatronInput = {
@@ -130,6 +128,10 @@ export type UpdatePatronInput = {
   articulo_id: string
   /** Si se provee, reemplaza el archivo actual. */
   file?: File | null
+  /** Si se provee, reemplaza la imagen del patrón. */
+  image?: File | null
+  /** Si es true y no se provee `image`, elimina la imagen actual. */
+  remove_image?: boolean
 }
 
 function getFileExtension(name: string): string {
@@ -169,6 +171,39 @@ async function uploadPatronFile(articuloId: string, file: File): Promise<string>
   return path
 }
 
+function validatePatternImageFile(file: File): string | null {
+  if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+    return 'Usá JPEG, PNG, WebP, GIF o SVG.'
+  }
+  if (file.size > MAX_IMAGE_BYTES) {
+    return 'La imagen no puede superar 8 MB.'
+  }
+  return null
+}
+
+function buildPatternImagePath(patronId: string, file: File): string {
+  const unique = `${Date.now()}-${sanitizeFileName(file.name)}`
+  return `${PATTERN_IMAGES_PREFIX}/${patronId}/${unique}`
+}
+
+async function uploadPatternImage(patronId: string, file: File): Promise<string> {
+  const validation = validatePatternImageFile(file)
+  if (validation) throw new Error(validation)
+
+  const path = buildPatternImagePath(patronId, file)
+  const { error } = await supabase.storage.from(PATTERN_IMAGES_BUCKET).upload(path, file, {
+    upsert: false,
+    contentType: file.type || undefined,
+  })
+  if (error) throw new Error(error.message)
+  return path
+}
+
+export function getPatternImagePublicUrl(storagePath: string): string {
+  const { data } = supabase.storage.from(PATTERN_IMAGES_BUCKET).getPublicUrl(storagePath)
+  return data.publicUrl
+}
+
 export async function createPatron(input: NewPatronInput): Promise<{ data: Patron | null; error: Error | null }> {
   let storagePath: string
   try {
@@ -196,7 +231,39 @@ export async function createPatron(input: NewPatronInput): Promise<{ data: Patro
     return { data: null, error: new Error(error.message) }
   }
 
-  return { data: rowToPatron(data), error: null }
+  const created = rowToPatron(data)
+  if (!created) return { data: null, error: new Error('No se pudo crear el patrón.') }
+
+  if (input.image) {
+    let imagePath: string
+    try {
+      imagePath = await uploadPatternImage(created.id, input.image)
+    } catch (e) {
+      try {
+        await supabase.from(TABLE).delete().eq('id', created.id)
+      } catch {}
+      await supabase.storage.from(BUCKET).remove([storagePath]).catch(() => {})
+      return { data: null, error: e instanceof Error ? e : new Error('No se pudo subir la imagen del patrón.') }
+    }
+
+    const { data: updatedRow, error: imageUpdateErr } = await supabase
+      .from(TABLE)
+      .update({ image_path: imagePath })
+      .eq('id', created.id)
+      .select(PATRON_SELECT)
+      .single()
+    if (imageUpdateErr) {
+      await supabase.storage.from(PATTERN_IMAGES_BUCKET).remove([imagePath]).catch(() => {})
+      try {
+        await supabase.from(TABLE).delete().eq('id', created.id)
+      } catch {}
+      await supabase.storage.from(BUCKET).remove([storagePath]).catch(() => {})
+      return { data: null, error: new Error(imageUpdateErr.message) }
+    }
+    return { data: rowToPatron(updatedRow), error: null }
+  }
+
+  return { data: created, error: null }
 }
 
 export async function updatePatron(
@@ -205,7 +272,7 @@ export async function updatePatron(
 ): Promise<{ data: Patron | null; error: Error | null }> {
   const { data: existingRow, error: fetchErr } = await supabase
     .from(TABLE)
-    .select('articulo_id, storage_path')
+    .select('articulo_id, storage_path, image_path')
     .eq('id', id)
     .maybeSingle()
 
@@ -214,6 +281,8 @@ export async function updatePatron(
 
   const prevArticuloId = String((existingRow as { articulo_id: unknown }).articulo_id ?? '')
   const prevStoragePath = String((existingRow as { storage_path: unknown }).storage_path ?? '')
+  const prevImagePathRaw = (existingRow as { image_path?: unknown }).image_path
+  const prevImagePath = typeof prevImagePathRaw === 'string' ? prevImagePathRaw : null
   const targetArticuloId = input.articulo_id.trim()
 
   if (!targetArticuloId) return { data: null, error: new Error('Seleccioná un artículo.') }
@@ -229,11 +298,13 @@ export async function updatePatron(
     return { data: null, error: new Error('Ese artículo ya tiene otro patrón asignado.') }
 
   let newStoragePath = prevStoragePath
+  let newImagePath = prevImagePath
   let newFileName: string | undefined
   let newFileSize: number | undefined
   let newFileType: string | undefined
   let uploadedTempPath: string | null = null
   let copiedTempPath: string | null = null
+  let uploadedTempImagePath: string | null = null
 
   if (input.file) {
     try {
@@ -257,11 +328,30 @@ export async function updatePatron(
     }
   }
 
+  const removeImage = Boolean(input.remove_image) && !input.image
+
+  if (input.image) {
+    try {
+      newImagePath = await uploadPatternImage(id, input.image)
+      uploadedTempImagePath = newImagePath
+    } catch (e) {
+      if (uploadedTempPath) await supabase.storage.from(BUCKET).remove([uploadedTempPath]).catch(() => {})
+      if (copiedTempPath) await supabase.storage.from(BUCKET).remove([copiedTempPath]).catch(() => {})
+      return {
+        data: null,
+        error: e instanceof Error ? e : new Error('No se pudo subir la imagen del patrón.'),
+      }
+    }
+  } else if (removeImage) {
+    newImagePath = null
+  }
+
   const updateRow: Record<string, unknown> = {
     nombre: input.nombre.trim(),
     descripcion: input.descripcion?.trim() || null,
     articulo_id: targetArticuloId,
     storage_path: newStoragePath,
+    image_path: newImagePath,
   }
   if (newFileName !== undefined) {
     updateRow.file_name = newFileName
@@ -279,6 +369,9 @@ export async function updatePatron(
   if (error) {
     if (uploadedTempPath) await supabase.storage.from(BUCKET).remove([uploadedTempPath]).catch(() => {})
     if (copiedTempPath) await supabase.storage.from(BUCKET).remove([copiedTempPath]).catch(() => {})
+    if (uploadedTempImagePath) {
+      await supabase.storage.from(PATTERN_IMAGES_BUCKET).remove([uploadedTempImagePath]).catch(() => {})
+    }
     return { data: null, error: new Error(error.message) }
   }
 
@@ -287,6 +380,11 @@ export async function updatePatron(
   if (replacedOldPath) {
     await supabase.storage.from(BUCKET).remove([replacedOldPath]).catch(() => {})
   }
+  if (uploadedTempImagePath && prevImagePath && prevImagePath !== uploadedTempImagePath) {
+    await supabase.storage.from(PATTERN_IMAGES_BUCKET).remove([prevImagePath]).catch(() => {})
+  } else if (removeImage && prevImagePath) {
+    await supabase.storage.from(PATTERN_IMAGES_BUCKET).remove([prevImagePath]).catch(() => {})
+  }
 
   return { data: rowToPatron(data), error: null }
 }
@@ -294,7 +392,7 @@ export async function updatePatron(
 export async function deletePatron(id: string): Promise<{ error: Error | null }> {
   const { data: row, error: fetchErr } = await supabase
     .from(TABLE)
-    .select('storage_path')
+    .select('storage_path, image_path')
     .eq('id', id)
     .maybeSingle()
 
@@ -304,8 +402,12 @@ export async function deletePatron(id: string): Promise<{ error: Error | null }>
   if (delErr) return { error: new Error(delErr.message) }
 
   const path = (row as Record<string, unknown> | null)?.storage_path
+  const imagePath = (row as Record<string, unknown> | null)?.image_path
   if (typeof path === 'string') {
     await supabase.storage.from(BUCKET).remove([path]).catch(() => {})
+  }
+  if (typeof imagePath === 'string') {
+    await supabase.storage.from(PATTERN_IMAGES_BUCKET).remove([imagePath]).catch(() => {})
   }
 
   return { error: null }

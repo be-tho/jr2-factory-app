@@ -1,12 +1,8 @@
 import { IconChevronRight, IconFile } from '@tabler/icons-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  DEFAULT_ARTICLE_IMAGE_PUBLIC_URL,
-  hasStorageCoverImage,
-} from '../../../constants/defaultArticleImage'
-import { getProductImagePublicUrl } from '../../media/services/storage.service'
 import type { Patron } from '../../../types/database'
+import { getPatternImagePublicUrl } from '../services/patrones.service'
 
 type PatronCardProps = {
   patron: Patron
@@ -20,9 +16,9 @@ function formatFileSize(bytes: number | null): string {
 }
 
 export function PatronCard({ patron }: PatronCardProps) {
-  const storagePath = patron.articulo_cover_image_path
-  const hasFile = hasStorageCoverImage(storagePath)
-  const coverSrc = hasFile ? getProductImagePublicUrl(storagePath) : DEFAULT_ARTICLE_IMAGE_PUBLIC_URL
+  const imagePath = patron.image_path
+  const hasImage = typeof imagePath === 'string' && imagePath.length > 0
+  const coverSrc = hasImage ? getPatternImagePublicUrl(imagePath) : null
 
   const imgRef = useRef<HTMLImageElement>(null)
   const [imgLoaded, setImgLoaded] = useState(false)
@@ -38,20 +34,24 @@ export function PatronCard({ patron }: PatronCardProps) {
     >
       <div
         className={`aspect-4/3 w-full shrink-0 overflow-hidden ${
-          hasFile ? 'bg-brand-canvas' : 'bg-white'
+          hasImage ? 'bg-brand-canvas' : 'bg-white'
         }`}
       >
-        <img
-          ref={imgRef}
-          src={coverSrc}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          onLoad={() => setImgLoaded(true)}
-          className={`h-full w-full transition-[opacity,transform] duration-300 group-hover:scale-[1.02] ${
-            hasFile ? 'object-cover' : 'object-contain p-2'
-          } ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
-        />
+        {coverSrc ? (
+          <img
+            ref={imgRef}
+            src={coverSrc}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            onLoad={() => setImgLoaded(true)}
+            className={`h-full w-full object-cover transition-[opacity,transform] duration-300 group-hover:scale-[1.02] ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-[#f8f7fa] text-sm font-medium text-brand-ink-faint">
+            Sin foto
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col p-4">
