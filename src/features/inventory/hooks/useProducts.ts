@@ -15,14 +15,13 @@ import {
 export const productsKeys = {
   all: ['products'] as const,
   lists: () => [...productsKeys.all, 'list'] as const,
-  list: () => [...productsKeys.lists()] as const,
   details: () => [...productsKeys.all, 'detail'] as const,
   detail: (id: string) => [...productsKeys.details(), id] as const,
 }
 
 export function useProductsQuery() {
   return useQuery({
-    queryKey: productsKeys.list(),
+    queryKey: productsKeys.lists(),
     queryFn: async (): Promise<Product[]> => {
       const { data, error } = await listProducts()
       if (error) throw error
@@ -52,8 +51,9 @@ export function useDeleteProductMutation() {
       const { error } = await deleteProduct(productId)
       if (error) throw error
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: productsKeys.all })
+    onSuccess: (_data, productId) => {
+      void queryClient.invalidateQueries({ queryKey: productsKeys.lists() })
+      void queryClient.removeQueries({ queryKey: productsKeys.detail(productId) })
       toast.success('Artículo eliminado')
     },
     onError: (e) => {
@@ -72,7 +72,7 @@ export function useCreateProductMutation() {
       return data
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: productsKeys.all })
+      void queryClient.invalidateQueries({ queryKey: productsKeys.lists() })
       toast.success('Artículo creado')
     },
     onError: (e) => {
@@ -91,7 +91,7 @@ export function useUpdateProductMutation() {
       return data
     },
     onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: productsKeys.all })
+      void queryClient.invalidateQueries({ queryKey: productsKeys.lists() })
       void queryClient.invalidateQueries({ queryKey: productsKeys.detail(variables.id) })
       void queryClient.invalidateQueries({ queryKey: articuloImagenesKeys.byArticulo(variables.id) })
       toast.success('Artículo actualizado')

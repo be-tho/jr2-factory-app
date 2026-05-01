@@ -2,7 +2,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import type { PropsWithChildren } from 'react'
 import { Toaster } from 'sonner'
-import { queryClient } from '../lib/queryClient'
+import { clearQueryCacheOnLogout, queryClient } from '../lib/queryClient'
 import { supabase } from '../lib/supabase/client'
 import { useSessionStore } from '../stores/session.store'
 
@@ -13,7 +13,7 @@ export function AppProviders({ children }: PropsWithChildren) {
   useEffect(() => {
     let mounted = true
 
-    supabase.auth.getSession().then(({ data }) => {
+    void supabase.auth.getSession().then(({ data }) => {
       if (!mounted) {
         return
       }
@@ -24,9 +24,12 @@ export function AppProviders({ children }: PropsWithChildren) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
       setSession(nextSession)
       setLoading(false)
+      if (event === 'SIGNED_OUT') {
+        clearQueryCacheOnLogout()
+      }
     })
 
     return () => {

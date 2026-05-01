@@ -1,3 +1,4 @@
+import type { AppRole } from '../types/database'
 import { useEffect } from 'react'
 import { Navigate, Outlet } from 'react-router-dom'
 import { useSession } from '../hooks/useSession'
@@ -56,7 +57,8 @@ export function AdminRoute() {
     )
   }
 
-  if (profile?.role !== 'admin') {
+  const adminRole: AppRole = 'admin'
+  if (profile?.role !== adminRole) {
     return <Navigate to="/dashboard" replace />
   }
 

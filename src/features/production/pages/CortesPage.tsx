@@ -1,6 +1,4 @@
 import {
-  IconChevronLeft,
-  IconChevronRight,
   IconEdit,
   IconEye,
   IconPhoto,
@@ -11,10 +9,12 @@ import {
   IconTrash,
   IconX,
 } from '@tabler/icons-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { StatCard } from '../../../components/ui/StatCard'
+import { SimplePagination } from '../../../components/ui/SimplePagination'
 import { ic } from '../../../lib/tabler'
+import { normalizeForSearch } from '../../../lib/normalize'
 import {
   DEFAULT_ARTICLE_IMAGE_PUBLIC_URL,
   hasStorageCoverImage,
@@ -44,25 +44,6 @@ const ESTADO_FILTERS: { value: CorteEstado | 'todos'; label: string }[] = [
 ]
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function normalize(s: string) {
-  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-}
-
-function getPaginationRange(current: number, total: number): (number | '…')[] {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
-  const delta = 1
-  const pages: (number | '…')[] = []
-  let prev: number | null = null
-  for (let i = 1; i <= total; i++) {
-    if (i === 1 || i === total || (i >= current - delta && i <= current + delta)) {
-      if (prev !== null && i - prev > 1) pages.push('…')
-      pages.push(i)
-      prev = i
-    }
-  }
-  return pages
-}
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -101,15 +82,15 @@ export function CortesPage() {
   const pendientes = cortes.filter((c) => c.estado === 'pendiente').length
 
   const filtered = useMemo(() => {
-    const q = normalize(query.trim())
+    const q = normalizeForSearch(query.trim())
     return cortes.filter((c) => {
       if (estadoFilter !== 'todos' && c.estado !== estadoFilter) return false
       if (!q) return true
       return (
-        normalize(c.numero_corte).includes(q) ||
-        normalize(c.tipo_tela).includes(q) ||
-        (c.costureros ? normalize(c.costureros).includes(q) : false) ||
-        c.articulos.some((a) => normalize(a.nombre).includes(q) || normalize(a.codigo).includes(q))
+        normalizeForSearch(c.numero_corte).includes(q) ||
+        normalizeForSearch(c.tipo_tela).includes(q) ||
+        (c.costureros ? normalizeForSearch(c.costureros).includes(q) : false) ||
+        c.articulos.some((a) => normalizeForSearch(a.nombre).includes(q) || normalizeForSearch(a.codigo).includes(q))
       )
     })
   }, [cortes, query, estadoFilter])
@@ -139,9 +120,9 @@ export function CortesPage() {
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-primary-ghost text-brand-primary">
               <IconScissors {...ic.headerSm} aria-hidden />
             </span>
-            <h1 className="text-2xl font-bold tracking-tight text-[#3d3b4f]">Cortes</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-brand-ink">Cortes</h1>
           </div>
-          <p className="mt-1.5 text-sm text-[#6e6b7b]">Seguimiento de cortes textiles y lotes en taller.</p>
+          <p className="mt-1.5 text-sm text-brand-ink-muted">Seguimiento de cortes textiles y lotes en taller.</p>
         </div>
         <Link
           to="/produccion/cortes/nuevo"
@@ -189,12 +170,12 @@ export function CortesPage() {
 
       {/* Filter bar */}
       {!errorMessage && (
-        <div className="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-black/4 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-3 rounded-xl bg-brand-surface p-4 shadow-sm ring-1 ring-brand-border sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <IconSearch
               size={15}
               stroke={1.5}
-              className="pointer-events-none absolute inset-y-0 left-3 my-auto text-[#b9b6c3]"
+              className="pointer-events-none absolute inset-y-0 left-3 my-auto text-brand-ink-muted"
               aria-hidden
             />
             <input
@@ -202,11 +183,11 @@ export function CortesPage() {
               value={query}
               onChange={(e) => { setQuery(e.target.value); setCurrentPage(1) }}
               placeholder="Buscar por número, tela, artículo o costurero…"
-              className="w-full rounded-lg border border-[#e8e4f0] bg-[#f8f7fa] py-2 pl-9 pr-3 text-sm text-[#3d3b4f] outline-none transition placeholder:text-[#b9b6c3] focus:border-brand-primary focus:bg-white focus:ring-2 focus:ring-brand-blush/50"
+              className="w-full rounded-lg border border-brand-border bg-brand-canvas py-2 pl-9 pr-3 text-sm text-brand-ink outline-none transition placeholder:text-brand-ink-muted focus:border-brand-primary focus:bg-brand-surface focus:ring-2 focus:ring-brand-blush/50"
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-1 rounded-lg border border-[#e8e4f0] bg-[#f8f7fa] p-1">
+          <div className="flex flex-wrap items-center gap-1 rounded-lg border border-brand-border bg-brand-canvas p-1">
             {ESTADO_FILTERS.map((op) => (
               <button
                 key={op.value}
@@ -215,7 +196,7 @@ export function CortesPage() {
                 className={`rounded-md px-3 py-1 text-sm font-medium transition ${
                   estadoFilter === op.value
                     ? 'bg-brand-primary text-white shadow-sm'
-                    : 'text-[#6e6b7b] hover:text-[#3d3b4f]'
+                    : 'text-brand-ink-muted hover:text-brand-ink'
                 }`}
               >
                 {op.label}
@@ -227,7 +208,7 @@ export function CortesPage() {
             <button
               type="button"
               onClick={clearFilters}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[#e8e4f0] px-3 py-2 text-sm text-[#6e6b7b] transition hover:bg-[#f8f7fa] hover:text-[#3d3b4f]"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border px-3 py-2 text-sm text-brand-ink-muted transition hover:bg-brand-canvas hover:text-brand-ink"
             >
               <IconX size={14} stroke={2} aria-hidden />
               Limpiar
@@ -238,7 +219,7 @@ export function CortesPage() {
 
       {/* Skeleton */}
       {loading && !errorMessage && (
-        <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/4">
+        <div className="overflow-hidden rounded-xl bg-brand-surface shadow-sm ring-1 ring-brand-border">
           <div className="divide-y divide-brand-border-subtle">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex animate-pulse items-center gap-4 px-5 py-4">
@@ -255,9 +236,9 @@ export function CortesPage() {
       {/* Empty — no cortes */}
       {!loading && !errorMessage && cortes.length === 0 && (
         <div className="rounded-xl bg-white px-5 py-14 text-center shadow-sm ring-1 ring-black/4">
-          <IconScissors size={40} stroke={1.25} className="mx-auto text-[#b9b6c3]" aria-hidden />
-          <p className="mt-3 text-sm font-medium text-[#3d3b4f]">No hay cortes todavía</p>
-          <p className="mt-1 text-sm text-[#6e6b7b]">
+          <IconScissors size={40} stroke={1.25} className="mx-auto text-brand-ink-muted" aria-hidden />
+          <p className="mt-3 text-sm font-medium text-brand-ink">No hay cortes todavía</p>
+          <p className="mt-1 text-sm text-brand-ink-muted">
             <Link to="/produccion/cortes/nuevo" className="font-semibold text-brand-primary hover:underline">
               Crear el primero
             </Link>
@@ -268,11 +249,11 @@ export function CortesPage() {
       {/* Empty — filtered */}
       {!loading && !errorMessage && cortes.length > 0 && filtered.length === 0 && (
         <div className="rounded-xl bg-white px-5 py-14 text-center shadow-sm ring-1 ring-black/4">
-          <p className="text-sm text-[#6e6b7b]">Ningún corte coincide con los filtros aplicados.</p>
+          <p className="text-sm text-brand-ink-muted">Ningún corte coincide con los filtros aplicados.</p>
           <button
             type="button"
             onClick={clearFilters}
-            className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-[#e8e4f0] px-3 py-1.5 text-sm text-[#6e6b7b] transition hover:text-[#3d3b4f]"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-brand-border px-3 py-1.5 text-sm text-brand-ink-muted transition hover:text-brand-ink"
           >
             <IconX size={14} stroke={2} aria-hidden />
             Limpiar filtros
@@ -297,11 +278,11 @@ export function CortesPage() {
             )}
           </div>
 
-          <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/4">
+          <div className="overflow-hidden rounded-xl bg-brand-surface shadow-sm ring-1 ring-brand-border">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[720px] table-auto text-sm">
                 <thead>
-                  <tr className="border-b border-brand-border-subtle bg-[#f8f7fa]">
+                  <tr className="border-b border-brand-border-subtle bg-brand-canvas">
                     <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-ink-faint">
                       Nº Corte
                     </th>
@@ -342,47 +323,15 @@ export function CortesPage() {
             </div>
           </div>
 
-          {/* Pagination */}
           {totalPages > 1 && (
-            <nav aria-label="Paginación de cortes" className="flex items-center justify-center gap-1">
-              <button
-                type="button"
-                disabled={safePage === 1}
-                onClick={() => setCurrentPage((p) => p - 1)}
-                aria-label="Página anterior"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#e8e4f0] bg-white text-[#6e6b7b] transition hover:bg-[#f8f7fa] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <IconChevronLeft size={16} stroke={1.5} aria-hidden />
-              </button>
-              {getPaginationRange(safePage, totalPages).map((item, idx) =>
-                item === '…' ? (
-                  <span key={`e-${idx}`} className="flex h-9 w-9 items-center justify-center text-sm text-[#b9b6c3]">…</span>
-                ) : (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => setCurrentPage(item)}
-                    aria-current={item === safePage ? 'page' : undefined}
-                    className={`inline-flex h-9 w-9 items-center justify-center rounded-lg text-sm font-medium transition ${
-                      item === safePage
-                        ? 'bg-brand-primary text-white shadow-sm'
-                        : 'border border-[#e8e4f0] bg-white text-[#6e6b7b] hover:bg-[#f8f7fa]'
-                    }`}
-                  >
-                    {item}
-                  </button>
-                ),
-              )}
-              <button
-                type="button"
-                disabled={safePage === totalPages}
-                onClick={() => setCurrentPage((p) => p + 1)}
-                aria-label="Página siguiente"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#e8e4f0] bg-white text-[#6e6b7b] transition hover:bg-[#f8f7fa] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <IconChevronRight size={16} stroke={1.5} aria-hidden />
-              </button>
-            </nav>
+            <SimplePagination
+              page={safePage}
+              totalPages={totalPages}
+              totalItems={filtered.length}
+              pageSize={PAGE_SIZE}
+              onPageChange={setCurrentPage}
+              ariaLabel="Paginación de cortes"
+            />
           )}
         </>
       )}
@@ -544,12 +493,26 @@ function ConfirmDeleteModal({
   onCancel: () => void
   deleting: boolean
 }) {
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onCancel()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onCancel])
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="confirm-delete-title"
+      aria-describedby="confirm-delete-desc"
+    >
       <div className="absolute inset-0 bg-modal-scrim" onClick={onCancel} aria-hidden />
-      <div className="relative z-10 w-full max-w-sm overflow-hidden rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-brand-border">
-        <h3 className="text-base font-semibold text-brand-ink">¿Eliminar este corte?</h3>
-        <p className="mt-2 text-sm text-brand-ink-muted">
+      <div className="relative z-10 w-full max-w-sm overflow-hidden rounded-2xl bg-brand-surface p-6 shadow-2xl ring-1 ring-brand-border">
+        <h3 id="confirm-delete-title" className="text-base font-semibold text-brand-ink">¿Eliminar este corte?</h3>
+        <p id="confirm-delete-desc" className="mt-2 text-sm text-brand-ink-muted">
           Esta acción no se puede deshacer. Se eliminarán también los artículos y colores vinculados.
         </p>
         <div className="mt-5 flex gap-3 justify-end">

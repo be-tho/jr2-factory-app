@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import {
   IconAlertTriangle,
   IconCalendar,
@@ -14,13 +15,13 @@ import { usePatronesQuery } from '../../patterns/hooks/usePatrones'
 import { useCortesQuery } from '../../production/hooks/useCortes'
 import { useProductsQuery } from '../../inventory/hooks/useProducts'
 import { SectionCard } from '../components/SectionCard'
+import { formatARS } from '../../sales/lib/pricing'
 import type { CorteEstado } from '../../../types/database'
 
 const DashboardChartsSection = lazy(() =>
   import('../components/DashboardChartsSection').then((m) => ({ default: m.DashboardChartsSection })),
 )
 
-// ─── Colores del tema ────────────────────────────────────────────────────────
 const ESTADO_COLOR: Record<CorteEstado, string> = {
   pendiente: '#f59e0b',
   en_proceso: '#6366f1',
@@ -35,8 +36,6 @@ const ESTADO_LABEL: Record<CorteEstado, string> = {
 }
 
 const STOCK_BAJO_UMBRAL = 10
-
-// ─── Sub-componentes ─────────────────────────────────────────────────────────
 
 function KpiCard({
   icon,
@@ -78,7 +77,6 @@ function KpiCard({
   return inner
 }
 
-// ─── Estado badge ─────────────────────────────────────────────────────────────
 const ESTADO_BADGE: Record<CorteEstado, { bg: string; text: string }> = {
   pendiente:  { bg: 'bg-amber-50 ring-1 ring-amber-200',  text: 'text-amber-700' },
   en_proceso: { bg: 'bg-indigo-50 ring-1 ring-indigo-200', text: 'text-indigo-700' },
@@ -86,7 +84,6 @@ const ESTADO_BADGE: Record<CorteEstado, { bg: string; text: string }> = {
   cancelado:  { bg: 'bg-gray-100 ring-1 ring-gray-200',   text: 'text-gray-500' },
 }
 
-// ─── Dashboard ────────────────────────────────────────────────────────────────
 export function DashboardPage() {
   const { data: articles = [], isPending: loadingArticles } = useProductsQuery()
   const { data: cortes = [], isPending: loadingCortes } = useCortesQuery()
@@ -94,50 +91,80 @@ export function DashboardPage() {
 
   const loading = loadingArticles || loadingCortes || loadingPatrones
 
-  // ── Artículos ──
-  const articulosActivos = articles.filter((a) => a.activo).length
-  const stockBajo = articles.filter((a) => a.activo && a.stock_actual <= STOCK_BAJO_UMBRAL)
-  const valorStock = articles
-    .filter((a) => a.activo)
-    .reduce((sum, a) => sum + (a.precio_lista * a.stock_actual), 0)
+  const articulosActivos = useMemo(
+    () => articles.filter((a) => a.activo).length,
+    [articles],
+  )
 
-  // ── Cortes ──
-  const cortesPendientes = cortes.filter((c) => c.estado === 'pendiente').length
-  const cortesEnProceso = cortes.filter((c) => c.estado === 'en_proceso').length
+  const stockBajo = useMemo(
+    () => articles.filter((a) => a.activo && a.stock_actual <= STOCK_BAJO_UMBRAL),
+    [articles],
+  )
+
+  const valorStock = useMemo(
+    () =>
+      articles
+        .filter((a) => a.activo)
+        .reduce((sum, a) => sum + a.precio_lista * a.stock_actual, 0),
+    [articles],
+  )
+
+  const cortesPendientes = useMemo(
+    () => cortes.filter((c) => c.estado === 'pendiente').length,
+    [cortes],
+  )
+
+  const cortesEnProceso = useMemo(
+    () => cortes.filter((c) => c.estado === 'en_proceso').length,
+    [cortes],
+  )
+
   const cortesActivos = cortesPendientes + cortesEnProceso
-  const unidadesEnProceso = cortes
-    .filter((c) => c.estado === 'en_proceso' || c.estado === 'pendiente')
-    .reduce((sum, c) => sum + c.cantidad_total, 0)
 
-  // ── Patrones ──
-  const patronesActivos = patrones.filter((p) => p.activo).length
+  const unidadesEnProceso = useMemo(
+    () =>
+      cortes
+        .filter((c) => c.estado === 'en_proceso' || c.estado === 'pendiente')
+        .reduce((sum, c) => sum + c.cantidad_total, 0),
+    [cortes],
+  )
 
-  // ── Gráfico 1: Cortes por estado ──
-  const cortesEstadoData = (['pendiente', 'en_proceso', 'completado', 'cancelado'] as CorteEstado[])
-    .map((estado) => ({
-      name: ESTADO_LABEL[estado],
-      value: cortes.filter((c) => c.estado === estado).length,
-      color: ESTADO_COLOR[estado],
-    }))
-    .filter((d) => d.value > 0)
+  const patronesActivos = useMemo(
+    () => patrones.filter((p) => p.activo).length,
+    [patrones],
+  )
 
-  // ── Gráfico 2: Stock por categoría ──
-  const categoriaStock = articles
-    .filter((a) => a.activo && a.category)
-    .reduce<Record<string, number>>((acc, a) => {
-      acc[a.category] = (acc[a.category] ?? 0) + a.stock_actual
-      return acc
-    }, {})
+  const cortesEstadoData = useMemo(
+    () =>
+      (['pendiente', 'en_proceso', 'completado', 'cancelado'] as CorteEstado[])
+        .map((estado) => ({
+          name: ESTADO_LABEL[estado],
+          value: cortes.filter((c) => c.estado === estado).length,
+          color: ESTADO_COLOR[estado],
+        }))
+        .filter((d) => d.value > 0),
+    [cortes],
+  )
 
-  const stockCategoriaData = Object.entries(categoriaStock)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 8)
-    .map(([name, stock]) => ({ name, stock }))
+  const stockCategoriaData = useMemo(() => {
+    const categoriaStock = articles
+      .filter((a) => a.activo && a.category)
+      .reduce<Record<string, number>>((acc, a) => {
+        acc[a.category] = (acc[a.category] ?? 0) + a.stock_actual
+        return acc
+      }, {})
 
-  // ── Últimos cortes ──
-  const ultimosCortes = [...cortes]
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 6)
+    return Object.entries(categoriaStock)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 8)
+      .map(([name, stock]) => ({ name, stock }))
+  }, [articles])
+
+  const ultimosCortes = useMemo(() => {
+    return [...cortes]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 6)
+  }, [cortes])
 
   const today = new Date().toLocaleDateString('es-AR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -145,20 +172,18 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-primary-ghost text-brand-primary">
               <IconLayoutDashboard {...ic.headerSm} aria-hidden />
             </span>
-            <h1 className="text-2xl font-bold tracking-tight text-[#3d3b4f]">Dashboard</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-brand-ink">Dashboard</h1>
           </div>
-          <p className="mt-1.5 text-sm capitalize text-[#6e6b7b]">{today}</p>
+          <p className="mt-1.5 text-sm capitalize text-brand-ink-muted">{today}</p>
         </div>
       </div>
 
-      {/* KPIs */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           icon={<IconPackage {...ic.stat} aria-hidden />}
@@ -195,7 +220,6 @@ export function DashboardPage() {
         />
       </div>
 
-      {/* Valor de stock — fila adicional */}
       <div className="rounded-xl bg-linear-to-r from-brand-primary to-indigo-500 p-5 shadow-sm">
         <div className="flex items-center justify-between gap-4">
           <div>
@@ -204,7 +228,7 @@ export function DashboardPage() {
               <div className="mt-2 h-8 w-48 animate-pulse rounded-lg bg-white/20" />
             ) : (
               <p className="mt-1 text-3xl font-bold tabular-nums text-white">
-                {new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(valorStock)}
+                {formatARS(valorStock)}
               </p>
             )}
             <p className="mt-1 text-xs text-white/60">Calculado sobre precio de lista × stock actual</p>
@@ -229,7 +253,6 @@ export function DashboardPage() {
         />
       </Suspense>
 
-      {/* Últimos cortes */}
       <SectionCard title={`Últimos cortes (${ultimosCortes.length})`}>
         {loading ? (
           <div className="space-y-2 p-5">

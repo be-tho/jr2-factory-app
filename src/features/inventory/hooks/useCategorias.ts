@@ -30,6 +30,7 @@ export function useCategoriasCatalogQuery() {
   })
 }
 
+/** @deprecated Usá `useCategoriasCatalogQuery` directamente. */
 export const useCategoriasQuery = useCategoriasCatalogQuery
 
 export function useCategoriasAdminQuery() {
@@ -67,7 +68,8 @@ export function useCreateCategoriaMutation() {
       return data
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: categoriasKeys.all })
+      void queryClient.invalidateQueries({ queryKey: categoriasKeys.catalog() })
+      void queryClient.invalidateQueries({ queryKey: categoriasKeys.admin() })
       toast.success('Categoría creada')
     },
     onError: (e) => {
@@ -85,8 +87,10 @@ export function useUpdateCategoriaMutation() {
       if (!data) throw new Error('No se pudo actualizar la categoría.')
       return data
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: categoriasKeys.all })
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: categoriasKeys.catalog() })
+      void queryClient.invalidateQueries({ queryKey: categoriasKeys.admin() })
+      void queryClient.invalidateQueries({ queryKey: categoriasKeys.detail(variables.id) })
       toast.success('Categoría actualizada')
     },
     onError: (e) => {
@@ -102,8 +106,10 @@ export function useDeleteCategoriaMutation() {
       const { error } = await deleteCategoria(id)
       if (error) throw error
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: categoriasKeys.all })
+    onSuccess: (_data, id) => {
+      void queryClient.invalidateQueries({ queryKey: categoriasKeys.catalog() })
+      void queryClient.invalidateQueries({ queryKey: categoriasKeys.admin() })
+      void queryClient.removeQueries({ queryKey: categoriasKeys.detail(id) })
       toast.success('Categoría eliminada')
     },
     onError: (e) => {

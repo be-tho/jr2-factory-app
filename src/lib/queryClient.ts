@@ -8,3 +8,8 @@ export const queryClient = new QueryClient({
     },
   },
 })
+
+/** Limpiar todo el caché al hacer logout para evitar datos stale entre sesiones. */
+export function clearQueryCacheOnLogout() {
+  queryClient.clear()
+}

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { memo, useEffect, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import {
   IconBuildingFactory2,
@@ -62,7 +62,23 @@ function NavCollapsible({ open, children }: { open: boolean; children: ReactNode
   )
 }
 
-function SidebarNav({ onNavigate }: NavBlockProps) {
+function itemClassFn({ isActive }: { isActive: boolean }) {
+  return `flex items-center gap-2.5 rounded-md px-3 py-2.5 text-base font-bold transition-colors duration-150 ${
+    isActive
+      ? 'bg-brand-primary text-brand-on-primary shadow-sm'
+      : 'text-brand-ink-muted hover:bg-brand-primary-subtle hover:text-brand-primary'
+  }`
+}
+
+function subItemClassFn({ isActive }: { isActive: boolean }) {
+  return `ml-2 flex items-center gap-2 rounded-md border-l-2 py-2.5 pl-3 pr-2 text-base transition-colors duration-150 ${
+    isActive
+      ? 'border-brand-primary bg-brand-primary-subtle font-bold text-brand-primary'
+      : 'border-transparent font-bold text-brand-ink-muted hover:border-brand-border hover:bg-brand-primary-ghost hover:text-brand-primary'
+  }`
+}
+
+const SidebarNav = memo(function SidebarNav({ onNavigate }: NavBlockProps) {
   const location = useLocation()
   const [produccionOpen, setProduccionOpen] = useState(() =>
     location.pathname.startsWith('/produccion'),
@@ -73,19 +89,8 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
   const [ventasOpen, setVentasOpen] = useState(() => location.pathname.startsWith('/ventas'))
   const { data: profile } = useProfileQuery()
 
-  const itemClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-2.5 rounded-md px-3 py-2.5 text-base font-bold transition-colors duration-150 ${
-      isActive
-        ? 'bg-brand-primary text-brand-on-primary shadow-sm'
-        : 'text-brand-ink-muted hover:bg-brand-primary-subtle hover:text-brand-primary'
-    }`
-
-  const subItemClass = ({ isActive }: { isActive: boolean }) =>
-    `ml-2 flex items-center gap-2 rounded-md border-l-2 py-2.5 pl-3 pr-2 text-base transition-colors duration-150 ${
-      isActive
-        ? 'border-brand-primary bg-brand-primary-subtle font-bold text-brand-primary'
-        : 'border-transparent font-bold text-brand-ink-muted hover:border-brand-border hover:bg-brand-primary-ghost hover:text-brand-primary'
-    }`
+  const itemClass = itemClassFn
+  const subItemClass = subItemClassFn
 
   return (
     <nav className="flex flex-col gap-1">
@@ -230,7 +235,7 @@ function SidebarNav({ onNavigate }: NavBlockProps) {
       </NavLink>
     </nav>
   )
-}
+})
 
 function SidebarUserCard() {
   const { session } = useSession()
@@ -260,8 +265,8 @@ function SidebarUserCard() {
         />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-[#3d3b4f]">{displayName}</p>
-        <p className="truncate text-xs text-[#b9b6c3]">{email}</p>
+        <p className="truncate text-sm font-semibold text-brand-ink">{displayName}</p>
+        <p className="truncate text-xs text-brand-ink-muted">{email}</p>
       </div>
     </NavLink>
   )
@@ -297,7 +302,7 @@ export function DashboardLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f7fa]">
+    <div className="min-h-screen bg-brand-canvas">
       <div className="mx-auto flex min-h-screen w-full max-w-7xl md:max-w-none">
         <aside className="hidden w-56 shrink-0 flex-col border-r border-brand-border bg-brand-surface sm:flex sm:sticky sm:top-0 sm:h-screen">
           <div className="border-b border-brand-border bg-brand-primary-ghost p-4">

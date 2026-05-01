@@ -15,7 +15,6 @@ import {
 export const patronesKeys = {
   all: ['patrones'] as const,
   lists: () => [...patronesKeys.all, 'list'] as const,
-  list: () => [...patronesKeys.lists()] as const,
   details: () => [...patronesKeys.all, 'detail'] as const,
   detail: (id: string) => [...patronesKeys.details(), id] as const,
   articulosConPatron: () => [...patronesKeys.all, 'articulos-con-patron'] as const,
@@ -23,7 +22,7 @@ export const patronesKeys = {
 
 export function usePatronesQuery() {
   return useQuery({
-    queryKey: patronesKeys.list(),
+    queryKey: patronesKeys.lists(),
     queryFn: async (): Promise<Patron[]> => {
       const { data, error } = await listPatrones()
       if (error) throw error
@@ -67,7 +66,8 @@ export function useCreatePatronMutation() {
       return data
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: patronesKeys.all })
+      void queryClient.invalidateQueries({ queryKey: patronesKeys.lists() })
+      void queryClient.invalidateQueries({ queryKey: patronesKeys.articulosConPatron() })
       toast.success('Patrón creado')
     },
     onError: (e) => {
@@ -86,8 +86,9 @@ export function useUpdatePatronMutation() {
       return data
     },
     onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: patronesKeys.all })
+      void queryClient.invalidateQueries({ queryKey: patronesKeys.lists() })
       void queryClient.invalidateQueries({ queryKey: patronesKeys.detail(variables.id) })
+      void queryClient.invalidateQueries({ queryKey: patronesKeys.articulosConPatron() })
       toast.success('Patrón actualizado')
     },
     onError: (e) => {
@@ -103,8 +104,10 @@ export function useDeletePatronMutation() {
       const { error } = await deletePatron(id)
       if (error) throw error
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: patronesKeys.all })
+    onSuccess: (_data, id) => {
+      void queryClient.invalidateQueries({ queryKey: patronesKeys.lists() })
+      void queryClient.removeQueries({ queryKey: patronesKeys.detail(id) })
+      void queryClient.invalidateQueries({ queryKey: patronesKeys.articulosConPatron() })
       toast.success('Patrón eliminado')
     },
     onError: (e) => {

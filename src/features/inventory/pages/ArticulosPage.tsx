@@ -1,6 +1,4 @@
 import {
-  IconChevronLeft,
-  IconChevronRight,
   IconPackage,
   IconPackageOff,
   IconPlus,
@@ -13,8 +11,10 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { StatCard } from '../../../components/ui/StatCard'
+import { SimplePagination } from '../../../components/ui/SimplePagination'
 import { useProductsQuery } from '../hooks/useProducts'
 import { ic } from '../../../lib/tabler'
+import { normalizeForSearch } from '../../../lib/normalize'
 import { ArticuloCard } from '../components/ArticuloCard'
 import type { Product } from '../../../types/database'
 
@@ -22,103 +22,23 @@ const PAGE_SIZE = 12
 
 type EstadoFilter = 'todos' | 'activo' | 'inactivo'
 
-type PaginationProps = {
-  currentPage: number
-  totalPages: number
-  onPageChange: (page: number) => void
-}
-
-function getPaginationRange(current: number, total: number): (number | '…')[] {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
-  const delta = 1
-  const left = current - delta
-  const right = current + delta
-  const pages: (number | '…')[] = []
-  let prev: number | null = null
-  for (let i = 1; i <= total; i++) {
-    if (i === 1 || i === total || (i >= left && i <= right)) {
-      if (prev !== null && i - prev > 1) pages.push('…')
-      pages.push(i)
-      prev = i
-    }
-  }
-  return pages
-}
-
-function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
-  const range = getPaginationRange(currentPage, totalPages)
-
-  return (
-    <nav aria-label="Paginación de artículos" className="flex items-center justify-center gap-1">
-      <button
-        type="button"
-        disabled={currentPage === 1}
-        onClick={() => onPageChange(currentPage - 1)}
-        aria-label="Página anterior"
-        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#e8e4f0] bg-white text-[#6e6b7b] transition hover:bg-[#f8f7fa] hover:text-[#3d3b4f] disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        <IconChevronLeft size={16} stroke={1.5} aria-hidden />
-      </button>
-
-      {range.map((item, idx) =>
-        item === '…' ? (
-          <span key={`ellipsis-${idx}`} className="flex h-9 w-9 items-center justify-center text-sm text-[#b9b6c3]">
-            …
-          </span>
-        ) : (
-          <button
-            key={item}
-            type="button"
-            onClick={() => onPageChange(item)}
-            aria-current={item === currentPage ? 'page' : undefined}
-            className={`inline-flex h-9 w-9 items-center justify-center rounded-lg text-sm font-medium transition ${
-              item === currentPage
-                ? 'bg-brand-primary text-white shadow-sm'
-                : 'border border-[#e8e4f0] bg-white text-[#6e6b7b] hover:bg-[#f8f7fa] hover:text-[#3d3b4f]'
-            }`}
-          >
-            {item}
-          </button>
-        ),
-      )}
-
-      <button
-        type="button"
-        disabled={currentPage === totalPages}
-        onClick={() => onPageChange(currentPage + 1)}
-        aria-label="Página siguiente"
-        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#e8e4f0] bg-white text-[#6e6b7b] transition hover:bg-[#f8f7fa] hover:text-[#3d3b4f] disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        <IconChevronRight size={16} stroke={1.5} aria-hidden />
-      </button>
-    </nav>
-  )
-}
-
-function normalize(str: string): string {
-  return str
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-}
-
 function filterArticulos(
   articles: Product[],
   query: string,
   categoria: string,
   estado: EstadoFilter,
 ): Product[] {
-  const q = normalize(query.trim())
+  const q = normalizeForSearch(query.trim())
   return articles.filter((a) => {
     if (estado === 'activo' && !a.activo) return false
     if (estado === 'inactivo' && a.activo) return false
     if (categoria && a.categoria_id !== categoria) return false
     if (!q) return true
     return (
-      normalize(a.name).includes(q) ||
-      normalize(a.sku).includes(q) ||
-      normalize(a.category).includes(q) ||
-      normalize(a.temporada).includes(q)
+      normalizeForSearch(a.name).includes(q) ||
+      normalizeForSearch(a.sku).includes(q) ||
+      normalizeForSearch(a.category).includes(q) ||
+      normalizeForSearch(a.temporada).includes(q)
     )
   })
 }
@@ -173,9 +93,9 @@ export function ArticulosPage() {
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-primary-ghost text-brand-primary">
               <IconStack {...ic.headerSm} aria-hidden />
             </span>
-            <h1 className="text-2xl font-bold tracking-tight text-[#3d3b4f]">Artículos</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-brand-ink">Artículos</h1>
           </div>
-          <p className="mt-1.5 text-sm text-[#6e6b7b]">Gestión de prendas, talles, colores y stock.</p>
+          <p className="mt-1.5 text-sm text-brand-ink-muted">Gestión de prendas, talles, colores y stock.</p>
         </div>
         <Link
           to="/inventario/articulos/nuevo"
@@ -208,12 +128,12 @@ export function ArticulosPage() {
 
       {/* Filter bar island */}
       {!errorMessage && (
-        <div className="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-black/4 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-3 rounded-xl bg-brand-surface p-4 shadow-sm ring-1 ring-brand-border sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <IconSearch
               size={15}
               stroke={1.5}
-              className="pointer-events-none absolute inset-y-0 left-3 my-auto text-[#b9b6c3]"
+              className="pointer-events-none absolute inset-y-0 left-3 my-auto text-brand-ink-muted"
               aria-hidden
             />
             <input
@@ -221,14 +141,14 @@ export function ArticulosPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Buscar por nombre, código, categoría o temporada…"
-              className="w-full rounded-lg border border-[#e8e4f0] bg-[#f8f7fa] py-2 pl-9 pr-3 text-sm text-[#3d3b4f] outline-none transition placeholder:text-[#b9b6c3] focus:border-brand-primary focus:bg-white focus:ring-2 focus:ring-brand-blush/50"
+              className="w-full rounded-lg border border-brand-border bg-brand-canvas py-2 pl-9 pr-3 text-sm text-brand-ink outline-none transition placeholder:text-brand-ink-muted focus:border-brand-primary focus:bg-brand-surface focus:ring-2 focus:ring-brand-blush/50"
             />
           </div>
 
           <select
             value={categoriaFilter}
             onChange={(e) => setCategoriaFilter(e.target.value)}
-            className="rounded-lg border border-[#e8e4f0] bg-[#f8f7fa] px-3 py-2 text-sm text-[#3d3b4f] outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50 sm:w-44"
+            className="rounded-lg border border-brand-border bg-brand-canvas px-3 py-2 text-sm text-brand-ink outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50 sm:w-44"
           >
             <option value="">Todas las categorías</option>
             {categorias.map(([id, nombre]) => (
@@ -238,7 +158,7 @@ export function ArticulosPage() {
             ))}
           </select>
 
-          <div className="flex items-center gap-1 rounded-lg border border-[#e8e4f0] bg-[#f8f7fa] p-1">
+          <div className="flex items-center gap-1 rounded-lg border border-brand-border bg-brand-canvas p-1">
             {(['todos', 'activo', 'inactivo'] as const).map((op) => (
               <button
                 key={op}
@@ -247,7 +167,7 @@ export function ArticulosPage() {
                 className={`rounded-md px-3 py-1 text-sm font-medium transition ${
                   estadoFilter === op
                     ? 'bg-brand-primary text-white shadow-sm'
-                    : 'text-[#6e6b7b] hover:text-[#3d3b4f]'
+                    : 'text-brand-ink-muted hover:text-brand-ink'
                 }`}
               >
                 {op === 'todos' ? 'Todos' : op === 'activo' ? 'Activos' : 'Inactivos'}
@@ -259,7 +179,7 @@ export function ArticulosPage() {
             <button
               type="button"
               onClick={clearFilters}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[#e8e4f0] px-3 py-2 text-sm text-[#6e6b7b] transition hover:bg-[#f8f7fa] hover:text-[#3d3b4f]"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border px-3 py-2 text-sm text-brand-ink-muted transition hover:bg-brand-canvas hover:text-brand-ink"
             >
               <IconX size={14} stroke={2} aria-hidden />
               Limpiar
@@ -310,9 +230,9 @@ export function ArticulosPage() {
       {/* Empty — no articles at all */}
       {!loading && !errorMessage && articles.length === 0 ? (
         <div className="rounded-xl bg-white px-5 py-14 text-center shadow-sm ring-1 ring-black/4">
-          <IconPackage size={40} stroke={1.25} className="mx-auto text-[#b9b6c3]" aria-hidden />
-          <p className="mt-3 text-sm font-medium text-[#3d3b4f]">No hay artículos todavía</p>
-          <p className="mt-1 text-sm text-[#6e6b7b]">
+          <IconPackage size={40} stroke={1.25} className="mx-auto text-brand-ink-muted" aria-hidden />
+          <p className="mt-3 text-sm font-medium text-brand-ink">No hay artículos todavía</p>
+          <p className="mt-1 text-sm text-brand-ink-muted">
             <Link to="/inventario/articulos/nuevo" className="font-semibold text-brand-primary hover:underline">
               Crear el primero
             </Link>
@@ -323,11 +243,11 @@ export function ArticulosPage() {
       {/* Empty — filtered */}
       {!loading && !errorMessage && articles.length > 0 && filtered.length === 0 ? (
         <div className="rounded-xl bg-white px-5 py-14 text-center shadow-sm ring-1 ring-black/4">
-          <p className="text-sm text-[#6e6b7b]">Ningún artículo coincide con los filtros aplicados.</p>
+          <p className="text-sm text-brand-ink-muted">Ningún artículo coincide con los filtros aplicados.</p>
           <button
             type="button"
             onClick={clearFilters}
-            className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-[#e8e4f0] px-3 py-1.5 text-sm text-[#6e6b7b] transition hover:text-[#3d3b4f]"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-brand-border px-3 py-1.5 text-sm text-brand-ink-muted transition hover:text-brand-ink"
           >
             <IconX size={14} stroke={2} aria-hidden />
             Limpiar filtros
@@ -358,10 +278,13 @@ export function ArticulosPage() {
             ))}
           </ul>
           {totalPages > 1 && (
-            <Pagination
-              currentPage={safePage}
+            <SimplePagination
+              page={safePage}
               totalPages={totalPages}
+              totalItems={filtered.length}
+              pageSize={PAGE_SIZE}
               onPageChange={setCurrentPage}
+              ariaLabel="Paginación de artículos"
             />
           )}
         </>
