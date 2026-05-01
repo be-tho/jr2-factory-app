@@ -6,6 +6,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import { AuthCard } from '../../../components/ui/AuthCard'
 import { FormField } from '../../../components/ui/FormField'
+import { markSessionSignOutReason } from '../../../lib/auth/sessionSignOutReason'
 import { loginSchema, type LoginFormValues } from '../../../lib/schemas/auth'
 import { ic } from '../../../lib/tabler'
 import { supabase } from '../../../lib/supabase/client'
@@ -42,12 +43,21 @@ export function LoginPage() {
       .maybeSingle()
 
     if (profile?.is_active === false) {
+      markSessionSignOutReason('inactive')
       await supabase.auth.signOut()
       toast.warning('Tu cuenta aún no fue habilitada.', {
         description: 'El administrador te activará pronto. Volvé a intentarlo más tarde.',
         duration: 6000,
       })
       return
+    }
+
+    const { error: revokeOthersError } = await supabase.auth.signOut({ scope: 'others' })
+    if (revokeOthersError) {
+      toast.warning('No se pudieron cerrar las sesiones anteriores.', {
+        description: revokeOthersError.message,
+        duration: 6000,
+      })
     }
 
     const name = data.user?.email?.split('@')[0] ?? 'usuario'

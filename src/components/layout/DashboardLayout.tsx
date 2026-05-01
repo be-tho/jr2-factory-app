@@ -26,6 +26,7 @@ import { BrandLogo } from '../ui/BrandLogo'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { NavLink, useLocation } from 'react-router-dom'
 import { ic } from '../../lib/tabler'
+import { markSessionSignOutReason } from '../../lib/auth/sessionSignOutReason'
 import { supabase } from '../../lib/supabase/client'
 import { useSession } from '../../hooks/useSession'
 import { ProfileAvatarImage } from '../../features/account/components/ProfileAvatarImage'
@@ -295,6 +296,7 @@ export function DashboardLayout() {
   }, [mobileMenuOpen])
 
   async function handleLogout() {
+    markSessionSignOutReason('manual')
     await supabase.auth.signOut()
     toast.success('Sesión cerrada', {
       description: '¡Hasta la próxima!',

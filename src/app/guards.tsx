@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { Navigate, Outlet } from 'react-router-dom'
 import { useSession } from '../hooks/useSession'
 import { useProfileQuery } from '../features/account/hooks/useProfile'
+import { markSessionSignOutReason } from '../lib/auth/sessionSignOutReason'
 import { supabase } from '../lib/supabase/client'
 
 export function ProtectedRoute() {
@@ -14,6 +15,7 @@ export function ProtectedRoute() {
 
   useEffect(() => {
     if (isInactive) {
+      markSessionSignOutReason('inactive')
       void supabase.auth.signOut()
     }
   }, [isInactive])

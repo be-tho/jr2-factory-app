@@ -6,6 +6,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { AuthCard } from '../../../components/ui/AuthCard'
 import { updatePasswordSchema, type UpdatePasswordFormValues } from '../../../lib/schemas/auth'
+import { markSessionSignOutReason } from '../../../lib/auth/sessionSignOutReason'
 import { ic } from '../../../lib/tabler'
 import { supabase } from '../../../lib/supabase/client'
 import { useSession } from '../../../hooks/useSession'
@@ -32,6 +33,7 @@ export function UpdatePasswordPage() {
       return
     }
 
+    markSessionSignOutReason('manual')
     await supabase.auth.signOut()
     toast.success('Password actualizado.', {
       description: 'Ya podes iniciar sesion con tu nuevo password.',
