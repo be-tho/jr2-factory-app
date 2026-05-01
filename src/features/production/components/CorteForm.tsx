@@ -7,9 +7,12 @@ import {
   IconTrash,
   IconX,
 } from '@tabler/icons-react'
-import { type FormEvent, useEffect, useId, useRef, useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useEffect, useId, useRef, useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { Link } from 'react-router-dom'
 import { FormField } from '../../../components/ui/FormField'
+import { corteScalarFormSchema, type CorteScalarFormValues } from '../../../lib/schemas/production'
 import { ic } from '../../../lib/tabler'
 import type { Corte, CorteEstado, Product } from '../../../types/database'
 import {
@@ -59,19 +62,36 @@ export interface CorteFormProps {
   error: string | null
 }
 
-export function CorteForm({ mode, initialData, onSubmit, saving, error }: CorteFormProps) {
+function corteScalarDefaults(initialData?: Corte): CorteScalarFormValues {
   const today = new Date().toISOString().slice(0, 10)
+  return {
+    numero_corte: initialData?.numero_corte ?? '',
+    tipo_tela: initialData?.tipo_tela ?? '',
+    cantidad_total: String(initialData?.cantidad_total ?? ''),
+    costureros: initialData?.costureros ?? '',
+    estado: initialData?.estado ?? 'pendiente',
+    fecha: initialData?.fecha ?? today,
+    descripcion: initialData?.descripcion ?? '',
+  }
+}
+
+export function CorteForm({ mode, initialData, onSubmit, saving, error }: CorteFormProps) {
   const imageInputId = useId()
   const imageInputRef = useRef<HTMLInputElement>(null)
 
-  // ─── Form fields ────────────────────────────────────────────────────────────
-  const [numeroCorre, setNumeroCorre] = useState(initialData?.numero_corte ?? '')
-  const [tipoTela, setTipoTela] = useState(initialData?.tipo_tela ?? '')
-  const [cantidadTotal, setCantidadTotal] = useState(String(initialData?.cantidad_total ?? ''))
-  const [costureros, setCostureros] = useState(initialData?.costureros ?? '')
-  const [estado, setEstado] = useState<CorteEstado>(initialData?.estado ?? 'pendiente')
-  const [fecha, setFecha] = useState(initialData?.fecha ?? today)
-  const [descripcion, setDescripcion] = useState(initialData?.descripcion ?? '')
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<CorteScalarFormValues>({
+    resolver: zodResolver(corteScalarFormSchema),
+    defaultValues: corteScalarDefaults(initialData),
+  })
+
+  useEffect(() => {
+    reset(corteScalarDefaults(initialData))
+  }, [initialData, reset])
 
   const [articulos, setArticulos] = useState<Product[]>(() => {
     if (!initialData?.articulos.length) return []
@@ -149,57 +169,31 @@ export function CorteForm({ mode, initialData, onSubmit, saving, error }: CorteF
     setArticulos((prev) => prev.filter((a) => a.id !== id))
   }
 
-  // ─── Field errors ────────────────────────────────────────────────────────────
-  const [fieldErrors, setFieldErrors] = useState<{
-    numeroCorre?: string
-    tipoTela?: string
-    cantidadTotal?: string
-    fecha?: string
-    articulos?: string
-  }>({})
+  const [articulosError, setArticulosError] = useState<string | undefined>()
 
-  function clearFieldError(field: keyof typeof fieldErrors) {
-    setFieldErrors((prev) => {
-      if (!prev[field]) return prev
-      const next = { ...prev }
-      delete next[field]
-      return next
-    })
-  }
+  async function submitForm(values: CorteScalarFormValues) {
+    if (imageError) return
 
-  // ─── Submit ─────────────────────────────────────────────────────────────────
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-
-    const n = parseInt(cantidadTotal, 10)
-    const errors: typeof fieldErrors = {}
-
-    if (!numeroCorre.trim()) errors.numeroCorre = 'El número de corte es obligatorio.'
-    if (!tipoTela.trim()) errors.tipoTela = 'El tipo de tela es obligatorio.'
-    if (!Number.isFinite(n) || n < 1) errors.cantidadTotal = 'Ingresá una cantidad mayor a 0.'
-    if (!fecha) errors.fecha = 'La fecha es obligatoria.'
-    if (articulos.length === 0) errors.articulos = 'Seleccioná al menos un artículo.'
-
-    if (Object.keys(errors).length > 0 || imageError) {
-      setFieldErrors(errors)
+    if (articulos.length === 0) {
+      setArticulosError('Seleccioná al menos un artículo.')
       return
     }
+    setArticulosError(undefined)
 
-    setFieldErrors({})
-
+    const n = Number.parseInt(values.cantidad_total, 10)
     const validColores: CorteColorInput[] = colores
       .filter((c) => c.color.trim() !== '')
       .map((c) => ({ color: c.color.trim(), cantidad: c.cantidad }))
 
     await onSubmit(
       {
-        numero_corte: numeroCorre.trim(),
-        tipo_tela: tipoTela.trim(),
+        numero_corte: values.numero_corte.trim(),
+        tipo_tela: values.tipo_tela.trim(),
         cantidad_total: n,
-        costureros: costureros.trim() || null,
-        estado,
-        fecha,
-        descripcion: descripcion.trim() || null,
+        costureros: values.costureros.trim() || null,
+        estado: values.estado,
+        fecha: values.fecha,
+        descripcion: values.descripcion.trim() || null,
         imagen_path: initialData?.imagen_path ?? null,
         articulo_ids: articulos.map((a) => a.id),
         colores: validColores,
@@ -207,6 +201,8 @@ export function CorteForm({ mode, initialData, onSubmit, saving, error }: CorteF
       imageFile,
     )
   }
+
+  const busy = saving || isSubmitting
 
   // ─── Derived ─────────────────────────────────────────────────────────────────
   const previewSrc = imagePreview ?? existingImageUrl ?? null
@@ -240,7 +236,7 @@ export function CorteForm({ mode, initialData, onSubmit, saving, error }: CorteF
         </Link>
       </div>
 
-      <form onSubmit={(e) => void handleSubmit(e)} className="relative space-y-6">
+      <form onSubmit={(e) => void handleSubmit(submitForm)(e)} className="relative space-y-6" noValidate>
         {/* Loading overlay */}
         {saving && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-xl bg-white/75 backdrop-blur-[2px]">
@@ -279,50 +275,37 @@ export function CorteForm({ mode, initialData, onSubmit, saving, error }: CorteF
           <div className="grid gap-4 px-5 py-5 sm:grid-cols-2">
             <FormField
               label="Número de Corte *"
-              value={numeroCorre}
-              onChange={(e) => { setNumeroCorre(e.target.value); clearFieldError('numeroCorre') }}
               placeholder="Ej: 001"
-              required
-              disabled={saving}
-              error={fieldErrors.numeroCorre}
+              disabled={busy}
+              error={errors.numero_corte?.message}
+              {...register('numero_corte')}
             />
             <FormField
               label="Tipo de Tela *"
-              value={tipoTela}
-              onChange={(e) => { setTipoTela(e.target.value); clearFieldError('tipoTela') }}
               placeholder="Ej: Algodón, Poliéster, Lino"
-              required
-              disabled={saving}
-              error={fieldErrors.tipoTela}
+              disabled={busy}
+              error={errors.tipo_tela?.message}
+              {...register('tipo_tela')}
             />
             <FormField
               label="Cantidad Total (encimadas) *"
               type="number"
               min={1}
               step={1}
-              value={cantidadTotal}
-              onChange={(e) => { setCantidadTotal(e.target.value); clearFieldError('cantidadTotal') }}
               placeholder="Ej: 100"
-              required
-              disabled={saving}
-              error={fieldErrors.cantidadTotal}
+              disabled={busy}
+              error={errors.cantidad_total?.message}
+              {...register('cantidad_total')}
             />
             <FormField
               label="Costureros"
-              value={costureros}
-              onChange={(e) => setCostureros(e.target.value)}
               placeholder="Ej: María, Juan"
-              disabled={saving}
+              disabled={busy}
+              {...register('costureros')}
             />
             <label className="block">
               <span className="mb-1 block text-sm font-medium text-brand-ink-muted">Estado *</span>
-              <select
-                className={selectClass}
-                value={estado}
-                onChange={(e) => setEstado(e.target.value as CorteEstado)}
-                required
-                disabled={saving}
-              >
+              <select className={selectClass} disabled={busy} {...register('estado')}>
                 {ESTADOS.map((op) => (
                   <option key={op.value} value={op.value}>
                     {op.label}
@@ -333,11 +316,9 @@ export function CorteForm({ mode, initialData, onSubmit, saving, error }: CorteF
             <FormField
               label="Fecha *"
               type="date"
-              value={fecha}
-              onChange={(e) => { setFecha(e.target.value); clearFieldError('fecha') }}
-              required
-              disabled={saving}
-              error={fieldErrors.fecha}
+              disabled={busy}
+              error={errors.fecha?.message}
+              {...register('fecha')}
             />
           </div>
           <div className="border-t border-brand-border-subtle px-5 pb-5">
@@ -345,11 +326,10 @@ export function CorteForm({ mode, initialData, onSubmit, saving, error }: CorteF
               <span className="mb-1 block text-sm font-medium text-brand-ink-muted">Descripción</span>
               <textarea
                 className="min-h-24 w-full rounded-lg border border-brand-border-strong bg-brand-surface px-3 py-2 text-sm text-brand-ink outline-none transition placeholder:text-brand-ink-faint focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50"
-                value={descripcion}
-                onChange={(e) => setDescripcion(e.target.value)}
                 placeholder="Describe las características del corte…"
-                disabled={saving}
+                disabled={busy}
                 rows={3}
+                {...register('descripcion')}
               />
             </label>
           </div>
@@ -412,7 +392,7 @@ export function CorteForm({ mode, initialData, onSubmit, saving, error }: CorteF
                         type="button"
                         aria-label={`Quitar ${art.name}`}
                         onClick={() => removeArticulo(art.id)}
-                        disabled={saving}
+                        disabled={busy}
                         className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-brand-ink-faint transition hover:bg-red-50 hover:text-red-500 disabled:opacity-40"
                       >
                         <IconX size={14} stroke={2} aria-hidden />
@@ -425,17 +405,20 @@ export function CorteForm({ mode, initialData, onSubmit, saving, error }: CorteF
 
             <button
               type="button"
-              onClick={() => { setShowPicker(true); clearFieldError('articulos') }}
-              disabled={saving}
+              onClick={() => {
+                setShowPicker(true)
+                setArticulosError(undefined)
+              }}
+              disabled={busy}
               className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border px-3 py-2 text-sm font-medium text-brand-primary transition hover:border-brand-blush-deep hover:bg-brand-primary-ghost disabled:opacity-40"
             >
               <IconPhoto size={15} stroke={1.5} aria-hidden />
               {articulos.length > 0 ? 'Cambiar artículos' : 'Seleccionar artículos'}
             </button>
 
-            {fieldErrors.articulos && (
-              <p className="text-xs font-medium text-red-600">{fieldErrors.articulos}</p>
-            )}
+            {articulosError ? (
+              <p className="text-xs font-medium text-red-600">{articulosError}</p>
+            ) : null}
           </div>
         </section>
 
@@ -446,7 +429,7 @@ export function CorteForm({ mode, initialData, onSubmit, saving, error }: CorteF
             hint="Indicá cada color del corte y cuántas unidades corresponden."
           />
           <div className="px-5 py-5">
-            <ColoresConCantidad value={colores} onChange={setColores} disabled={saving} />
+            <ColoresConCantidad value={colores} onChange={setColores} disabled={busy} />
           </div>
         </section>
 
@@ -471,7 +454,7 @@ export function CorteForm({ mode, initialData, onSubmit, saving, error }: CorteF
                   ref={imageInputRef}
                   type="file"
                   accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
-                  disabled={saving}
+                  disabled={busy}
                   onChange={handleFileChange}
                   className="block w-full max-w-md text-sm text-brand-ink file:mr-3 file:rounded-lg file:border file:border-brand-border file:bg-brand-canvas file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-brand-ink transition file:transition file:hover:bg-brand-primary-ghost"
                 />
@@ -493,7 +476,7 @@ export function CorteForm({ mode, initialData, onSubmit, saving, error }: CorteF
                   <button
                     type="button"
                     onClick={clearImage}
-                    disabled={saving}
+                    disabled={busy}
                     className="inline-flex items-center gap-1 text-sm text-brand-ink-muted underline-offset-2 hover:text-brand-ink hover:underline"
                   >
                     <IconTrash size={13} stroke={1.5} aria-hidden />
@@ -551,7 +534,7 @@ export function CorteForm({ mode, initialData, onSubmit, saving, error }: CorteF
           </Link>
           <button
             type="submit"
-            disabled={saving || Boolean(imageError)}
+            disabled={busy || Boolean(imageError)}
             className="inline-flex min-w-40 items-center justify-center gap-2 rounded-lg bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
             {saving ? (

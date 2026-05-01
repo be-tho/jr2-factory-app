@@ -1,4 +1,6 @@
-import { useEffect, useId, useState, type FormEvent } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useEffect, useId, useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { DEFAULT_ARTICLE_IMAGE_PUBLIC_URL } from '../../../constants/defaultArticleImage'
@@ -15,6 +17,7 @@ import {
 import { useCategoriasQuery } from '../hooks/useCategorias'
 import { useCreateProductMutation } from '../hooks/useProducts'
 import { useTemporadasCatalogQuery } from '../hooks/useTemporadas'
+import { articuloFormSchema, type ArticuloFormValues } from '../../../lib/schemas/inventory'
 import { createArticuloImagen } from '../services/articulo-imagenes.service'
 
 const selectClass =
@@ -46,15 +49,25 @@ export function NuevoArticuloPage() {
       : temporadasQ.isError && temporadasQ.error instanceof Error
         ? temporadasQ.error.message
         : null
-  const [name, setName] = useState('')
-  const [sku, setSku] = useState('')
-  const [categoriaId, setCategoriaId] = useState('')
-  const [temporadaId, setTemporadaId] = useState('')
-  const [precioLista, setPrecioLista] = useState('')
-  const [precioPromo, setPrecioPromo] = useState('')
-  const [stockActual, setStockActual] = useState('0')
-  const [activo, setActivo] = useState(true)
-  const [descripcion, setDescripcion] = useState('')
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ArticuloFormValues>({
+    resolver: zodResolver(articuloFormSchema),
+    defaultValues: {
+      name: '',
+      sku: '',
+      categoria_id: '',
+      temporada_id: '',
+      precioLista: '',
+      precioPromo: '',
+      stockActual: '0',
+      activo: true,
+      descripcion: '',
+    },
+  })
+
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [coverImage, setCoverImage] = useState<File | null>(null)
@@ -126,22 +139,10 @@ export function NuevoArticuloPage() {
     }
   }
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  async function submitForm(values: ArticuloFormValues) {
     if (articleIdPendingImage) return
+    setError(null)
 
-    const n = name.trim()
-    const s = sku.trim()
-    const pl = Number.parseInt(precioLista.replace(/\s/g, ''), 10)
-    const st = Number.parseInt(stockActual.replace(/\s/g, ''), 10)
-    if (!n || !s || !categoriaId || !temporadaId || !Number.isFinite(pl) || pl < 0) {
-      setError('Completá nombre, código, categoría, temporada y precio de lista válido.')
-      return
-    }
-    if (!Number.isFinite(st) || st < 0) {
-      setError('Indicá un stock actual válido (entero ≥ 0).')
-      return
-    }
     if (coverImage) {
       const imgErr = validateImageFile(coverImage)
       if (imgErr) {
@@ -149,15 +150,15 @@ export function NuevoArticuloPage() {
         return
       }
     }
-    const promoRaw = precioPromo.trim()
+
+    const n = values.name.trim()
+    const s = values.sku.trim()
+    const pl = Number.parseInt(values.precioLista.replace(/\s/g, ''), 10)
+    const st = Number.parseInt(values.stockActual.replace(/\s/g, ''), 10)
+    const promoRaw = values.precioPromo.trim()
     let precio_promocional: number | null = null
     if (promoRaw !== '') {
-      const p = Number.parseInt(promoRaw.replace(/\s/g, ''), 10)
-      if (!Number.isFinite(p) || p < 0) {
-        setError('Precio promocional inválido.')
-        return
-      }
-      precio_promocional = p
+      precio_promocional = Number.parseInt(promoRaw.replace(/\s/g, ''), 10)
     }
     setSaving(true)
     setError(null)
@@ -168,13 +169,13 @@ export function NuevoArticuloPage() {
       const data = await createMutation.mutateAsync({
         nombre: n,
         codigo: s,
-        categoria_id: categoriaId,
-        temporada_id: temporadaId,
+        categoria_id: values.categoria_id,
+        temporada_id: values.temporada_id,
         precio_lista: pl,
         precio_promocional,
         stock_actual: st,
-        activo,
-        descripcion: descripcion.trim() || null,
+        activo: values.activo,
+        descripcion: values.descripcion.trim() || null,
       })
       if (!data?.id) {
         setSaving(false)
@@ -232,7 +233,7 @@ export function NuevoArticuloPage() {
         </Link>
       </div>
 
-      <form onSubmit={(e) => void handleSubmit(e)} className="space-y-6">
+      <form onSubmit={(e) => void handleSubmit(submitForm)(e)} className="space-y-6" noValidate>
         {catalogError ? (
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             <p className="font-medium">Catálogo auxiliar</p>
@@ -245,19 +246,17 @@ export function NuevoArticuloPage() {
           <div className="grid gap-4 px-5 py-5 sm:grid-cols-2">
             <FormField
               label="Nombre"
-              value={name}
-              onChange={(ev) => setName(ev.target.value)}
               placeholder="Ej. Remera manga corta"
-              required
               disabled={saving || articleIdPendingImage != null}
+              error={errors.name?.message}
+              {...register('name')}
             />
             <FormField
               label="Código (SKU)"
-              value={sku}
-              onChange={(ev) => setSku(ev.target.value)}
               placeholder="Ej. REM-105"
-              required
               disabled={saving || articleIdPendingImage != null}
+              error={errors.sku?.message}
+              {...register('sku')}
             />
           </div>
         </section>
@@ -269,10 +268,9 @@ export function NuevoArticuloPage() {
               <span className="mb-1 block text-sm font-medium text-brand-ink-muted">Categoría</span>
               <select
                 className={selectClass}
-                value={categoriaId}
-                onChange={(ev) => setCategoriaId(ev.target.value)}
-                required
                 disabled={saving || catalogLoading || categorias.length === 0 || articleIdPendingImage != null}
+                aria-invalid={Boolean(errors.categoria_id)}
+                {...register('categoria_id')}
               >
                 <option value="">{catalogLoading ? 'Cargando…' : 'Elegí una categoría'}</option>
                 {categorias.map((c) => (
@@ -281,15 +279,17 @@ export function NuevoArticuloPage() {
                   </option>
                 ))}
               </select>
+              {errors.categoria_id ? (
+                <p className="mt-1 text-xs font-medium text-red-600">{errors.categoria_id.message}</p>
+              ) : null}
             </label>
             <label className="block sm:col-span-1">
               <span className="mb-1 block text-sm font-medium text-brand-ink-muted">Temporada</span>
               <select
                 className={selectClass}
-                value={temporadaId}
-                onChange={(ev) => setTemporadaId(ev.target.value)}
-                required
                 disabled={saving || catalogLoading || temporadas.length === 0 || articleIdPendingImage != null}
+                aria-invalid={Boolean(errors.temporada_id)}
+                {...register('temporada_id')}
               >
                 <option value="">{catalogLoading ? 'Cargando…' : 'Elegí una temporada'}</option>
                 {temporadas.map((t) => (
@@ -298,6 +298,9 @@ export function NuevoArticuloPage() {
                   </option>
                 ))}
               </select>
+              {errors.temporada_id ? (
+                <p className="mt-1 text-xs font-medium text-red-600">{errors.temporada_id.message}</p>
+              ) : null}
             </label>
           </div>
         </section>
@@ -313,42 +316,39 @@ export function NuevoArticuloPage() {
               type="number"
               min={0}
               step={1}
-              value={precioLista}
-              onChange={(ev) => setPrecioLista(ev.target.value)}
               placeholder="0"
-              required
               disabled={saving || articleIdPendingImage != null}
+              error={errors.precioLista?.message}
+              {...register('precioLista')}
             />
             <FormField
               label="Precio promocional (opcional)"
               type="number"
               min={0}
               step={1}
-              value={precioPromo}
-              onChange={(ev) => setPrecioPromo(ev.target.value)}
               placeholder="—"
               disabled={saving || articleIdPendingImage != null}
+              error={errors.precioPromo?.message}
+              {...register('precioPromo')}
             />
             <FormField
               label="Stock actual"
               type="number"
               min={0}
               step={1}
-              value={stockActual}
-              onChange={(ev) => setStockActual(ev.target.value)}
               placeholder="0"
-              required
               disabled={saving || articleIdPendingImage != null}
+              error={errors.stockActual?.message}
+              {...register('stockActual')}
             />
           </div>
           <div className="border-t border-brand-border-subtle px-5 py-4">
             <label className="flex cursor-pointer items-center gap-3">
               <input
                 type="checkbox"
-                checked={activo}
-                onChange={(ev) => setActivo(ev.target.checked)}
                 disabled={saving || articleIdPendingImage != null}
                 className="h-4 w-4 rounded border-brand-border-strong text-brand-primary focus:ring-brand-blush/50"
+                {...register('activo')}
               />
               <span className="text-sm text-brand-ink">Artículo activo en catálogo</span>
             </label>
@@ -362,11 +362,10 @@ export function NuevoArticuloPage() {
               <span className="mb-1 block text-sm font-medium text-brand-ink-muted">Texto</span>
               <textarea
                 className="min-h-24 w-full rounded-lg border border-brand-border-strong bg-brand-surface px-3 py-2 text-brand-ink outline-none transition placeholder:text-brand-ink-faint focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50"
-                value={descripcion}
-                onChange={(ev) => setDescripcion(ev.target.value)}
                 placeholder="Notas o detalle comercial"
                 disabled={saving || articleIdPendingImage != null}
                 rows={4}
+                {...register('descripcion')}
               />
             </label>
           </div>

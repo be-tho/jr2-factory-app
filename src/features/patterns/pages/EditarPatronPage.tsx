@@ -7,8 +7,11 @@ import {
   IconUpload,
   IconX,
 } from '@tabler/icons-react'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { patronMetaFormSchema, type PatronMetaFormValues } from '../../../lib/schemas/patron'
 import { ic } from '../../../lib/tabler'
 import { useProductsQuery } from '../../inventory/hooks/useProducts'
 import { getPatternImagePublicUrl } from '../services/patrones.service'
@@ -34,9 +37,19 @@ export function EditarPatronPage() {
   const { data: articulosConPatron = [], isPending: loadingOcupados } = useArticulosConPatronQuery()
   const updateMutation = useUpdatePatronMutation()
 
-  const [articuloId, setArticuloId] = useState('')
-  const [nombre, setNombre] = useState('')
-  const [descripcion, setDescripcion] = useState('')
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm<PatronMetaFormValues>({
+    resolver: zodResolver(patronMetaFormSchema),
+    defaultValues: { articulo_id: '', nombre: '', descripcion: '' },
+  })
+
+  const articuloIdWatch = watch('articulo_id')
+
   const [newFile, setNewFile] = useState<File | null>(null)
   const [newImage, setNewImage] = useState<File | null>(null)
   const [removeCurrentImage, setRemoveCurrentImage] = useState(false)
@@ -48,19 +61,21 @@ export function EditarPatronPage() {
   const imageInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    if (patron) {
-      setArticuloId(patron.articulo_id)
-      setNombre(patron.nombre)
-      setDescripcion(patron.descripcion ?? '')
-    }
-  }, [patron])
+    if (!patron) return
+    reset({
+      articulo_id: patron.articulo_id,
+      nombre: patron.nombre,
+      descripcion: patron.descripcion ?? '',
+    })
+  }, [patron, reset])
 
   const articulosDisponibles = useMemo(
-    () => articulos.filter((a) => !articulosConPatron.includes(a.id) || a.id === patron?.articulo_id),
+    () =>
+      articulos.filter((a) => !articulosConPatron.includes(a.id) || a.id === patron?.articulo_id),
     [articulos, articulosConPatron, patron?.articulo_id],
   )
 
-  const articuloSeleccionado = articulos.find((a) => a.id === articuloId) ?? null
+  const articuloSeleccionado = articulos.find((a) => a.id === articuloIdWatch) ?? null
   const cargandoArticulos = loadingArticulos || loadingOcupados
   const currentImageUrl =
     patron?.image_path && patron.image_path.length > 0 ? getPatternImagePublicUrl(patron.image_path) : null
@@ -104,20 +119,17 @@ export function EditarPatronPage() {
     setRemoveCurrentImage(false)
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  function onSubmit(values: PatronMetaFormValues) {
     setFormError(null)
     if (!patron) return
-    if (!articuloId) { setFormError('Seleccioná un artículo.'); return }
-    if (!nombre.trim()) { setFormError('El nombre del patrón es requerido.'); return }
 
     updateMutation.mutate(
       {
         id: patron.id,
         input: {
-          nombre: nombre.trim(),
-          descripcion: descripcion.trim() || null,
-          articulo_id: articuloId,
+          nombre: values.nombre.trim(),
+          descripcion: values.descripcion.trim() || null,
+          articulo_id: values.articulo_id,
           file: newFile ?? undefined,
           image: newImage ?? undefined,
           remove_image: removeCurrentImage,
@@ -179,7 +191,7 @@ export function EditarPatronPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={(e) => void handleSubmit(onSubmit)(e)} className="space-y-6" noValidate>
         <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-black/4 space-y-5">
 
           {/* Artículo */}
@@ -192,10 +204,10 @@ export function EditarPatronPage() {
             </p>
             <select
               id="articulo"
-              value={articuloId}
-              onChange={(e) => setArticuloId(e.target.value)}
               disabled={cargandoArticulos}
-              className="mt-2 w-full rounded-lg border border-[#e8e4f0] bg-[#f8f7fa] px-3 py-2 text-sm text-[#3d3b4f] outline-none transition focus:border-brand-primary focus:bg-white focus:ring-2 focus:ring-brand-blush/50 disabled:opacity-60 sm:max-w-md"
+              aria-invalid={Boolean(errors.articulo_id)}
+              className="mt-2 w-full rounded-lg border border-[#e8e4f0] bg-[#f8f7fa] px-3 py-2 text-sm text-[#3d3b4f] outline-none transition focus:border-brand-primary focus:bg-white focus:ring-2 focus:ring-brand-blush/50 disabled:opacity-60 aria-invalid:border-red-400 sm:max-w-md"
+              {...register('articulo_id')}
             >
               <option value="">
                 {cargandoArticulos ? 'Cargando…' : articulosDisponibles.length === 0 ? 'Sin artículos disponibles' : 'Elegí un artículo…'}
@@ -211,35 +223,40 @@ export function EditarPatronPage() {
                 Categoría: {articuloSeleccionado.category || '—'} · Temporada: {articuloSeleccionado.temporada || '—'}
               </p>
             )}
+            {errors.articulo_id ? (
+              <p className="mt-1 text-xs font-medium text-red-600">{errors.articulo_id.message}</p>
+            ) : null}
           </div>
 
           {/* Nombre */}
           <div>
-            <label htmlFor="nombre" className="block text-sm font-semibold text-[#3d3b4f]">
+            <label htmlFor="patron-edit-nombre" className="block text-sm font-semibold text-[#3d3b4f]">
               Nombre del patrón <span className="text-red-500">*</span>
             </label>
             <input
-              id="nombre"
+              id="patron-edit-nombre"
               type="text"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
               maxLength={200}
-              className="mt-2 w-full rounded-lg border border-[#e8e4f0] bg-[#f8f7fa] px-3 py-2 text-sm text-[#3d3b4f] outline-none transition placeholder:text-[#b9b6c3] focus:border-brand-primary focus:bg-white focus:ring-2 focus:ring-brand-blush/50 sm:max-w-md"
+              aria-invalid={Boolean(errors.nombre)}
+              className="mt-2 w-full rounded-lg border border-[#e8e4f0] bg-[#f8f7fa] px-3 py-2 text-sm text-[#3d3b4f] outline-none transition placeholder:text-[#b9b6c3] focus:border-brand-primary focus:bg-white focus:ring-2 focus:ring-brand-blush/50 aria-invalid:border-red-400 sm:max-w-md"
+              {...register('nombre')}
             />
+            {errors.nombre ? (
+              <p className="mt-1 text-xs font-medium text-red-600">{errors.nombre.message}</p>
+            ) : null}
           </div>
 
           {/* Descripción */}
           <div>
-            <label htmlFor="descripcion" className="block text-sm font-semibold text-[#3d3b4f]">
+            <label htmlFor="patron-edit-desc" className="block text-sm font-semibold text-[#3d3b4f]">
               Descripción <span className="text-xs font-normal text-brand-ink-faint">(opcional)</span>
             </label>
             <textarea
-              id="descripcion"
-              value={descripcion}
-              onChange={(e) => setDescripcion(e.target.value)}
+              id="patron-edit-desc"
               rows={3}
               maxLength={500}
               className="mt-2 w-full resize-none rounded-lg border border-[#e8e4f0] bg-[#f8f7fa] px-3 py-2 text-sm text-[#3d3b4f] outline-none transition placeholder:text-[#b9b6c3] focus:border-brand-primary focus:bg-white focus:ring-2 focus:ring-brand-blush/50 sm:max-w-lg"
+              {...register('descripcion')}
             />
           </div>
 

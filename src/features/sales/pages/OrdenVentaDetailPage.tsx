@@ -11,9 +11,12 @@ import {
 } from '@tabler/icons-react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { createPortal } from 'react-dom'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect, useMemo, useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { Link, Navigate, useNavigate, useParams, useLocation } from 'react-router-dom'
-import type { MedioPagoVenta, Product } from '../../../types/database'
+import { ventaClienteFormSchema, type VentaClienteFormValues } from '../../../lib/schemas/sales'
+import type { Product } from '../../../types/database'
 import { useProductsQuery } from '../../inventory/hooks/useProducts'
 import { OrdenDeleteConfirmDialog } from '../components/OrdenDeleteConfirmDialog'
 import {
@@ -108,9 +111,24 @@ export function OrdenVentaDetailPage() {
   const pagarMutation = useMarcarOrdenPagadaMutation()
   const deleteMutation = useDeleteOrdenVentaPendienteMutation()
 
-  const [nombre, setNombre] = useState('')
-  const [telefono, setTelefono] = useState('')
-  const [medioPago, setMedioPago] = useState<MedioPagoVenta>('efectivo')
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<VentaClienteFormValues>({
+    resolver: zodResolver(ventaClienteFormSchema),
+    defaultValues: {
+      cliente_nombre: '',
+      cliente_telefono: '',
+      medio_pago: 'efectivo',
+    },
+  })
+
+  const medioPago = watch('medio_pago')
+
   const [lines, setLines] = useState<DraftLine[]>([])
   const [formError, setFormError] = useState<string | null>(null)
   const [payOpen, setPayOpen] = useState(false)
@@ -122,9 +140,11 @@ export function OrdenVentaDetailPage() {
 
   useEffect(() => {
     if (!data) return
-    setNombre(data.orden.cliente_nombre)
-    setTelefono(data.orden.cliente_telefono ?? '')
-    setMedioPago(data.orden.medio_pago)
+    reset({
+      cliente_nombre: data.orden.cliente_nombre,
+      cliente_telefono: data.orden.cliente_telefono ?? '',
+      medio_pago: data.orden.medio_pago,
+    })
     setLines(
       data.items.map((it) => ({
         key: it.id,
@@ -133,7 +153,7 @@ export function OrdenVentaDetailPage() {
         precio_unitario: Math.floor(Number(it.precio_unitario)),
       })),
     )
-  }, [data])
+  }, [data, reset])
 
   const readonly = orden?.estado === 'pagado'
 
@@ -204,15 +224,9 @@ export function OrdenVentaDetailPage() {
     ])
   }
 
-  function handleSave(e: React.FormEvent) {
-    e.preventDefault()
+  function submitForm(values: VentaClienteFormValues) {
     setFormError(null)
     if (!id || readonly) return
-    const n = nombre.trim()
-    if (n.length < 2) {
-      setFormError('Ingresá el nombre del cliente.')
-      return
-    }
     if (!itemsPayload.length) {
       setFormError('Agregá al menos un artículo.')
       return
@@ -225,9 +239,9 @@ export function OrdenVentaDetailPage() {
     updateMutation.mutate({
       id,
       input: {
-        cliente_nombre: n,
-        cliente_telefono: telefono.trim() || null,
-        medio_pago: medioPago,
+        cliente_nombre: values.cliente_nombre.trim(),
+        cliente_telefono: values.cliente_telefono.trim() || null,
+        medio_pago: values.medio_pago,
         items: itemsPayload,
       },
     })
@@ -338,7 +352,11 @@ export function OrdenVentaDetailPage() {
         </Link>
       </div>
 
-      <form onSubmit={handleSave} className="grid gap-8 lg:grid-cols-[1fr_min(380px,100%)] lg:items-start lg:gap-10">
+      <form
+        onSubmit={(e) => void handleSubmit(submitForm)(e)}
+        className="grid gap-8 lg:grid-cols-[1fr_min(380px,100%)] lg:items-start lg:gap-10"
+        noValidate
+      >
         <section className="space-y-4">
           <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-brand-ink-faint">Artículos</h2>
 
@@ -488,10 +506,13 @@ export function OrdenVentaDetailPage() {
                   id="ov-nombre"
                   type="text"
                   disabled={readonly}
-                  value={nombre}
-                  onChange={(e) => setNombre(e.target.value)}
+                  aria-invalid={Boolean(errors.cliente_nombre)}
                   className={`${inputClass} mt-1`}
+                  {...register('cliente_nombre', { disabled: readonly })}
                 />
+                {errors.cliente_nombre ? (
+                  <p className="mt-1 text-xs font-medium text-red-600">{errors.cliente_nombre.message}</p>
+                ) : null}
               </div>
 
               <div>
@@ -502,10 +523,9 @@ export function OrdenVentaDetailPage() {
                   id="ov-tel"
                   type="tel"
                   disabled={readonly}
-                  value={telefono}
-                  onChange={(e) => setTelefono(e.target.value)}
                   className={`${inputClass} mt-1`}
                   placeholder="Opcional"
+                  {...register('cliente_telefono', { disabled: readonly })}
                 />
               </div>
 
@@ -515,7 +535,7 @@ export function OrdenVentaDetailPage() {
                   <button
                     type="button"
                     disabled={readonly}
-                    onClick={() => setMedioPago('efectivo')}
+                    onClick={() => setValue('medio_pago', 'efectivo', { shouldDirty: true })}
                     className={`flex items-center justify-center gap-2 rounded-xl border-2 px-3 py-3 text-sm font-semibold transition ${
                       medioPago === 'efectivo'
                         ? 'border-brand-primary bg-brand-primary-ghost text-brand-primary ring-2 ring-brand-blush/35'
@@ -528,7 +548,7 @@ export function OrdenVentaDetailPage() {
                   <button
                     type="button"
                     disabled={readonly}
-                    onClick={() => setMedioPago('transferencia')}
+                    onClick={() => setValue('medio_pago', 'transferencia', { shouldDirty: true })}
                     className={`flex items-center justify-center gap-2 rounded-xl border-2 px-3 py-3 text-sm font-semibold transition ${
                       medioPago === 'transferencia'
                         ? 'border-brand-primary bg-brand-primary-ghost text-brand-primary ring-2 ring-brand-blush/35'

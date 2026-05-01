@@ -1,7 +1,10 @@
 import { IconAlertCircle, IconArrowLeft, IconRefresh, IconTag } from '@tabler/icons-react'
-import { useEffect, useState, type FormEvent } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useEffect } from 'react'
+import { useForm } from 'react-hook-form'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { FormField } from '../../../components/ui/FormField'
+import { categoriaFormSchema, type CategoriaFormValues } from '../../../lib/schemas/inventory'
 import { ic } from '../../../lib/tabler'
 import { useCategoriaQuery, useUpdateCategoriaMutation } from '../hooks/useCategorias'
 
@@ -11,24 +14,31 @@ export function EditarCategoriaPage() {
   const { data: categoria, isPending, isError, error, refetch } = useCategoriaQuery(id)
   const updateMutation = useUpdateCategoriaMutation()
 
-  const [nombre, setNombre] = useState('')
-  const [activo, setActivo] = useState(true)
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<CategoriaFormValues>({
+    resolver: zodResolver(categoriaFormSchema),
+    defaultValues: { nombre: '', activo: true },
+  })
 
   useEffect(() => {
     if (categoria) {
-      setNombre(categoria.nombre)
-      setActivo(categoria.activo)
+      reset({ nombre: categoria.nombre, activo: categoria.activo })
     }
-  }, [categoria])
+  }, [categoria, reset])
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  function onSubmit(values: CategoriaFormValues) {
     if (!id) return
     updateMutation.mutate(
-      { id, input: { nombre, activo } },
+      { id, input: { nombre: values.nombre, activo: values.activo } },
       { onSuccess: () => navigate('/inventario/categorias', { replace: true }) },
     )
   }
+
+  const saving = updateMutation.isPending || isSubmitting
 
   const backLink = (
     <Link
@@ -84,8 +94,6 @@ export function EditarCategoriaPage() {
     )
   }
 
-  const saving = updateMutation.isPending
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -104,8 +112,9 @@ export function EditarCategoriaPage() {
 
       {/* Form island */}
       <form
-        onSubmit={handleSubmit}
+        onSubmit={(e) => void handleSubmit(onSubmit)(e)}
         className="max-w-lg overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/4"
+        noValidate
       >
         <div className="border-b border-[#f0eef5] bg-[#f8f7fa] px-5 py-3">
           <p className="text-xs font-semibold uppercase tracking-wider text-[#b9b6c3]">Datos de la categoría</p>
@@ -113,20 +122,18 @@ export function EditarCategoriaPage() {
         <div className="space-y-5 p-5">
           <FormField
             label="Nombre"
-            value={nombre}
-            onChange={(ev) => setNombre(ev.target.value)}
             placeholder="Ej. Remeras"
-            required
             disabled={saving}
+            error={errors.nombre?.message}
+            {...register('nombre')}
           />
 
           <label className="flex cursor-pointer items-center gap-2.5 text-sm text-[#3d3b4f]">
             <input
               type="checkbox"
-              checked={activo}
-              onChange={(ev) => setActivo(ev.target.checked)}
               disabled={saving}
               className="h-4 w-4 rounded border-brand-border-strong text-brand-primary focus:ring-brand-blush/50"
+              {...register('activo')}
             />
             Categoría activa (visible en formularios de artículos)
           </label>

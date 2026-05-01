@@ -7,11 +7,13 @@ import {
   IconShieldCheck,
   IconUser,
 } from '@tabler/icons-react'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { motion, useReducedMotion, type Variants } from 'framer-motion'
 import { useMemo, useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import type { MedioPagoVenta, Product } from '../../../types/database'
+import type { Product } from '../../../types/database'
 import { useProductsQuery } from '../../inventory/hooks/useProducts'
 import { useCreateOrdenVentaMutation } from '../hooks/useOrdenVenta'
 import type { CreateOrdenVentaItemInput } from '../services/ordenesVenta.service'
@@ -20,6 +22,7 @@ import {
   type PrecioFuenteVenta,
   resolvedCartUnitPrice,
 } from '../lib/pricing'
+import { ventaClienteFormSchema, type VentaClienteFormValues } from '../../../lib/schemas/sales'
 import type { CartLine } from '../store/cartStore'
 import { useCartStore } from '../store/cartStore'
 
@@ -166,10 +169,23 @@ export function VentasCheckoutPage() {
   const setLinePrecioManual = useCartStore((s) => s.setLinePrecioManual)
   const mutation = useCreateOrdenVentaMutation()
 
-  const [nombre, setNombre] = useState('')
-  const [telefono, setTelefono] = useState('')
-  const [medioPago, setMedioPago] = useState<MedioPagoVenta>('efectivo')
-  const [formError, setFormError] = useState<string | null>(null)
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<VentaClienteFormValues>({
+    resolver: zodResolver(ventaClienteFormSchema),
+    defaultValues: {
+      cliente_nombre: '',
+      cliente_telefono: '',
+      medio_pago: 'efectivo',
+    },
+  })
+
+  const medioPago = watch('medio_pago')
+
+  const [checkoutError, setCheckoutError] = useState<string | null>(null)
 
   const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products])
 
@@ -209,24 +225,18 @@ export function VentasCheckoutPage() {
     return { items: out, total: sum, warnings: w }
   }, [lines, productById])
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setFormError(null)
-    const n = nombre.trim()
-    if (n.length < 2) {
-      setFormError('Ingresá el nombre completo del cliente.')
-      return
-    }
+  function onSubmit(values: VentaClienteFormValues) {
+    setCheckoutError(null)
     if (!items.length) {
-      setFormError('No quedaron ítems válidos en el carrito (stock o disponibilidad).')
+      setCheckoutError('No quedaron ítems válidos en el carrito (stock o disponibilidad).')
       return
     }
 
     mutation.mutate(
       {
-        cliente_nombre: n,
-        cliente_telefono: telefono.trim() || null,
-        medio_pago: medioPago,
+        cliente_nombre: values.cliente_nombre.trim(),
+        cliente_telefono: values.cliente_telefono.trim() || null,
+        medio_pago: values.medio_pago,
         items,
       },
       {
@@ -306,7 +316,11 @@ export function VentasCheckoutPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="grid gap-8 lg:grid-cols-[1fr_min(400px,100%)] lg:items-start lg:gap-10">
+      <form
+        onSubmit={(e) => void handleSubmit(onSubmit)(e)}
+        className="grid gap-8 lg:grid-cols-[1fr_min(400px,100%)] lg:items-start lg:gap-10"
+        noValidate
+      >
         <motion.section
           aria-labelledby="checkout-items-heading"
           variants={reduceMotion ? undefined : checkoutSectionVariants}
@@ -404,12 +418,15 @@ export function VentasCheckoutPage() {
                     id="nombre"
                     type="text"
                     autoComplete="name"
-                    value={nombre}
-                    onChange={(e) => setNombre(e.target.value)}
                     maxLength={200}
                     placeholder="Ej. María González"
+                    aria-invalid={Boolean(errors.cliente_nombre)}
                     className={`${inputClass} mt-2`}
+                    {...register('cliente_nombre')}
                   />
+                  {errors.cliente_nombre ? (
+                    <p className="mt-1.5 text-xs font-medium text-red-600">{errors.cliente_nombre.message}</p>
+                  ) : null}
                 </div>
                 <div>
                   <label htmlFor="telefono" className="block text-xs font-semibold text-brand-ink">
@@ -419,11 +436,10 @@ export function VentasCheckoutPage() {
                     id="telefono"
                     type="tel"
                     autoComplete="tel"
-                    value={telefono}
-                    onChange={(e) => setTelefono(e.target.value)}
                     maxLength={40}
                     placeholder="11 · código · número"
                     className={`${inputClass} mt-2`}
+                    {...register('cliente_telefono')}
                   />
                 </div>
               </div>
@@ -444,13 +460,7 @@ export function VentasCheckoutPage() {
                       : 'border-brand-border bg-brand-canvas/30 hover:border-brand-border-strong hover:bg-brand-canvas'
                   }`}
                 >
-                  <input
-                    type="radio"
-                    name="medio"
-                    checked={medioPago === 'efectivo'}
-                    onChange={() => setMedioPago('efectivo')}
-                    className="sr-only"
-                  />
+                  <input type="radio" value="efectivo" className="sr-only" {...register('medio_pago')} />
                   <span className="flex items-center gap-2 font-semibold text-brand-ink">
                     <IconCash size={20} stroke={1.5} className="text-brand-primary" aria-hidden />
                     Efectivo
@@ -464,13 +474,7 @@ export function VentasCheckoutPage() {
                       : 'border-brand-border bg-brand-canvas/30 hover:border-brand-border-strong hover:bg-brand-canvas'
                   }`}
                 >
-                  <input
-                    type="radio"
-                    name="medio"
-                    checked={medioPago === 'transferencia'}
-                    onChange={() => setMedioPago('transferencia')}
-                    className="sr-only"
-                  />
+                  <input type="radio" value="transferencia" className="sr-only" {...register('medio_pago')} />
                   <span className="flex items-center gap-2 font-semibold text-brand-ink">
                     <IconBuildingBank size={20} stroke={1.5} className="text-brand-primary" aria-hidden />
                     Transferencia
@@ -480,14 +484,14 @@ export function VentasCheckoutPage() {
               </div>
             </fieldset>
 
-            {formError && (
+            {checkoutError ? (
               <div
                 role="alert"
                 className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 ring-1 ring-red-100"
               >
-                {formError}
+                {checkoutError}
               </div>
-            )}
+            ) : null}
 
             <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center">
               <button

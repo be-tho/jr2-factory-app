@@ -1,13 +1,19 @@
 import { IconArrowLeft, IconCheck, IconExternalLink, IconMapPin, IconTruck } from '@tabler/icons-react'
-import { type FormEvent, useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useEffect, useMemo } from 'react'
+import { useForm } from 'react-hook-form'
 import { Link } from 'react-router-dom'
 import { FormField } from '../../../components/ui/FormField'
+import {
+  createClienteEnvioFormSchema,
+  normalizeClienteMapsUrl,
+  type ClienteEnvioFormValues,
+} from '../../../lib/schemas/envios'
 import {
   isProvinciaArgentina,
   PROVINCIAS_ARGENTINA,
   type ProvinciaArgentina,
 } from '../../../lib/argentina-provincias'
-import { isGoogleMapsEmbedUrl } from '../../../lib/maps-embed'
 import { ic } from '../../../lib/tabler'
 import type { ClienteEnvio } from '../../../types/database'
 import type { ClienteEnvioInput } from '../services/clientesEnvio.service'
@@ -44,104 +50,68 @@ export interface ClienteEnvioFormProps {
   error: string | null
 }
 
-function normalizeMapsUrl(raw: string): string {
-  const t = raw.trim()
-  if (!t) return t
-  if (/^https?:\/\//i.test(t)) return t
-  return `https://${t}`
+function defaultsFromCliente(initial?: ClienteEnvio): ClienteEnvioFormValues {
+  const provincia: ProvinciaArgentina =
+    initial?.provincia && isProvinciaArgentina(initial.provincia) ? initial.provincia : 'Buenos Aires'
+
+  return {
+    nombreEmpresa: initial?.nombre_empresa ?? '',
+    direccion: initial?.direccion ?? '',
+    localidad: initial?.localidad ?? '',
+    provincia,
+    mapsUrl: initial?.maps_url ?? '',
+    mapsEmbedUrl: initial?.maps_embed_url ?? '',
+    telefono: initial?.telefono ?? '',
+    horarioAtencion: initial?.horario_atencion ?? '',
+    observaciones: initial?.observaciones ?? '',
+    zonasEnvio: initial?.zonas_envio ?? '',
+    notas: initial?.notas ?? '',
+    activo: initial?.activo ?? true,
+  }
 }
 
 export function ClienteEnvioForm({ mode, initialData, onSubmit, saving, error }: ClienteEnvioFormProps) {
   const isCtcCatalog = initialData?.catalogo_origen === 'ctc'
 
-  const [nombreEmpresa, setNombreEmpresa] = useState(initialData?.nombre_empresa ?? '')
-  const [direccion, setDireccion] = useState(initialData?.direccion ?? '')
-  const [localidad, setLocalidad] = useState(initialData?.localidad ?? '')
-  const [provincia, setProvincia] = useState<ProvinciaArgentina>(() => {
-    const p = initialData?.provincia
-    if (p && isProvinciaArgentina(p)) return p
-    return 'Buenos Aires'
+  const schema = useMemo(() => createClienteEnvioFormSchema(isCtcCatalog), [isCtcCatalog])
+  const resolver = useMemo(() => zodResolver(schema), [schema])
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<ClienteEnvioFormValues>({
+    resolver,
+    defaultValues: defaultsFromCliente(initialData),
   })
-  const [mapsUrl, setMapsUrl] = useState(initialData?.maps_url ?? '')
-  const [mapsEmbedUrl, setMapsEmbedUrl] = useState(initialData?.maps_embed_url ?? '')
-  const [telefono, setTelefono] = useState(initialData?.telefono ?? '')
-  const [horarioAtencion, setHorarioAtencion] = useState(initialData?.horario_atencion ?? '')
-  const [observaciones, setObservaciones] = useState(initialData?.observaciones ?? '')
-  const [zonasEnvio, setZonasEnvio] = useState(initialData?.zonas_envio ?? '')
-  const [notas, setNotas] = useState(initialData?.notas ?? '')
-  const [activo, setActivo] = useState(initialData?.activo ?? true)
 
-  const [fieldErrors, setFieldErrors] = useState<{
-    nombreEmpresa?: string
-    direccion?: string
-    mapsUrl?: string
-    mapsEmbedUrl?: string
-    zonasEnvio?: string
-  }>({})
+  useEffect(() => {
+    reset(defaultsFromCliente(initialData))
+  }, [initialData, reset])
 
-  function clearErr(k: keyof typeof fieldErrors) {
-    setFieldErrors((p) => {
-      if (!p[k]) return p
-      const n = { ...p }
-      delete n[k]
-      return n
-    })
-  }
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault()
-    const errs: typeof fieldErrors = {}
-    if (!nombreEmpresa.trim()) errs.nombreEmpresa = 'El nombre de la empresa es obligatorio.'
-    if (!direccion.trim()) errs.direccion = 'La dirección es obligatoria.'
-    if (!zonasEnvio.trim()) errs.zonasEnvio = 'Indicá a dónde envía el cliente (zonas, provincias, etc.).'
-
-    let urlNormalized: string
-    let embedTrim: string | null
-
-    if (isCtcCatalog) {
-      urlNormalized = CTC_GOOGLE_MAPS_URL
-      embedTrim = CTC_GOOGLE_MAPS_EMBED_URL
-    } else {
-      urlNormalized = normalizeMapsUrl(mapsUrl)
-      if (!mapsUrl.trim()) {
-        errs.mapsUrl = 'El link de Google Maps es obligatorio.'
-      } else {
-        try {
-          const u = new URL(urlNormalized)
-          if (u.protocol !== 'http:' && u.protocol !== 'https:') errs.mapsUrl = 'Usá un link http o https válido.'
-        } catch {
-          errs.mapsUrl = 'No es un link válido. Pegá la URL que copiás de Google Maps (Compartir).'
-        }
-      }
-
-      embedTrim = mapsEmbedUrl.trim() || null
-      if (embedTrim && !isGoogleMapsEmbedUrl(embedTrim)) {
-        errs.mapsEmbedUrl =
-          'Si completás el embed, tiene que ser la URL del iframe de Google Maps (https://www.google.com/maps/embed?… o maps.google.com/…).'
-      }
-    }
-
-    if (Object.keys(errs).length) {
-      setFieldErrors(errs)
-      return
-    }
-    setFieldErrors({})
+  async function submitForm(values: ClienteEnvioFormValues) {
+    const maps_url = isCtcCatalog ? CTC_GOOGLE_MAPS_URL : normalizeClienteMapsUrl(values.mapsUrl)
+    const maps_embed_url = isCtcCatalog ? CTC_GOOGLE_MAPS_EMBED_URL : values.mapsEmbedUrl.trim() || null
 
     await onSubmit({
-      nombre_empresa: nombreEmpresa.trim(),
-      direccion: direccion.trim(),
-      localidad: localidad.trim() || null,
-      provincia,
-      maps_url: urlNormalized,
-      maps_embed_url: embedTrim,
-      telefono: telefono.trim() || null,
-      horario_atencion: horarioAtencion.trim() || null,
-      observaciones: observaciones.trim() || null,
-      zonas_envio: zonasEnvio.trim(),
-      notas: notas.trim() || null,
-      activo,
+      nombre_empresa: values.nombreEmpresa.trim(),
+      direccion: values.direccion.trim(),
+      localidad: values.localidad.trim() || null,
+      provincia: values.provincia,
+      maps_url,
+      maps_embed_url,
+      telefono: values.telefono.trim() || null,
+      horario_atencion: values.horarioAtencion.trim() || null,
+      observaciones: values.observaciones.trim() || null,
+      zonas_envio: values.zonasEnvio.trim(),
+      notas: values.notas.trim() || null,
+      activo: values.activo,
     })
   }
+
+  const busy = saving || isSubmitting
 
   return (
     <>
@@ -168,7 +138,7 @@ export function ClienteEnvioForm({ mode, initialData, onSubmit, saving, error }:
         </Link>
       </div>
 
-      <form onSubmit={(e) => void handleSubmit(e)} className="relative space-y-6">
+      <form onSubmit={(e) => void handleSubmit(submitForm)(e)} className="relative space-y-6" noValidate>
         {saving && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-xl bg-white/75 backdrop-blur-[2px]">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-md ring-1 ring-black/8">
@@ -187,25 +157,15 @@ export function ClienteEnvioForm({ mode, initialData, onSubmit, saving, error }:
           <div className="sm:col-span-2">
             <FormField
               label="Nombre de la empresa *"
-              value={nombreEmpresa}
-              onChange={(e) => {
-                setNombreEmpresa(e.target.value)
-                clearErr('nombreEmpresa')
-              }}
               placeholder="Ej: Distribuidora Norte S.A."
-              required
-              disabled={saving}
-              error={fieldErrors.nombreEmpresa}
+              disabled={busy}
+              error={errors.nombreEmpresa?.message}
+              {...register('nombreEmpresa')}
             />
           </div>
           <label className="block sm:col-span-2">
             <span className="mb-1 block text-sm font-medium text-brand-ink-muted">Provincia (jurisdicción) *</span>
-            <select
-              className={selectClass}
-              value={provincia}
-              onChange={(e) => setProvincia(e.target.value as ProvinciaArgentina)}
-              disabled={saving}
-            >
+            <select className={selectClass} disabled={busy} {...register('provincia')}>
               {PROVINCIAS_ARGENTINA.map((p) => (
                 <option key={p} value={p}>
                   {p}
@@ -219,46 +179,37 @@ export function ClienteEnvioForm({ mode, initialData, onSubmit, saving, error }:
           </label>
           <FormField
             label="Localidad / ciudad"
-            value={localidad}
-            onChange={(e) => setLocalidad(e.target.value)}
             placeholder="Ej: Rosario"
-            disabled={saving}
+            disabled={busy}
+            {...register('localidad')}
           />
           <div className="sm:col-span-2">
             <FormField
               label="Dirección completa *"
-              value={direccion}
-              onChange={(e) => {
-                setDireccion(e.target.value)
-                clearErr('direccion')
-              }}
               placeholder="Calle, número, piso, barrio, referencias…"
-              required
-              disabled={saving}
-              error={fieldErrors.direccion}
+              disabled={busy}
+              error={errors.direccion?.message}
+              {...register('direccion')}
             />
           </div>
           <FormField
             label="Teléfono de contacto"
-            value={telefono}
-            onChange={(e) => setTelefono(e.target.value)}
             placeholder="Ej: (011) 1234-5678, WhatsApp…"
-            disabled={saving}
+            disabled={busy}
+            {...register('telefono')}
           />
           <FormField
             label="Horario de atención"
-            value={horarioAtencion}
-            onChange={(e) => setHorarioAtencion(e.target.value)}
             placeholder="Ej: Lun. a Vie. 8 a 17 hs."
-            disabled={saving}
+            disabled={busy}
+            {...register('horarioAtencion')}
           />
           <div className="sm:col-span-2">
             <FormField
               label="Observaciones"
-              value={observaciones}
-              onChange={(e) => setObservaciones(e.target.value)}
               placeholder="Ej: Nave B módulo 40 (CTC), referencia en planta…"
-              disabled={saving}
+              disabled={busy}
+              {...register('observaciones')}
             />
           </div>
           <p className="sm:col-span-2 text-xs text-brand-ink-faint">
@@ -293,15 +244,13 @@ export function ClienteEnvioForm({ mode, initialData, onSubmit, saving, error }:
             </div>
           ) : (
             <>
-              <div className="sm:col-span-2 flex flex-col gap-2">
+              <div className="flex flex-col gap-2 sm:col-span-2">
                 <button
                   type="button"
-                  disabled={saving}
+                  disabled={busy}
                   onClick={() => {
-                    setMapsUrl(CTC_GOOGLE_MAPS_URL)
-                    setMapsEmbedUrl(CTC_GOOGLE_MAPS_EMBED_URL)
-                    clearErr('mapsUrl')
-                    clearErr('mapsEmbedUrl')
+                    setValue('mapsUrl', CTC_GOOGLE_MAPS_URL, { shouldValidate: true })
+                    setValue('mapsEmbedUrl', CTC_GOOGLE_MAPS_EMBED_URL, { shouldValidate: true })
                   }}
                   className="inline-flex w-fit items-center gap-2 rounded-lg border border-brand-primary/35 bg-brand-primary-ghost px-3 py-2 text-sm font-semibold text-brand-primary transition hover:bg-brand-primary/15 disabled:opacity-50"
                 >
@@ -315,14 +264,10 @@ export function ClienteEnvioForm({ mode, initialData, onSubmit, saving, error }:
               <div className="sm:col-span-2">
                 <FormField
                   label="Link de Google Maps *"
-                  value={mapsUrl}
-                  onChange={(e) => {
-                    setMapsUrl(e.target.value)
-                    clearErr('mapsUrl')
-                  }}
                   placeholder="https://maps.app.goo.gl/… o https://www.google.com/maps/…"
-                  disabled={saving}
-                  error={fieldErrors.mapsUrl}
+                  disabled={busy}
+                  error={errors.mapsUrl?.message}
+                  {...register('mapsUrl')}
                 />
                 <p className="mt-1.5 text-xs text-brand-ink-faint">
                   Es el link que compartís por WhatsApp (Compartir → Copiar enlace). Es la referencia principal.
@@ -331,14 +276,10 @@ export function ClienteEnvioForm({ mode, initialData, onSubmit, saving, error }:
               <div className="sm:col-span-2">
                 <FormField
                   label="URL del embed (opcional)"
-                  value={mapsEmbedUrl}
-                  onChange={(e) => {
-                    setMapsEmbedUrl(e.target.value)
-                    clearErr('mapsEmbedUrl')
-                  }}
                   placeholder="https://www.google.com/maps/embed?pb=…"
-                  disabled={saving}
-                  error={fieldErrors.mapsEmbedUrl}
+                  disabled={busy}
+                  error={errors.mapsEmbedUrl?.message}
+                  {...register('mapsEmbedUrl')}
                 />
                 <p className="mt-1.5 text-xs text-brand-ink-faint">
                   Solo para ver el mapa embebido en esta app. En Google Maps: Compartir → Insertar mapa → copiar solo el{' '}
@@ -362,38 +303,33 @@ export function ClienteEnvioForm({ mode, initialData, onSubmit, saving, error }:
             <label className="block">
               <span className="mb-1 block text-sm font-medium text-brand-ink-muted">¿A dónde envía? *</span>
               <textarea
-                className="min-h-28 w-full rounded-lg border border-brand-border-strong bg-brand-surface px-3 py-2 text-sm text-brand-ink outline-none transition placeholder:text-brand-ink-faint focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50"
-                value={zonasEnvio}
-                onChange={(e) => {
-                  setZonasEnvio(e.target.value)
-                  clearErr('zonasEnvio')
-                }}
+                className="min-h-28 w-full rounded-lg border border-brand-border-strong bg-brand-surface px-3 py-2 text-sm text-brand-ink outline-none transition placeholder:text-brand-ink-faint focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50 aria-invalid:border-red-400"
                 placeholder="Ej: CABA y GBA oeste; interior de Buenos Aires (Zona 1); todo el país vía correo…"
-                disabled={saving}
+                disabled={busy}
                 rows={4}
+                aria-invalid={Boolean(errors.zonasEnvio)}
+                {...register('zonasEnvio')}
               />
-              {fieldErrors.zonasEnvio && (
-                <p className="mt-1 text-xs font-medium text-red-600">{fieldErrors.zonasEnvio}</p>
-              )}
+              {errors.zonasEnvio ? (
+                <p className="mt-1 text-xs font-medium text-red-600">{errors.zonasEnvio.message}</p>
+              ) : null}
             </label>
             <label className="block">
               <span className="mb-1 block text-sm font-medium text-brand-ink-muted">Notas internas</span>
               <textarea
                 className="min-h-20 w-full rounded-lg border border-brand-border-strong bg-brand-surface px-3 py-2 text-sm text-brand-ink outline-none transition placeholder:text-brand-ink-faint focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50"
-                value={notas}
-                onChange={(e) => setNotas(e.target.value)}
                 placeholder="Horario de recepción, contacto en planta, observaciones para logística…"
-                disabled={saving}
+                disabled={busy}
                 rows={3}
+                {...register('notas')}
               />
             </label>
             <label className="flex cursor-pointer items-center gap-3">
               <input
                 type="checkbox"
-                checked={activo}
-                onChange={(e) => setActivo(e.target.checked)}
-                disabled={saving}
+                disabled={busy}
                 className="h-4 w-4 rounded border-brand-border-strong accent-brand-primary"
+                {...register('activo')}
               />
               <span className="text-sm font-medium text-brand-ink-muted">Cliente activo (aparece por defecto en filtros)</span>
             </label>
@@ -416,7 +352,7 @@ export function ClienteEnvioForm({ mode, initialData, onSubmit, saving, error }:
           </Link>
           <button
             type="submit"
-            disabled={saving}
+            disabled={busy}
             className="inline-flex min-w-40 items-center justify-center gap-2 rounded-lg bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
             {saving ? (

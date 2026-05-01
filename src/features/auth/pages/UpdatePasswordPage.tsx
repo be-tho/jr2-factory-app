@@ -1,31 +1,31 @@
 import { IconArrowLeft, IconEye, IconEyeOff, IconKey } from '@tabler/icons-react'
-import { useState, type FormEvent } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useState } from 'react'
+import { useForm, type UseFormRegisterReturn } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { AuthCard } from '../../../components/ui/AuthCard'
+import { updatePasswordSchema, type UpdatePasswordFormValues } from '../../../lib/schemas/auth'
 import { ic } from '../../../lib/tabler'
 import { supabase } from '../../../lib/supabase/client'
 import { useSession } from '../../../hooks/useSession'
 
 export function UpdatePasswordPage() {
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
   const { session, loading: sessionLoading } = useSession()
   const navigate = useNavigate()
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<UpdatePasswordFormValues>({
+    resolver: zodResolver(updatePasswordSchema),
+    defaultValues: { password: '', confirmPassword: '' },
+  })
 
-    if (password !== confirmPassword) {
-      toast.error('Los passwords no coinciden.')
-      return
-    }
-
-    setLoading(true)
-    const { error } = await supabase.auth.updateUser({ password })
-    setLoading(false)
+  async function onSubmit(values: UpdatePasswordFormValues) {
+    const { error } = await supabase.auth.updateUser({ password: values.password })
 
     if (error) {
       toast.error(error.message)
@@ -36,8 +36,10 @@ export function UpdatePasswordPage() {
     toast.success('Password actualizado.', {
       description: 'Ya podes iniciar sesion con tu nuevo password.',
     })
-    navigate('/login', { replace: true })
+    void navigate('/login', { replace: true })
   }
+
+  const loading = isSubmitting
 
   return (
     <AuthCard
@@ -69,19 +71,19 @@ export function UpdatePasswordPage() {
       ) : null}
 
       {!sessionLoading && session ? (
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <PasswordInput
+        <form className="space-y-4" onSubmit={(e) => void handleSubmit(onSubmit)(e)} noValidate>
+          <PasswordField
             label="Nuevo password"
-            value={password}
-            onChange={setPassword}
+            registration={register('password')}
+            error={errors.password?.message}
             showPassword={showPassword}
             onToggleVisibility={() => setShowPassword((value) => !value)}
             autoComplete="new-password"
           />
-          <PasswordInput
+          <PasswordField
             label="Confirmar password"
-            value={confirmPassword}
-            onChange={setConfirmPassword}
+            registration={register('confirmPassword')}
+            error={errors.confirmPassword?.message}
             showPassword={showPassword}
             onToggleVisibility={() => setShowPassword((value) => !value)}
             autoComplete="new-password"
@@ -110,36 +112,32 @@ export function UpdatePasswordPage() {
   )
 }
 
-interface PasswordInputProps {
-  label: string
-  value: string
-  onChange: (value: string) => void
-  showPassword: boolean
-  onToggleVisibility: () => void
-  autoComplete: string
-}
-
-function PasswordInput({
+function PasswordField({
   label,
-  value,
-  onChange,
+  registration,
+  error,
   showPassword,
   onToggleVisibility,
   autoComplete,
-}: PasswordInputProps) {
+}: {
+  label: string
+  registration: UseFormRegisterReturn<'password'> | UseFormRegisterReturn<'confirmPassword'>
+  error?: string
+  showPassword: boolean
+  onToggleVisibility: () => void
+  autoComplete: string
+}) {
   return (
     <label className="block">
       <span className="mb-1 block text-sm font-medium text-brand-ink-muted">{label}</span>
       <div className="relative">
         <input
           type={showPassword ? 'text' : 'password'}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
           placeholder="Minimo 6 caracteres"
-          minLength={6}
           autoComplete={autoComplete}
-          required
-          className="w-full rounded-lg border border-brand-border-strong bg-brand-surface py-2 pl-3 pr-10 text-brand-ink outline-none transition placeholder:text-brand-ink-faint focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50"
+          className="w-full rounded-lg border border-brand-border-strong bg-brand-surface py-2 pl-3 pr-10 text-brand-ink outline-none transition placeholder:text-brand-ink-faint focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50 aria-invalid:border-red-400"
+          aria-invalid={Boolean(error)}
+          {...registration}
         />
         <button
           type="button"
@@ -154,6 +152,7 @@ function PasswordInput({
           )}
         </button>
       </div>
+      {error ? <p className="mt-1 text-xs font-medium text-red-600">{error}</p> : null}
     </label>
   )
 }

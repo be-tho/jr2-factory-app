@@ -1,9 +1,12 @@
 import { IconArrowLeft, IconMailForward } from '@tabler/icons-react'
-import { useState, type FormEvent } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { AuthCard } from '../../../components/ui/AuthCard'
 import { FormField } from '../../../components/ui/FormField'
+import { forgotPasswordSchema, type ForgotPasswordFormValues } from '../../../lib/schemas/auth'
 import { ic } from '../../../lib/tabler'
 import { supabase } from '../../../lib/supabase/client'
 
@@ -18,21 +21,24 @@ function getRecoveryErrorMessage(message: string) {
 }
 
 export function ForgotPasswordPage() {
-  const [email, setEmail] = useState('')
-  const [loading, setLoading] = useState(false)
   const [sentTo, setSentTo] = useState<string | null>(null)
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setLoading(true)
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm<ForgotPasswordFormValues>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: { email: '' },
+  })
 
-    const normalizedEmail = email.trim().toLowerCase()
+  async function onSubmit(values: ForgotPasswordFormValues) {
+    const normalizedEmail = values.email.trim().toLowerCase()
     const redirectTo = `${publicAppUrl}/actualizar-password`
     const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
       redirectTo,
     })
-
-    setLoading(false)
 
     if (error) {
       toast.error(getRecoveryErrorMessage(error.message))
@@ -44,6 +50,8 @@ export function ForgotPasswordPage() {
       description: 'Revisa tu correo y segui el link para crear un password nuevo.',
     })
   }
+
+  const loading = isSubmitting
 
   return (
     <AuthCard
@@ -63,21 +71,23 @@ export function ForgotPasswordPage() {
           <button
             type="button"
             className="w-full rounded-lg border border-brand-border-strong bg-brand-surface px-4 py-2.5 text-sm font-semibold text-brand-ink transition hover:border-brand-primary hover:text-brand-primary-hover"
-            onClick={() => setSentTo(null)}
+            onClick={() => {
+              setSentTo(null)
+              reset()
+            }}
           >
             Usar otro email
           </button>
         </div>
       ) : (
-        <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
+        <form className="mt-4 space-y-4" onSubmit={(e) => void handleSubmit(onSubmit)(e)} noValidate>
           <FormField
             label="Email"
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="tu@email.com"
             autoComplete="email"
-            required
+            placeholder="tu@email.com"
+            error={errors.email?.message}
+            {...register('email')}
           />
 
           <button
