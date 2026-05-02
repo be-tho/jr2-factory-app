@@ -1,22 +1,30 @@
 import { IconArrowLeft, IconTag } from '@tabler/icons-react'
-import { useState, type FormEvent } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
 import { FormField } from '../../../components/ui/FormField'
+import { categoriaFormSchema, type CategoriaFormValues } from '../../../lib/schemas/inventory'
 import { ic } from '../../../lib/tabler'
 import { useCreateCategoriaMutation } from '../hooks/useCategorias'
 
 export function NuevaCategoriaPage() {
   const navigate = useNavigate()
   const createMutation = useCreateCategoriaMutation()
-  const [nombre, setNombre] = useState('')
-  const [activo, setActivo] = useState(true)
 
-  const saving = createMutation.isPending
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<CategoriaFormValues>({
+    resolver: zodResolver(categoriaFormSchema),
+    defaultValues: { nombre: '', activo: true },
+  })
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  const saving = createMutation.isPending || isSubmitting
+
+  function onSubmit(values: CategoriaFormValues) {
     createMutation.mutate(
-      { nombre, activo },
+      { nombre: values.nombre, activo: values.activo },
       { onSuccess: () => navigate('/inventario/categorias', { replace: true }) },
     )
   }
@@ -45,8 +53,9 @@ export function NuevaCategoriaPage() {
 
       {/* Form island */}
       <form
-        onSubmit={handleSubmit}
+        onSubmit={(e) => void handleSubmit(onSubmit)(e)}
         className="max-w-lg overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/4"
+        noValidate
       >
         <div className="border-b border-[#f0eef5] bg-[#f8f7fa] px-5 py-3">
           <p className="text-xs font-semibold uppercase tracking-wider text-[#b9b6c3]">Datos de la categoría</p>
@@ -54,20 +63,18 @@ export function NuevaCategoriaPage() {
         <div className="space-y-5 p-5">
           <FormField
             label="Nombre"
-            value={nombre}
-            onChange={(ev) => setNombre(ev.target.value)}
             placeholder="Ej. Remeras"
-            required
             disabled={saving}
+            error={errors.nombre?.message}
+            {...register('nombre')}
           />
 
           <label className="flex cursor-pointer items-center gap-2.5 text-sm text-[#3d3b4f]">
             <input
               type="checkbox"
-              checked={activo}
-              onChange={(ev) => setActivo(ev.target.checked)}
               disabled={saving}
               className="h-4 w-4 rounded border-brand-border-strong text-brand-primary focus:ring-brand-blush/50"
+              {...register('activo')}
             />
             Categoría activa (visible en formularios de artículos)
           </label>

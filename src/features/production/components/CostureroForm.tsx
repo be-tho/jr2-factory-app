@@ -6,14 +6,15 @@ import {
   IconUser,
   IconWallet,
 } from '@tabler/icons-react'
-import { type FormEvent, useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useEffect } from 'react'
+import { useForm } from 'react-hook-form'
 import { Link } from 'react-router-dom'
 import { FormField } from '../../../components/ui/FormField'
+import { costureroFormSchema, type CostureroFormValues } from '../../../lib/schemas/production'
 import { ic } from '../../../lib/tabler'
-import type { Costurero, TipoDocumento } from '../../../types/database'
+import type { Costurero } from '../../../types/database'
 import type { CostureroInput } from '../services/costureros.service'
-
-const TIPOS_DOCUMENTO: TipoDocumento[] = ['DNI', 'CUIL', 'CUIT']
 
 const selectClass =
   'w-full rounded-lg border border-brand-border-strong bg-brand-surface px-3 py-2 text-brand-ink outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50'
@@ -30,6 +31,20 @@ function SectionCard({ title, icon, children }: { title: string; icon: React.Rea
   )
 }
 
+function costureroDefaults(initialData?: Costurero): CostureroFormValues {
+  return {
+    nombre_completo: initialData?.nombre_completo ?? '',
+    telefono: initialData?.telefono ?? '',
+    email: initialData?.email ?? '',
+    direccion: initialData?.direccion ?? '',
+    tipo_documento: initialData?.tipo_documento ?? 'DNI',
+    numero_documento: initialData?.numero_documento ?? '',
+    cbu_alias: initialData?.cbu_alias ?? '',
+    notas: initialData?.notas ?? '',
+    activo: initialData?.activo ?? true,
+  }
+}
+
 export interface CostureroFormProps {
   mode: 'create' | 'edit'
   initialData?: Costurero
@@ -39,48 +54,35 @@ export interface CostureroFormProps {
 }
 
 export function CostureroForm({ mode, initialData, onSubmit, saving, error }: CostureroFormProps) {
-  // ─── Fields ───────────────────────────────────────────────────────────────
-  const [nombreCompleto, setNombreCompleto] = useState(initialData?.nombre_completo ?? '')
-  const [telefono, setTelefono] = useState(initialData?.telefono ?? '')
-  const [email, setEmail] = useState(initialData?.email ?? '')
-  const [direccion, setDireccion] = useState(initialData?.direccion ?? '')
-  const [tipoDoc, setTipoDoc] = useState<TipoDocumento>(initialData?.tipo_documento ?? 'DNI')
-  const [numeroDoc, setNumeroDoc] = useState(initialData?.numero_documento ?? '')
-  const [cbuAlias, setCbuAlias] = useState(initialData?.cbu_alias ?? '')
-  const [notas, setNotas] = useState(initialData?.notas ?? '')
-  const [activo, setActivo] = useState(initialData?.activo ?? true)
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<CostureroFormValues>({
+    resolver: zodResolver(costureroFormSchema),
+    defaultValues: costureroDefaults(initialData),
+  })
 
-  // ─── Field errors ─────────────────────────────────────────────────────────
-  const [fieldErrors, setFieldErrors] = useState<{
-    nombreCompleto?: string
-    numeroDoc?: string
-  }>({})
+  useEffect(() => {
+    reset(costureroDefaults(initialData))
+  }, [initialData, reset])
 
-  function clearErr(k: keyof typeof fieldErrors) {
-    setFieldErrors((p) => { if (!p[k]) return p; const n = { ...p }; delete n[k]; return n })
-  }
-
-  // ─── Submit ───────────────────────────────────────────────────────────────
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault()
-    const errs: typeof fieldErrors = {}
-    if (!nombreCompleto.trim()) errs.nombreCompleto = 'El nombre completo es obligatorio.'
-    if (!numeroDoc.trim()) errs.numeroDoc = 'El número de documento es obligatorio.'
-    if (Object.keys(errs).length) { setFieldErrors(errs); return }
-    setFieldErrors({})
-
+  async function submitForm(values: CostureroFormValues) {
     await onSubmit({
-      nombre_completo: nombreCompleto.trim(),
-      telefono: telefono.trim() || null,
-      email: email.trim() || null,
-      direccion: direccion.trim() || null,
-      tipo_documento: tipoDoc,
-      numero_documento: numeroDoc.trim(),
-      cbu_alias: cbuAlias.trim() || null,
-      notas: notas.trim() || null,
-      activo,
+      nombre_completo: values.nombre_completo.trim(),
+      telefono: values.telefono.trim() || null,
+      email: values.email.trim() || null,
+      direccion: values.direccion.trim() || null,
+      tipo_documento: values.tipo_documento,
+      numero_documento: values.numero_documento.trim(),
+      cbu_alias: values.cbu_alias.trim() || null,
+      notas: values.notas.trim() || null,
+      activo: values.activo,
     })
   }
+
+  const busy = saving || isSubmitting
 
   return (
     <>
@@ -108,7 +110,7 @@ export function CostureroForm({ mode, initialData, onSubmit, saving, error }: Co
         </Link>
       </div>
 
-      <form onSubmit={(e) => void handleSubmit(e)} className="relative space-y-6">
+      <form onSubmit={(e) => void handleSubmit(submitForm)(e)} className="relative space-y-6" noValidate>
         {/* Loading overlay */}
         {saving && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-xl bg-white/75 backdrop-blur-[2px]">
@@ -129,35 +131,26 @@ export function CostureroForm({ mode, initialData, onSubmit, saving, error }: Co
           <div className="sm:col-span-2">
             <FormField
               label="Nombre completo *"
-              value={nombreCompleto}
-              onChange={(e) => { setNombreCompleto(e.target.value); clearErr('nombreCompleto') }}
               placeholder="Ej: María González"
-              required
-              disabled={saving}
-              error={fieldErrors.nombreCompleto}
+              disabled={busy}
+              error={errors.nombre_completo?.message}
+              {...register('nombre_completo')}
             />
           </div>
           <label className="block">
             <span className="mb-1 block text-sm font-medium text-brand-ink-muted">Tipo de documento *</span>
-            <select
-              className={selectClass}
-              value={tipoDoc}
-              onChange={(e) => setTipoDoc(e.target.value as TipoDocumento)}
-              disabled={saving}
-            >
-              {TIPOS_DOCUMENTO.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
+            <select className={selectClass} disabled={busy} {...register('tipo_documento')}>
+              <option value="DNI">DNI</option>
+              <option value="CUIL">CUIL</option>
+              <option value="CUIT">CUIT</option>
             </select>
           </label>
           <FormField
             label="Número de documento *"
-            value={numeroDoc}
-            onChange={(e) => { setNumeroDoc(e.target.value); clearErr('numeroDoc') }}
             placeholder="Ej: 28.456.123"
-            required
-            disabled={saving}
-            error={fieldErrors.numeroDoc}
+            disabled={busy}
+            error={errors.numero_documento?.message}
+            {...register('numero_documento')}
           />
         </SectionCard>
 
@@ -166,26 +159,24 @@ export function CostureroForm({ mode, initialData, onSubmit, saving, error }: Co
           <FormField
             label="Teléfono"
             type="tel"
-            value={telefono}
-            onChange={(e) => setTelefono(e.target.value)}
             placeholder="Ej: +54 11 1234-5678"
-            disabled={saving}
+            disabled={busy}
+            {...register('telefono')}
           />
           <FormField
             label="Email"
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
             placeholder="Ej: maria@gmail.com"
-            disabled={saving}
+            disabled={busy}
+            error={errors.email?.message}
+            {...register('email')}
           />
           <div className="sm:col-span-2">
             <FormField
               label="Dirección"
-              value={direccion}
-              onChange={(e) => setDireccion(e.target.value)}
               placeholder="Ej: Av. Corrientes 1234, CABA"
-              disabled={saving}
+              disabled={busy}
+              {...register('direccion')}
             />
           </div>
         </SectionCard>
@@ -195,10 +186,9 @@ export function CostureroForm({ mode, initialData, onSubmit, saving, error }: Co
           <div className="sm:col-span-2">
             <FormField
               label="CBU o Alias"
-              value={cbuAlias}
-              onChange={(e) => setCbuAlias(e.target.value)}
               placeholder="Ej: maria.gonzalez o 0000003100012345678901"
-              disabled={saving}
+              disabled={busy}
+              {...register('cbu_alias')}
             />
             <p className="mt-1.5 text-xs text-brand-ink-faint">
               Se usará cuando se implemente el módulo de pagos por corte.
@@ -212,25 +202,23 @@ export function CostureroForm({ mode, initialData, onSubmit, saving, error }: Co
             <span className="text-brand-ink-faint"><IconMapPin size={14} stroke={1.5} /></span>
             <h2 className="text-xs font-semibold uppercase tracking-wider text-[#b9b6c3]">Observaciones y estado</h2>
           </header>
-          <div className="px-5 py-5 space-y-4">
+          <div className="space-y-4 px-5 py-5">
             <label className="block">
               <span className="mb-1 block text-sm font-medium text-brand-ink-muted">Notas internas</span>
               <textarea
                 className="min-h-24 w-full rounded-lg border border-brand-border-strong bg-brand-surface px-3 py-2 text-sm text-brand-ink outline-none transition placeholder:text-brand-ink-faint focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50"
-                value={notas}
-                onChange={(e) => setNotas(e.target.value)}
                 placeholder="Anotaciones internas sobre el costurero, especialidades, disponibilidad…"
-                disabled={saving}
+                disabled={busy}
                 rows={3}
+                {...register('notas')}
               />
             </label>
             <label className="flex cursor-pointer items-center gap-3">
               <input
                 type="checkbox"
-                checked={activo}
-                onChange={(e) => setActivo(e.target.checked)}
-                disabled={saving}
+                disabled={busy}
                 className="h-4 w-4 rounded border-brand-border-strong accent-brand-primary"
+                {...register('activo')}
               />
               <span className="text-sm font-medium text-brand-ink-muted">Costurero activo</span>
             </label>
@@ -255,7 +243,7 @@ export function CostureroForm({ mode, initialData, onSubmit, saving, error }: Co
           </Link>
           <button
             type="submit"
-            disabled={saving}
+            disabled={busy}
             className="inline-flex min-w-40 items-center justify-center gap-2 rounded-lg bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
             {saving ? (

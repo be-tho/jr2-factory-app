@@ -1,31 +1,42 @@
 import { IconEye, IconEyeOff, IconUserPlus } from '@tabler/icons-react'
-import { useState, type FormEvent } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { AuthCard } from '../../../components/ui/AuthCard'
 import { FormField } from '../../../components/ui/FormField'
+import { registerSchema, type RegisterFormValues } from '../../../lib/schemas/auth'
 import { ic } from '../../../lib/tabler'
 import { supabase } from '../../../lib/supabase/client'
 
 export function RegisterPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setLoading(true)
-    const { error: signUpError } = await supabase.auth.signUp({ email, password })
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { email: '', password: '' },
+  })
+
+  async function onSubmit(values: RegisterFormValues) {
+    const { error: signUpError } = await supabase.auth.signUp({
+      email: values.email,
+      password: values.password,
+    })
     if (signUpError) {
       toast.error(signUpError.message)
-      setLoading(false)
       return
     }
     toast.success('Cuenta creada. Iniciá sesión para continuar.')
-    navigate('/login', { replace: true })
+    void navigate('/login', { replace: true })
   }
+
+  const loading = isSubmitting
 
   return (
     <AuthCard
@@ -33,28 +44,25 @@ export function RegisterPage() {
       subtitle="Registra un usuario para acceder al dashboard."
       icon={<IconUserPlus {...ic.headerSm} aria-hidden />}
     >
-      <form className="space-y-4" onSubmit={handleSubmit}>
+      <form className="space-y-4" onSubmit={(e) => void handleSubmit(onSubmit)(e)} noValidate>
         <FormField
           label="Email"
           type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="tu@email.com"
           autoComplete="email"
-          required
+          placeholder="tu@email.com"
+          error={errors.email?.message}
+          {...register('email')}
         />
         <div className="block">
           <span className="mb-1 block text-sm font-medium text-brand-ink-muted">Password</span>
           <div className="relative">
             <input
               type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Mínimo 6 caracteres"
-              minLength={6}
               autoComplete="new-password"
-              required
-              className="w-full rounded-lg border border-brand-border-strong bg-brand-surface py-2 pl-3 pr-10 text-brand-ink outline-none transition placeholder:text-brand-ink-faint focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50"
+              placeholder="Mínimo 6 caracteres"
+              className="w-full rounded-lg border border-brand-border-strong bg-brand-surface py-2 pl-3 pr-10 text-brand-ink outline-none transition placeholder:text-brand-ink-faint focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50 aria-invalid:border-red-400"
+              aria-invalid={Boolean(errors.password)}
+              {...register('password')}
             />
             <button
               type="button"
@@ -69,6 +77,9 @@ export function RegisterPage() {
               )}
             </button>
           </div>
+          {errors.password ? (
+            <p className="mt-1 text-xs font-medium text-red-600">{errors.password.message}</p>
+          ) : null}
         </div>
 
         <button

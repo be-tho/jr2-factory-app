@@ -181,6 +181,7 @@ export async function createCorte(input: NewCorteInput): Promise<{ data: Corte |
       input.colores.map((c) => ({ corte_id: corteId, color: c.color.trim(), cantidad: c.cantidad })),
     )
     if (colError) {
+      await supabase.from('corte_articulos').delete().eq('corte_id', corteId)
       await supabase.from(TABLE).delete().eq('id', corteId)
       return { data: null, error: new Error(colError.message) }
     }

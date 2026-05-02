@@ -5,7 +5,7 @@ export interface Profile {
   id: string
   full_name: string | null
   avatar_path: string | null
-  role: string | null
+  role: AppRole | null
   bio: string | null
   is_active: boolean
   created_at: string
@@ -101,7 +101,6 @@ export interface PatronRow {
 export interface Patron extends PatronRow {
   articulo_nombre: string
   articulo_sku: string
-  articulo_cover_image_path: string | null
 }
 
 // ─── Cortes Textiles ───────────────────────────────────────────────────────────

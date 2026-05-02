@@ -64,7 +64,6 @@ export function BrandLogo({ size = 'md', showText = false, subtitle, className }
             'absolute rounded-full border-white',
             'bg-linear-to-br from-[#f0c84a] to-[#d4960a]',
             'shadow-sm',
-            'animate-pulse',
           )}
           aria-hidden
         />

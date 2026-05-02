@@ -14,14 +14,13 @@ import {
 export const cortesKeys = {
   all: ['cortes'] as const,
   lists: () => [...cortesKeys.all, 'list'] as const,
-  list: () => [...cortesKeys.lists()] as const,
   details: () => [...cortesKeys.all, 'detail'] as const,
   detail: (id: string) => [...cortesKeys.details(), id] as const,
 }
 
 export function useCortesQuery() {
   return useQuery({
-    queryKey: cortesKeys.list(),
+    queryKey: cortesKeys.lists(),
     queryFn: async (): Promise<Corte[]> => {
       const { data, error } = await listCortes()
       if (error) throw error
@@ -54,7 +53,7 @@ export function useCreateCorteMutation() {
       return data
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: cortesKeys.all })
+      void queryClient.invalidateQueries({ queryKey: cortesKeys.lists() })
       toast.success('Corte creado')
     },
     onError: (e) => {
@@ -73,7 +72,7 @@ export function useUpdateCorteMutation() {
       return data
     },
     onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: cortesKeys.all })
+      void queryClient.invalidateQueries({ queryKey: cortesKeys.lists() })
       void queryClient.invalidateQueries({ queryKey: cortesKeys.detail(variables.id) })
       toast.success('Corte actualizado')
     },
@@ -90,8 +89,9 @@ export function useDeleteCorteMutation() {
       const { error } = await deleteCorte(id)
       if (error) throw error
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: cortesKeys.all })
+    onSuccess: (_data, id) => {
+      void queryClient.invalidateQueries({ queryKey: cortesKeys.lists() })
+      void queryClient.removeQueries({ queryKey: cortesKeys.detail(id) })
       toast.success('Corte eliminado')
     },
     onError: (e) => {

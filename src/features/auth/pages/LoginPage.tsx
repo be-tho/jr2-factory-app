@@ -1,28 +1,37 @@
 import { IconClock, IconEye, IconEyeOff, IconLogin } from '@tabler/icons-react'
-import { useState, type FormEvent } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { Link, useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import { AuthCard } from '../../../components/ui/AuthCard'
 import { FormField } from '../../../components/ui/FormField'
+import { markSessionSignOutReason } from '../../../lib/auth/sessionSignOutReason'
+import { loginSchema, type LoginFormValues } from '../../../lib/schemas/auth'
 import { ic } from '../../../lib/tabler'
 import { supabase } from '../../../lib/supabase/client'
 
 export function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
   const location = useLocation()
   const pendingActivation = (location.state as { pendingActivation?: boolean } | null)?.pendingActivation === true
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setLoading(true)
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: '', password: '' },
+  })
 
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+  async function onSubmit(values: LoginFormValues) {
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      email: values.email,
+      password: values.password,
+    })
 
     if (signInError) {
-      setLoading(false)
       toast.error(signInError.message)
       return
     }
@@ -34,8 +43,8 @@ export function LoginPage() {
       .maybeSingle()
 
     if (profile?.is_active === false) {
+      markSessionSignOutReason('inactive')
       await supabase.auth.signOut()
-      setLoading(false)
       toast.warning('Tu cuenta aún no fue habilitada.', {
         description: 'El administrador te activará pronto. Volvé a intentarlo más tarde.',
         duration: 6000,
@@ -43,12 +52,21 @@ export function LoginPage() {
       return
     }
 
-    setLoading(false)
+    const { error: revokeOthersError } = await supabase.auth.signOut({ scope: 'others' })
+    if (revokeOthersError) {
+      toast.warning('No se pudieron cerrar las sesiones anteriores.', {
+        description: revokeOthersError.message,
+        duration: 6000,
+      })
+    }
+
     const name = data.user?.email?.split('@')[0] ?? 'usuario'
     toast.success(`¡Bienvenido, ${name}!`, {
       description: 'Sesión iniciada correctamente.',
     })
   }
+
+  const loading = isSubmitting
 
   return (
     <AuthCard
@@ -68,27 +86,25 @@ export function LoginPage() {
         </div>
       )}
 
-      <form className="space-y-4" onSubmit={handleSubmit}>
+      <form className="space-y-4" onSubmit={(e) => void handleSubmit(onSubmit)(e)} noValidate>
         <FormField
           label="Email"
           type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="tu@email.com"
           autoComplete="email"
-          required
+          placeholder="tu@email.com"
+          error={errors.email?.message}
+          {...register('email')}
         />
         <div className="block">
           <span className="mb-1 block text-sm font-medium text-brand-ink-muted">Password</span>
           <div className="relative">
             <input
               type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="********"
               autoComplete="current-password"
-              required
-              className="w-full rounded-lg border border-brand-border-strong bg-brand-surface py-2 pl-3 pr-10 text-brand-ink outline-none transition placeholder:text-brand-ink-faint focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50"
+              placeholder="********"
+              className="w-full rounded-lg border border-brand-border-strong bg-brand-surface py-2 pl-3 pr-10 text-brand-ink outline-none transition placeholder:text-brand-ink-faint focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50 aria-invalid:border-red-400"
+              aria-invalid={Boolean(errors.password)}
+              {...register('password')}
             />
             <button
               type="button"
@@ -103,6 +119,9 @@ export function LoginPage() {
               )}
             </button>
           </div>
+          {errors.password ? (
+            <p className="mt-1 text-xs font-medium text-red-600">{errors.password.message}</p>
+          ) : null}
         </div>
 
         <button

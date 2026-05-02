@@ -75,7 +75,6 @@ function rowToPatron(raw: unknown): Patron | null {
     updated_at,
     articulo_nombre,
     articulo_sku,
-    articulo_cover_image_path: null,
   }
 }
 

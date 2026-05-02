@@ -5,6 +5,7 @@ export async function getAllUsers() {
   return supabase
     .from('profiles')
     .select('*')
+    .returns<Profile[]>()
     .order('created_at', { ascending: false })
 }
 
