@@ -1,3 +1,4 @@
+import React from 'react'
 import {
   IconEdit,
   IconEye,
@@ -11,6 +12,18 @@ import {
 } from '@tabler/icons-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import {
+  flexRender,
+  useReactTable,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getSortedRowModel,
+  getPaginationRowModel,
+  type SortingState,
+  type ColumnFiltersState,
+  type PaginationState,
+  type ColumnDef,
+} from '@tanstack/react-table'
 import { StatCard } from '../../../components/ui/StatCard'
 import { SimplePagination } from '../../../components/ui/SimplePagination'
 import { ic } from '../../../lib/tabler'
@@ -23,8 +36,6 @@ import { getProductImagePublicUrl } from '../../media/services/storage.service'
 import type { Corte, CorteEstado } from '../../../types/database'
 import { useCortesQuery, useDeleteCorteMutation } from '../hooks/useCortes'
 import { ArticuloImageModal } from '../components/ArticuloImageModal'
-
-// ─── Constants ───────────────────────────────────────────────────────────────
 
 const PAGE_SIZE = 15
 
@@ -43,10 +54,6 @@ const ESTADO_FILTERS: { value: CorteEstado | 'todos'; label: string }[] = [
   { value: 'cancelado',  label: 'Cancelados' },
 ]
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
 function EstadoBadge({ estado }: { estado: CorteEstado }) {
   const cfg = ESTADO_CONFIG[estado]
   return (
@@ -63,8 +70,6 @@ interface ImageTargetState {
   cover_image_path: string | null
 }
 
-// ─── Main page ────────────────────────────────────────────────────────────────
-
 export function CortesPage() {
   const { data: cortes = [], isPending: loading, isError, error, refetch } = useCortesQuery()
   const deleteMutation = useDeleteCorteMutation()
@@ -72,44 +77,295 @@ export function CortesPage() {
 
   const [query, setQuery] = useState('')
   const [estadoFilter, setEstadoFilter] = useState<CorteEstado | 'todos'>('todos')
-  const [currentPage, setCurrentPage] = useState(1)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [imageTarget, setImageTarget] = useState<ImageTargetState | null>(null)
 
-  // Stats
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [globalFilter, setGlobalFilter] = useState('')
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: PAGE_SIZE,
+  })
+
+  useEffect(() => {
+    setGlobalFilter(query)
+  }, [query])
+
+  useEffect(() => {
+    if (estadoFilter === 'todos') {
+      setColumnFilters((prev) => prev.filter((f) => f.id !== 'estado'))
+    } else {
+      setColumnFilters((prev) => {
+        const existing = prev.find((f) => f.id === 'estado')
+        if (existing) {
+          return prev.map((f) => f.id === 'estado' ? { id: 'estado', value: estadoFilter } : f)
+        } else {
+          return [...prev, { id: 'estado', value: estadoFilter }]
+        }
+      })
+    }
+  }, [estadoFilter])
+
   const enProceso = cortes.filter((c) => c.estado === 'en_proceso').length
   const completados = cortes.filter((c) => c.estado === 'completado').length
   const pendientes = cortes.filter((c) => c.estado === 'pendiente').length
 
-  const filtered = useMemo(() => {
-    const q = normalizeForSearch(query.trim())
-    return cortes.filter((c) => {
-      if (estadoFilter !== 'todos' && c.estado !== estadoFilter) return false
-      if (!q) return true
-      return (
-        normalizeForSearch(c.numero_corte).includes(q) ||
-        normalizeForSearch(c.tipo_tela).includes(q) ||
-        (c.costureros ? normalizeForSearch(c.costureros).includes(q) : false) ||
-        c.articulos.some((a) => normalizeForSearch(a.nombre).includes(q) || normalizeForSearch(a.codigo).includes(q))
-      )
-    })
-  }, [cortes, query, estadoFilter])
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const safePage = Math.min(currentPage, totalPages)
-  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
   const hasFilters = query.trim() !== '' || estadoFilter !== 'todos'
 
   function clearFilters() {
     setQuery('')
     setEstadoFilter('todos')
-    setCurrentPage(1)
+    setColumnFilters([])
+    setGlobalFilter('')
   }
 
   async function handleDelete(id: string) {
     await deleteMutation.mutateAsync(id)
     setConfirmDeleteId(null)
   }
+
+  const columns = useMemo(() => [
+    {
+      accessorKey: 'numero_corte',
+      header: ({ column }: { column: { getIsSorted: () => string | boolean; toggleSorting: (asc: boolean) => void } }) => (
+        <div
+          className="flex items-center gap-1 cursor-pointer"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Nº Corte
+          {column.getIsSorted() && (column.getIsSorted() === 'asc' ? '↑' : '↓')}
+        </div>
+      ),
+      cell: ({ row }: { row: { original: Corte } }) => (
+        <td className="px-5 py-3.5">
+          <span className="font-mono text-sm font-semibold text-brand-ink">#{row.original.numero_corte}</span>
+        </td>
+      ),
+      enableSorting: true,
+    },
+    {
+      accessorKey: 'articulos',
+      header: 'Artículos',
+      cell: ({ row, table }: { row: { original: Corte }; table: { meta: { onImageRequest: (target: ImageTargetState) => void } } }) => {
+        const corte = row.original
+        const { onImageRequest } = table.meta
+        return (
+          <td className="px-5 py-3.5">
+            <div className="flex flex-wrap gap-1.5">
+              {corte.articulos.length === 0 ? (
+                <span className="text-xs text-brand-ink-faint">—</span>
+              ) : (
+                corte.articulos.map((art) => {
+                  const imgSrc = hasStorageCoverImage(art.cover_image_path)
+                    ? getProductImagePublicUrl(art.cover_image_path)
+                    : DEFAULT_ARTICLE_IMAGE_PUBLIC_URL
+                  const isPlaceholder = !hasStorageCoverImage(art.cover_image_path)
+                  return (
+                    <button
+                      key={art.articulo_id}
+                      type="button"
+                      aria-label={`Ver imagen de ${art.nombre}`}
+                      title={`${art.nombre} · ${art.codigo}`}
+                      onClick={() => onImageRequest({ nombre: art.nombre, codigo: art.codigo, cover_image_path: art.cover_image_path })}
+                      className="group/art flex items-center gap-1.5 rounded-full border border-brand-border bg-brand-canvas px-2 py-1 text-xs text-brand-ink-muted transition hover:border-brand-blush-deep hover:bg-brand-primary-ghost hover:text-brand-primary"
+                    >
+                      <div className="h-5 w-5 shrink-0 overflow-hidden rounded-full border border-brand-border bg-white">
+                        <img
+                          src={imgSrc}
+                          alt=""
+                          className={`h-full w-full ${isPlaceholder ? 'object-contain' : 'object-cover'}`}
+                        />
+                      </div>
+                      <span className="max-w-[80px] truncate font-medium">{art.nombre}</span>
+                      <IconPhoto size={11} stroke={1.5} className="shrink-0 opacity-0 transition group-hover/art:opacity-100" aria-hidden />
+                    </button>
+                  )
+                })
+              )}
+            </div>
+          </td>
+        )
+      },
+      enableSorting: false,
+    },
+    {
+      accessorKey: 'tipo_tela',
+      header: ({ column }: { column: { getIsSorted: () => string | boolean; toggleSorting: (asc: boolean) => void } }) => (
+        <div
+          className="flex items-center gap-1 cursor-pointer"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Tipo de Tela
+          {column.getIsSorted() && (column.getIsSorted() === 'asc' ? '↑' : '↓')}
+        </div>
+      ),
+      cell: ({ row }: { row: { original: Corte } }) => (
+        <td className="px-5 py-3.5">
+          <span className="text-sm text-brand-ink">{row.original.tipo_tela}</span>
+        </td>
+      ),
+      enableSorting: true,
+    },
+    {
+      accessorKey: 'cantidad_total',
+      header: ({ column }: { column: { getIsSorted: () => string | boolean; toggleSorting: (asc: boolean) => void } }) => (
+        <div
+          className="flex items-center justify-end gap-1 cursor-pointer"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Cant.
+          {column.getIsSorted() && (column.getIsSorted() === 'asc' ? '↑' : '↓')}
+        </div>
+      ),
+      cell: ({ row }: { row: { original: Corte } }) => (
+        <td className="px-5 py-3.5 text-right">
+          <span className="font-mono text-sm font-semibold text-brand-ink">{row.original.cantidad_total}</span>
+        </td>
+      ),
+      enableSorting: true,
+    },
+    {
+      accessorKey: 'colores',
+      header: 'Colores',
+      cell: ({ row }: { row: { original: Corte } }) => {
+        const corte = row.original
+        return (
+          <td className="px-5 py-3.5">
+            <div className="flex flex-wrap gap-1">
+              {corte.colores.length === 0 ? (
+                <span className="text-xs text-brand-ink-faint">—</span>
+              ) : (
+                corte.colores.map((col) => (
+                  <span
+                    key={col.id}
+                    className="inline-flex items-center gap-1 rounded-full bg-brand-border-subtle px-2 py-0.5 text-[11px] text-brand-ink-muted ring-1 ring-brand-border"
+                  >
+                    {col.color}
+                    <span className="font-semibold text-brand-ink">×{col.cantidad}</span>
+                  </span>
+                ))
+              )}
+            </div>
+          </td>
+        )
+      },
+      enableSorting: false,
+    },
+    {
+      accessorKey: 'estado',
+      header: ({ column }: { column: { getIsSorted: () => string | boolean; toggleSorting: (asc: boolean) => void } }) => (
+        <div
+          className="flex items-center gap-1 cursor-pointer"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Estado
+          {column.getIsSorted() && (column.getIsSorted() === 'asc' ? '↑' : '↓')}
+        </div>
+      ),
+      cell: ({ row }: { row: { original: Corte } }) => (
+        <td className="px-5 py-3.5">
+          <EstadoBadge estado={row.original.estado} />
+        </td>
+      ),
+      enableSorting: true,
+    },
+    {
+      accessorKey: 'fecha',
+      header: ({ column }: { column: { getIsSorted: () => string | boolean; toggleSorting: (asc: boolean) => void } }) => (
+        <div
+          className="flex items-center gap-1 cursor-pointer"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Fecha
+          {column.getIsSorted() && (column.getIsSorted() === 'asc' ? '↑' : '↓')}
+        </div>
+      ),
+      cell: ({ row }: { row: { original: Corte } }) => (
+        <td className="px-5 py-3.5">
+          <span className="text-sm text-brand-ink-muted">
+            {new Date(row.original.fecha + 'T00:00:00').toLocaleDateString('es-AR', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            })}
+          </span>
+        </td>
+      ),
+      enableSorting: true,
+    },
+    {
+      id: 'actions',
+      header: 'Acciones',
+      cell: ({ row, table }: { row: { original: Corte }; table: { meta: { onDeleteRequest: (id: string) => void } } }) => {
+        const corte = row.original
+        const { onDeleteRequest } = table.meta
+        return (
+          <td className="px-5 py-3.5">
+            <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+              <Link
+                to={`/produccion/cortes/${corte.id}`}
+                aria-label={`Ver corte ${corte.numero_corte}`}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-brand-ink-faint transition hover:bg-brand-canvas hover:text-brand-ink"
+              >
+                <IconEye size={16} stroke={1.5} aria-hidden />
+              </Link>
+              <Link
+                to={`/produccion/cortes/${corte.id}/editar`}
+                aria-label={`Editar corte ${corte.numero_corte}`}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-brand-ink-faint transition hover:bg-brand-canvas hover:text-brand-ink"
+              >
+                <IconEdit size={16} stroke={1.5} aria-hidden />
+              </Link>
+              <button
+                type="button"
+                aria-label={`Eliminar corte ${corte.numero_corte}`}
+                onClick={() => onDeleteRequest(corte.id)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-brand-ink-faint transition hover:bg-red-50 hover:text-red-500"
+              >
+                <IconTrash size={16} stroke={1.5} aria-hidden />
+              </button>
+            </div>
+          </td>
+        )
+      },
+      enableSorting: false,
+    },
+  ] as ColumnDef<Corte>[], [setConfirmDeleteId, setImageTarget])
+
+  const table = useReactTable({
+    data: cortes,
+    columns,
+    state: {
+      sorting,
+      globalFilter,
+      columnFilters,
+      pagination,
+    },
+    onSortingChange: setSorting,
+    onGlobalFilterChange: setGlobalFilter,
+    onColumnFiltersChange: setColumnFilters,
+    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    globalFilterFn: (row, _columnId, filterValue) => {
+      const q = normalizeForSearch(filterValue as string)
+      if (!q) return true
+      const corte = row.original
+      return (
+        normalizeForSearch(corte.numero_corte).includes(q) ||
+        normalizeForSearch(corte.tipo_tela).includes(q) ||
+        (corte.costureros ? normalizeForSearch(corte.costureros).includes(q) : false) ||
+        corte.articulos.some((a) => normalizeForSearch(a.nombre).includes(q) || normalizeForSearch(a.codigo).includes(q))
+      )
+    },
+    meta: {
+      onDeleteRequest: setConfirmDeleteId,
+      onImageRequest: setImageTarget,
+    },
+  })
 
   return (
     <div className="space-y-6">
@@ -181,7 +437,7 @@ export function CortesPage() {
             <input
               type="search"
               value={query}
-              onChange={(e) => { setQuery(e.target.value); setCurrentPage(1) }}
+              onChange={(e) => setQuery(e.target.value)}
               placeholder="Buscar por número, tela, artículo o costurero…"
               className="w-full rounded-lg border border-brand-border bg-brand-canvas py-2 pl-9 pr-3 text-sm text-brand-ink outline-none transition placeholder:text-brand-ink-muted focus:border-brand-primary focus:bg-brand-surface focus:ring-2 focus:ring-brand-blush/50"
             />
@@ -192,7 +448,7 @@ export function CortesPage() {
               <button
                 key={op.value}
                 type="button"
-                onClick={() => { setEstadoFilter(op.value); setCurrentPage(1) }}
+                onClick={() => setEstadoFilter(op.value)}
                 className={`rounded-md px-3 py-1 text-sm font-medium transition ${
                   estadoFilter === op.value
                     ? 'bg-brand-primary text-white shadow-sm'
@@ -247,7 +503,7 @@ export function CortesPage() {
       )}
 
       {/* Empty — filtered */}
-      {!loading && !errorMessage && cortes.length > 0 && filtered.length === 0 && (
+      {!loading && !errorMessage && cortes.length > 0 && table.getFilteredRowModel().rows.length === 0 && (
         <div className="rounded-xl bg-white px-5 py-14 text-center shadow-sm ring-1 ring-black/4">
           <p className="text-sm text-brand-ink-muted">Ningún corte coincide con los filtros aplicados.</p>
           <button
@@ -262,18 +518,16 @@ export function CortesPage() {
       )}
 
       {/* Table */}
-      {!loading && !errorMessage && filtered.length > 0 && (
+      {!loading && !errorMessage && cortes.length > 0 && table.getFilteredRowModel().rows.length > 0 && (
         <>
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs font-medium text-brand-ink-faint">
-              {filtered.length === cortes.length
-                ? `${filtered.length} cortes`
-                : `${filtered.length} de ${cortes.length} cortes`}
+              {table.getFilteredRowModel().rows.length} cortes
               {pendientes > 0 && ` · ${pendientes} pendiente${pendientes > 1 ? 's' : ''}`}
             </p>
-            {totalPages > 1 && (
+            {table.getPageCount() > 1 && (
               <p className="text-xs font-medium text-brand-ink-faint">
-                Página {safePage} de {totalPages}
+                Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
               </p>
             )}
           </div>
@@ -282,54 +536,38 @@ export function CortesPage() {
             <div className="overflow-x-auto">
               <table className="w-full min-w-[720px] table-auto text-sm">
                 <thead>
-                  <tr className="border-b border-brand-border-subtle bg-brand-canvas">
-                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-ink-faint">
-                      Nº Corte
-                    </th>
-                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-ink-faint">
-                      Artículos
-                    </th>
-                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-ink-faint">
-                      Tipo de Tela
-                    </th>
-                    <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-brand-ink-faint">
-                      Cant.
-                    </th>
-                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-ink-faint">
-                      Colores
-                    </th>
-                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-ink-faint">
-                      Estado
-                    </th>
-                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-ink-faint">
-                      Fecha
-                    </th>
-                    <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-brand-ink-faint">
-                      Acciones
-                    </th>
-                  </tr>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <tr key={headerGroup.id} className="border-b border-brand-border-subtle bg-brand-canvas">
+                      {headerGroup.headers.map((header) => (
+                        <th key={header.id} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-ink-faint">
+                          {flexRender(header.column.columnDef.header, header.getContext())}
+                        </th>
+                      ))}
+                    </tr>
+                  ))}
                 </thead>
                 <tbody className="divide-y divide-brand-border-subtle">
-                  {paginated.map((corte) => (
-                    <CorteRow
-                      key={corte.id}
-                      corte={corte}
-                      onDeleteRequest={setConfirmDeleteId}
-                      onImageRequest={setImageTarget}
-                    />
+                  {table.getRowModel().rows.map((row) => (
+                    <tr key={row.id} className="group transition-colors hover:bg-brand-canvas">
+                      {row.getVisibleCells().map((cell) => (
+                        <React.Fragment key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </React.Fragment>
+                      ))}
+                    </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
 
-          {totalPages > 1 && (
+          {table.getPageCount() > 1 && (
             <SimplePagination
-              page={safePage}
-              totalPages={totalPages}
-              totalItems={filtered.length}
+              page={table.getState().pagination.pageIndex + 1}
+              totalPages={table.getPageCount()}
+              totalItems={table.getFilteredRowModel().rows.length}
               pageSize={PAGE_SIZE}
-              onPageChange={setCurrentPage}
+              onPageChange={(newPage) => table.setPageIndex(newPage - 1)}
               ariaLabel="Paginación de cortes"
             />
           )}
@@ -352,137 +590,6 @@ export function CortesPage() {
     </div>
   )
 }
-
-// ─── Table row ────────────────────────────────────────────────────────────────
-
-interface CorteRowProps {
-  corte: Corte
-  onDeleteRequest: (id: string) => void
-  onImageRequest: (target: { nombre: string; codigo: string; cover_image_path: string | null }) => void
-}
-
-function CorteRow({ corte, onDeleteRequest, onImageRequest }: CorteRowProps) {
-  return (
-    <tr className="group transition-colors hover:bg-brand-canvas">
-      {/* Nº Corte */}
-      <td className="px-5 py-3.5">
-        <span className="font-mono text-sm font-semibold text-brand-ink">#{corte.numero_corte}</span>
-      </td>
-
-      {/* Artículos */}
-      <td className="px-5 py-3.5">
-        <div className="flex flex-wrap gap-1.5">
-          {corte.articulos.length === 0 ? (
-            <span className="text-xs text-brand-ink-faint">—</span>
-          ) : (
-            corte.articulos.map((art) => {
-              const imgSrc = hasStorageCoverImage(art.cover_image_path)
-                ? getProductImagePublicUrl(art.cover_image_path)
-                : DEFAULT_ARTICLE_IMAGE_PUBLIC_URL
-              const isPlaceholder = !hasStorageCoverImage(art.cover_image_path)
-
-              return (
-                <button
-                  key={art.articulo_id}
-                  type="button"
-                  aria-label={`Ver imagen de ${art.nombre}`}
-                  title={`${art.nombre} · ${art.codigo}`}
-                  onClick={() => onImageRequest({ nombre: art.nombre, codigo: art.codigo, cover_image_path: art.cover_image_path })}
-                  className="group/art flex items-center gap-1.5 rounded-full border border-brand-border bg-brand-canvas px-2 py-1 text-xs text-brand-ink-muted transition hover:border-brand-blush-deep hover:bg-brand-primary-ghost hover:text-brand-primary"
-                >
-                  <div className="h-5 w-5 shrink-0 overflow-hidden rounded-full border border-brand-border bg-white">
-                    <img
-                      src={imgSrc}
-                      alt=""
-                      className={`h-full w-full ${isPlaceholder ? 'object-contain' : 'object-cover'}`}
-                    />
-                  </div>
-                  <span className="max-w-[80px] truncate font-medium">{art.nombre}</span>
-                  <IconPhoto size={11} stroke={1.5} className="shrink-0 opacity-0 transition group-hover/art:opacity-100" aria-hidden />
-                </button>
-              )
-            })
-          )}
-        </div>
-      </td>
-
-      {/* Tipo Tela */}
-      <td className="px-5 py-3.5">
-        <span className="text-sm text-brand-ink">{corte.tipo_tela}</span>
-      </td>
-
-      {/* Cantidad */}
-      <td className="px-5 py-3.5 text-right">
-        <span className="font-mono text-sm font-semibold text-brand-ink">{corte.cantidad_total}</span>
-      </td>
-
-      {/* Colores */}
-      <td className="px-5 py-3.5">
-        <div className="flex flex-wrap gap-1">
-          {corte.colores.length === 0 ? (
-            <span className="text-xs text-brand-ink-faint">—</span>
-          ) : (
-            corte.colores.map((col) => (
-              <span
-                key={col.id}
-                className="inline-flex items-center gap-1 rounded-full bg-brand-border-subtle px-2 py-0.5 text-[11px] text-brand-ink-muted ring-1 ring-brand-border"
-              >
-                {col.color}
-                <span className="font-semibold text-brand-ink">×{col.cantidad}</span>
-              </span>
-            ))
-          )}
-        </div>
-      </td>
-
-      {/* Estado */}
-      <td className="px-5 py-3.5">
-        <EstadoBadge estado={corte.estado} />
-      </td>
-
-      {/* Fecha */}
-      <td className="px-5 py-3.5">
-        <span className="text-sm text-brand-ink-muted">
-          {new Date(corte.fecha + 'T00:00:00').toLocaleDateString('es-AR', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-          })}
-        </span>
-      </td>
-
-      {/* Acciones */}
-      <td className="px-5 py-3.5">
-        <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-          <Link
-            to={`/produccion/cortes/${corte.id}`}
-            aria-label={`Ver corte ${corte.numero_corte}`}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-brand-ink-faint transition hover:bg-brand-canvas hover:text-brand-ink"
-          >
-            <IconEye size={16} stroke={1.5} aria-hidden />
-          </Link>
-          <Link
-            to={`/produccion/cortes/${corte.id}/editar`}
-            aria-label={`Editar corte ${corte.numero_corte}`}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-brand-ink-faint transition hover:bg-brand-canvas hover:text-brand-ink"
-          >
-            <IconEdit size={16} stroke={1.5} aria-hidden />
-          </Link>
-          <button
-            type="button"
-            aria-label={`Eliminar corte ${corte.numero_corte}`}
-            onClick={() => onDeleteRequest(corte.id)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-brand-ink-faint transition hover:bg-red-50 hover:text-red-500"
-          >
-            <IconTrash size={16} stroke={1.5} aria-hidden />
-          </button>
-        </div>
-      </td>
-    </tr>
-  )
-}
-
-// ─── Delete confirm ───────────────────────────────────────────────────────────
 
 function ConfirmDeleteModal({
   onConfirm,

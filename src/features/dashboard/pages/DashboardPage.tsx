@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import {
   IconAlertTriangle,
   IconCalendar,
@@ -7,6 +7,7 @@ import {
   IconPackage,
   IconScissors,
   IconTrendingUp,
+  IconX,
 } from '@tabler/icons-react'
 import { lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
@@ -16,7 +17,9 @@ import { useCortesQuery } from '../../production/hooks/useCortes'
 import { useProductsQuery } from '../../inventory/hooks/useProducts'
 import { SectionCard } from '../components/SectionCard'
 import { formatARS } from '../../sales/lib/pricing'
-import type { CorteEstado } from '../../../types/database'
+import { SkeletonStats, SkeletonTable, SkeletonChart } from '../../../components/ui/SkeletonLoader'
+import { getMockProducts, getMockCortes, getMockPatrones } from '../lib/mockData'
+import type { CorteEstado, Product, Corte, Patron } from '../../../types/database'
 
 const DashboardChartsSection = lazy(() =>
   import('../components/DashboardChartsSection').then((m) => ({ default: m.DashboardChartsSection })),
@@ -85,48 +88,80 @@ const ESTADO_BADGE: Record<CorteEstado, { bg: string; text: string }> = {
 }
 
 export function DashboardPage() {
-  const { data: articles = [], isPending: loadingArticles } = useProductsQuery()
-  const { data: cortes = [], isPending: loadingCortes } = useCortesQuery()
-  const { data: patrones = [], isPending: loadingPatrones } = usePatronesQuery()
+  const { data: realArticles = [], isPending: loadingArticles } = useProductsQuery()
+  const { data: realCortes = [], isPending: loadingCortes } = useCortesQuery()
+  const { data: realPatrones = [], isPending: loadingPatrones } = usePatronesQuery()
+  const [dateRange, setDateRange] = useState<{ start: string; end: string } | null>(null)
+
+  const useMock = realArticles.length === 0 && realCortes.length === 0 && realPatrones.length === 0
+
+  const articles = useMock ? (getMockProducts() as unknown as Product[]) : realArticles
+  const cortes = useMock ? (getMockCortes() as unknown as Corte[]) : realCortes
+  const patrones = useMock ? (getMockPatrones() as unknown as Patron[]) : realPatrones
 
   const loading = loadingArticles || loadingCortes || loadingPatrones
 
+  // ─── Filtrar por rango de fechas ────────────────────────────────
+  const filteredCortes = useMemo(() => {
+    if (!dateRange) return cortes
+    const start = new Date(dateRange.start)
+    const end = new Date(dateRange.end)
+    return cortes.filter((c) => {
+      const corteDate = new Date(c.fecha + 'T00:00:00')
+      return corteDate >= start && corteDate <= end
+    })
+  }, [cortes, dateRange])
+
+  const filteredArticles = useMemo(() => {
+    if (!dateRange) return articles
+    const start = new Date(dateRange.start)
+    const end = new Date(dateRange.end)
+    return articles.filter((a) => {
+      const articleDate = new Date(a.created_at)
+      return articleDate >= start && articleDate <= end
+    })
+  }, [articles, dateRange])
+
+  function clearDateFilter() {
+    setDateRange(null)
+  }
+
   const articulosActivos = useMemo(
-    () => articles.filter((a) => a.activo).length,
-    [articles],
+    () => filteredArticles.filter((a) => a.activo).length,
+    [filteredArticles],
   )
 
   const stockBajo = useMemo(
-    () => articles.filter((a) => a.activo && a.stock_actual <= STOCK_BAJO_UMBRAL),
-    [articles],
+    () => filteredArticles.filter((a) => a.activo && a.stock_actual <= STOCK_BAJO_UMBRAL),
+    [filteredArticles],
   )
 
   const valorStock = useMemo(
     () =>
-      articles
+      filteredArticles
         .filter((a) => a.activo)
         .reduce((sum, a) => sum + a.precio_lista * a.stock_actual, 0),
-    [articles],
+    [filteredArticles],
   )
 
   const cortesPendientes = useMemo(
-    () => cortes.filter((c) => c.estado === 'pendiente').length,
-    [cortes],
+    () => filteredCortes.filter((c) => c.estado === 'pendiente').length,
+    [filteredCortes],
   )
 
   const cortesEnProceso = useMemo(
-    () => cortes.filter((c) => c.estado === 'en_proceso').length,
-    [cortes],
+    () => filteredCortes.filter((c) => c.estado === 'en_proceso').length,
+    [filteredCortes],
   )
 
   const cortesActivos = cortesPendientes + cortesEnProceso
 
   const unidadesEnProceso = useMemo(
     () =>
-      cortes
+      filteredCortes
         .filter((c) => c.estado === 'en_proceso' || c.estado === 'pendiente')
         .reduce((sum, c) => sum + c.cantidad_total, 0),
-    [cortes],
+    [filteredCortes],
   )
 
   const patronesActivos = useMemo(
@@ -139,15 +174,15 @@ export function DashboardPage() {
       (['pendiente', 'en_proceso', 'completado', 'cancelado'] as CorteEstado[])
         .map((estado) => ({
           name: ESTADO_LABEL[estado],
-          value: cortes.filter((c) => c.estado === estado).length,
+          value: filteredCortes.filter((c) => c.estado === estado).length,
           color: ESTADO_COLOR[estado],
         }))
         .filter((d) => d.value > 0),
-    [cortes],
+    [filteredCortes],
   )
 
   const stockCategoriaData = useMemo(() => {
-    const categoriaStock = articles
+    const categoriaStock = filteredArticles
       .filter((a) => a.activo && a.category)
       .reduce<Record<string, number>>((acc, a) => {
         acc[a.category] = (acc[a.category] ?? 0) + a.stock_actual
@@ -158,13 +193,13 @@ export function DashboardPage() {
       .sort(([, a], [, b]) => b - a)
       .slice(0, 8)
       .map(([name, stock]) => ({ name, stock }))
-  }, [articles])
+  }, [filteredArticles])
 
   const ultimosCortes = useMemo(() => {
-    return [...cortes]
+    return [...filteredCortes]
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 6)
-  }, [cortes])
+  }, [filteredCortes])
 
   const today = new Date().toLocaleDateString('es-AR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -184,64 +219,107 @@ export function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard
-          icon={<IconPackage {...ic.stat} aria-hidden />}
-          label="Artículos en inventario"
-          value={loading ? '…' : articles.length}
-          sub={loading ? undefined : `${articulosActivos} activos · ${articles.length - articulosActivos} inactivos`}
-          loading={loading}
-          to="/inventario/articulos"
+      {/* Date filter */}
+      <div className="flex flex-wrap items-center gap-3 rounded-xl bg-brand-surface p-4 shadow-sm ring-1 ring-brand-border">
+        <div className="flex items-center gap-2">
+          <IconCalendar size={15} stroke={1.5} className="text-brand-ink-muted" aria-hidden />
+          <span className="text-sm font-medium text-brand-ink-muted">Filtrar por fecha:</span>
+        </div>
+        <input
+          type="date"
+          value={dateRange?.start ?? ''}
+          onChange={(e) => setDateRange(e.target.value ? { start: e.target.value, end: dateRange?.end ?? e.target.value } : null)}
+          className="rounded-lg border border-brand-border bg-brand-canvas px-3 py-2 text-sm text-brand-ink outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50"
         />
-        <KpiCard
-          icon={<IconScissors {...ic.stat} aria-hidden />}
-          label="Cortes activos"
-          value={loading ? '…' : cortesActivos}
-          sub={loading ? undefined : `${cortesPendientes} pendientes · ${cortesEnProceso} en proceso · ${unidadesEnProceso} unidades`}
-          loading={loading}
-          to="/produccion/cortes"
+        <span className="text-sm text-brand-ink-faint">al</span>
+        <input
+          type="date"
+          value={dateRange?.end ?? ''}
+          onChange={(e) => setDateRange(e.target.value ? { start: dateRange?.start ?? e.target.value, end: e.target.value } : null)}
+          className="rounded-lg border border-brand-border bg-brand-canvas px-3 py-2 text-sm text-brand-ink outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50"
         />
-        <KpiCard
-          icon={<IconAlertTriangle {...ic.stat} aria-hidden />}
-          label="Stock bajo"
-          value={loading ? '…' : stockBajo.length}
-          sub={loading ? undefined : stockBajo.length > 0 ? `Artículos con ≤${STOCK_BAJO_UMBRAL} unidades` : 'Todo en orden'}
-          subColor={stockBajo.length > 0 ? 'text-amber-600 font-medium' : 'text-green-600 font-medium'}
-          loading={loading}
-          to="/inventario/articulos"
-        />
-        <KpiCard
-          icon={<IconFileDescription {...ic.stat} aria-hidden />}
-          label="Patrones activos"
-          value={loading ? '…' : patronesActivos}
-          sub={loading ? undefined : `${patrones.length - patronesActivos} inactivos`}
-          loading={loading}
-          to="/produccion/patrones"
-        />
+        {dateRange && (
+          <button
+            type="button"
+            onClick={clearDateFilter}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border px-3 py-2 text-sm text-brand-ink-muted transition hover:bg-brand-canvas hover:text-brand-ink"
+          >
+            <IconX size={14} stroke={2} aria-hidden />
+            Limpiar
+          </button>
+        )}
+        {useMock && !dateRange && (
+          <span className="text-xs text-brand-ink-faint">(Mostrando datos de ejemplo)</span>
+        )}
       </div>
 
-      <div className="rounded-xl bg-linear-to-r from-brand-primary to-indigo-500 p-5 shadow-sm">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-white/80">Valor total del stock activo</p>
-            {loading ? (
-              <div className="mt-2 h-8 w-48 animate-pulse rounded-lg bg-white/20" />
-            ) : (
+      {loading ? (
+        <SkeletonStats count={4} />
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <KpiCard
+            icon={<IconPackage {...ic.stat} aria-hidden />}
+            label="Artículos en inventario"
+            value={articles.length}
+            sub={`${articulosActivos} activos · ${articles.length - articulosActivos} inactivos`}
+            to="/inventario/articulos"
+          />
+          <KpiCard
+            icon={<IconScissors {...ic.stat} aria-hidden />}
+            label="Cortes activos"
+            value={cortesActivos}
+            sub={`${cortesPendientes} pendientes · ${cortesEnProceso} en proceso · ${unidadesEnProceso} unidades`}
+            to="/produccion/cortes"
+          />
+          <KpiCard
+            icon={<IconAlertTriangle {...ic.stat} aria-hidden />}
+            label="Stock bajo"
+            value={stockBajo.length}
+            sub={stockBajo.length > 0 ? `Artículos con ≤${STOCK_BAJO_UMBRAL} unidades` : 'Todo en orden'}
+            subColor={stockBajo.length > 0 ? 'text-amber-600 font-medium' : 'text-green-600 font-medium'}
+            to="/inventario/articulos"
+          />
+          <KpiCard
+            icon={<IconFileDescription {...ic.stat} aria-hidden />}
+            label="Patrones activos"
+            value={patronesActivos}
+            sub={`${patrones.length - patronesActivos} inactivos`}
+            to="/produccion/patrones"
+          />
+        </div>
+      )}
+
+      {loading ? (
+        <div className="animate-pulse rounded-xl bg-linear-to-r from-brand-primary to-indigo-500 p-5 shadow-sm">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1">
+              <div className="h-4 w-32 rounded bg-white/20" />
+              <div className="mt-2 h-8 w-48 rounded bg-white/20" />
+              <div className="mt-1 h-3 w-64 rounded bg-white/20" />
+            </div>
+            <div className="h-10 w-10 rounded bg-white/20" />
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-xl bg-linear-to-r from-brand-primary to-indigo-500 p-5 shadow-sm">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-white/80">Valor total del stock activo</p>
               <p className="mt-1 text-3xl font-bold tabular-nums text-white">
                 {formatARS(valorStock)}
               </p>
-            )}
-            <p className="mt-1 text-xs text-white/60">Calculado sobre precio de lista × stock actual</p>
+              <p className="mt-1 text-xs text-white/60">Calculado sobre precio de lista × stock actual</p>
+            </div>
+            <IconTrendingUp size={40} stroke={1.25} className="shrink-0 text-white/30" aria-hidden />
           </div>
-          <IconTrendingUp size={40} stroke={1.25} className="shrink-0 text-white/30" aria-hidden />
         </div>
-      </div>
+      )}
 
       <Suspense
         fallback={
-          <div className="grid h-[320px] gap-6 lg:grid-cols-2">
-            <div className="animate-pulse rounded-xl bg-brand-border" />
-            <div className="animate-pulse rounded-xl bg-brand-border" />
+          <div className="grid gap-6 lg:grid-cols-2">
+            <SkeletonChart />
+            <SkeletonChart />
           </div>
         }
       >
@@ -253,12 +331,10 @@ export function DashboardPage() {
         />
       </Suspense>
 
-      <SectionCard title={`Últimos cortes (${ultimosCortes.length})`}>
+      <SectionCard title={`Últimos cortes (${loading ? '...' : ultimosCortes.length})`}>
         {loading ? (
-          <div className="space-y-2 p-5">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-12 animate-pulse rounded-lg bg-brand-border" />
-            ))}
+          <div className="p-5">
+            <SkeletonTable rows={3} cols={3} />
           </div>
         ) : ultimosCortes.length === 0 ? (
           <p className="px-5 py-8 text-center text-sm text-brand-ink-faint">

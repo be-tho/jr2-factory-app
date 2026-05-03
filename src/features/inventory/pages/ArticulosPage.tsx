@@ -10,38 +10,26 @@ import {
 } from '@tabler/icons-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import {
+  useReactTable,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getSortedRowModel,
+  getPaginationRowModel,
+  type SortingState,
+  type ColumnFiltersState,
+  type PaginationState,
+} from '@tanstack/react-table'
 import { StatCard } from '../../../components/ui/StatCard'
 import { SimplePagination } from '../../../components/ui/SimplePagination'
 import { useProductsQuery } from '../hooks/useProducts'
 import { ic } from '../../../lib/tabler'
 import { normalizeForSearch } from '../../../lib/normalize'
 import { ArticuloCard } from '../components/ArticuloCard'
-import type { Product } from '../../../types/database'
 
 const PAGE_SIZE = 12
 
 type EstadoFilter = 'todos' | 'activo' | 'inactivo'
-
-function filterArticulos(
-  articles: Product[],
-  query: string,
-  categoria: string,
-  estado: EstadoFilter,
-): Product[] {
-  const q = normalizeForSearch(query.trim())
-  return articles.filter((a) => {
-    if (estado === 'activo' && !a.activo) return false
-    if (estado === 'inactivo' && a.activo) return false
-    if (categoria && a.categoria_id !== categoria) return false
-    if (!q) return true
-    return (
-      normalizeForSearch(a.name).includes(q) ||
-      normalizeForSearch(a.sku).includes(q) ||
-      normalizeForSearch(a.category).includes(q) ||
-      normalizeForSearch(a.temporada).includes(q)
-    )
-  })
-}
 
 export function ArticulosPage() {
   const { data: articles = [], isPending: loading, isError, error, refetch } = useProductsQuery()
@@ -50,11 +38,49 @@ export function ArticulosPage() {
   const [query, setQuery] = useState('')
   const [categoriaFilter, setCategoriaFilter] = useState('')
   const [estadoFilter, setEstadoFilter] = useState<EstadoFilter>('todos')
-  const [currentPage, setCurrentPage] = useState(1)
+
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [globalFilter, setGlobalFilter] = useState('')
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: PAGE_SIZE,
+  })
 
   useEffect(() => {
-    setCurrentPage(1)
-  }, [query, categoriaFilter, estadoFilter])
+    setGlobalFilter(query)
+  }, [query])
+
+  useEffect(() => {
+    if (categoriaFilter) {
+      setColumnFilters((prev) => {
+        const existing = prev.find((f) => f.id === 'categoria_id')
+        if (existing) {
+          return prev.map((f) => f.id === 'categoria_id' ? { id: 'categoria_id', value: categoriaFilter } : f)
+        } else {
+          return [...prev, { id: 'categoria_id', value: categoriaFilter }]
+        }
+      })
+    } else {
+      setColumnFilters((prev) => prev.filter((f) => f.id !== 'categoria_id'))
+    }
+  }, [categoriaFilter])
+
+  useEffect(() => {
+    if (estadoFilter === 'todos') {
+      setColumnFilters((prev) => prev.filter((f) => f.id !== 'activo'))
+    } else {
+      const isActive = estadoFilter === 'activo'
+      setColumnFilters((prev) => {
+        const existing = prev.find((f) => f.id === 'activo')
+        if (existing) {
+          return prev.map((f) => f.id === 'activo' ? { id: 'activo', value: isActive } : f)
+        } else {
+          return [...prev, { id: 'activo', value: isActive }]
+        }
+      })
+    }
+  }, [estadoFilter])
 
   const activeCount = articles.filter((a) => a.activo).length
   const noStockCount = articles.filter((a) => a.stock_actual === 0).length
@@ -67,22 +93,92 @@ export function ArticulosPage() {
     return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1], 'es'))
   }, [articles])
 
-  const filtered = useMemo(
-    () => filterArticulos(articles, query, categoriaFilter, estadoFilter),
-    [articles, query, categoriaFilter, estadoFilter],
-  )
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const safePage = Math.min(currentPage, totalPages)
-  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
-
   const hasFilters = query.trim() !== '' || categoriaFilter !== '' || estadoFilter !== 'todos'
 
   function clearFilters() {
     setQuery('')
     setCategoriaFilter('')
     setEstadoFilter('todos')
+    setColumnFilters([])
+    setGlobalFilter('')
   }
+
+  const columns = useMemo(() => [
+    {
+      accessorKey: 'name',
+      header: 'Nombre',
+      cell: (props: any) => (
+        <span className="text-sm font-semibold text-brand-ink">{props.row.original.name}</span>
+      ),
+      enableSorting: true,
+    },
+    {
+      accessorKey: 'sku',
+      header: 'SKU',
+      cell: (props: any) => (
+        <span className="font-mono text-sm text-brand-ink">{props.row.original.sku}</span>
+      ),
+      enableSorting: true,
+    },
+    {
+      accessorKey: 'category',
+      header: 'Categoría',
+      cell: (props: any) => (
+        <span className="text-sm text-brand-ink-muted">{props.row.original.category || '—'}</span>
+      ),
+      enableSorting: true,
+    },
+    {
+      accessorKey: 'temporada',
+      header: 'Temporada',
+      cell: (props: any) => (
+        <span className="text-sm text-brand-ink-muted">{props.row.original.temporada || '—'}</span>
+      ),
+      enableSorting: true,
+    },
+    {
+      accessorKey: 'categoria_id',
+      header: '',
+      cell: () => null,
+      enableSorting: false,
+    },
+    {
+      accessorKey: 'activo',
+      header: '',
+      cell: () => null,
+      enableSorting: false,
+    },
+  ], [])
+
+  const table = useReactTable({
+    data: articles,
+    columns,
+    state: {
+      sorting,
+      globalFilter,
+      columnFilters,
+      pagination,
+    },
+    onSortingChange: setSorting,
+    onGlobalFilterChange: setGlobalFilter,
+    onColumnFiltersChange: setColumnFilters,
+    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    globalFilterFn: (row, _columnId, filterValue) => {
+      const q = normalizeForSearch(filterValue as string)
+      if (!q) return true
+      const a = row.original
+      return (
+        normalizeForSearch(a.name).includes(q) ||
+        normalizeForSearch(a.sku).includes(q) ||
+        normalizeForSearch(a.category).includes(q) ||
+        normalizeForSearch(a.temporada).includes(q)
+      )
+    },
+  })
 
   return (
     <div className="space-y-6">
@@ -241,7 +337,7 @@ export function ArticulosPage() {
       ) : null}
 
       {/* Empty — filtered */}
-      {!loading && !errorMessage && articles.length > 0 && filtered.length === 0 ? (
+      {!loading && !errorMessage && articles.length > 0 && table.getFilteredRowModel().rows.length === 0 ? (
         <div className="rounded-xl bg-white px-5 py-14 text-center shadow-sm ring-1 ring-black/4">
           <p className="text-sm text-brand-ink-muted">Ningún artículo coincide con los filtros aplicados.</p>
           <button
@@ -255,35 +351,33 @@ export function ArticulosPage() {
         </div>
       ) : null}
 
-      {/* Results */}
-      {!loading && !errorMessage && filtered.length > 0 ? (
+      {/* Results - Cards grid using TanStack Table data */}
+      {!loading && !errorMessage && table.getFilteredRowModel().rows.length > 0 ? (
         <>
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs font-medium text-brand-ink-faint">
-              {filtered.length === articles.length
-                ? `${filtered.length} artículos`
-                : `${filtered.length} de ${articles.length} artículos`}
+              {table.getFilteredRowModel().rows.length} artículo{table.getFilteredRowModel().rows.length !== 1 ? 's' : ''}
             </p>
-            {totalPages > 1 && (
+            {table.getPageCount() > 1 && (
               <p className="text-xs font-medium text-brand-ink-faint">
-                Página {safePage} de {totalPages}
+                Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
               </p>
             )}
           </div>
           <ul className="grid list-none gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {paginated.map((product) => (
-              <li key={product.id}>
-                <ArticuloCard product={product} />
+            {table.getRowModel().rows.map((row) => (
+              <li key={row.id}>
+                <ArticuloCard product={row.original} />
               </li>
             ))}
           </ul>
-          {totalPages > 1 && (
+          {table.getPageCount() > 1 && (
             <SimplePagination
-              page={safePage}
-              totalPages={totalPages}
-              totalItems={filtered.length}
+              page={table.getState().pagination.pageIndex + 1}
+              totalPages={table.getPageCount()}
+              totalItems={table.getFilteredRowModel().rows.length}
               pageSize={PAGE_SIZE}
-              onPageChange={setCurrentPage}
+              onPageChange={(newPage) => table.setPageIndex(newPage - 1)}
               ariaLabel="Paginación de artículos"
             />
           )}

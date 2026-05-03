@@ -1,3 +1,4 @@
+import React from 'react'
 import {
   IconCheck,
   IconEdit,
@@ -9,8 +10,19 @@ import {
   IconUsers,
   IconX,
 } from '@tabler/icons-react'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import {
+  flexRender,
+  useReactTable,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getSortedRowModel,
+  getPaginationRowModel,
+  type SortingState,
+  type ColumnFiltersState,
+  type PaginationState,
+} from '@tanstack/react-table'
 import { ic } from '../../../lib/tabler'
 import { useDeleteCostureroMutation, useToggleCostureroActivoMutation, useCosturerosQuery } from '../hooks/useCostureros'
 import type { Costurero } from '../../../types/database'
@@ -88,24 +100,231 @@ export function CosturerosPage() {
   const [filtro, setFiltro] = useState<FiltroActivo>('activos')
   const [deleteTarget, setDeleteTarget] = useState<Costurero | null>(null)
 
-  // Filtrar
-  const filtered = costureros.filter((c) => {
-    const matchFiltro =
-      filtro === 'todos' ||
-      (filtro === 'activos' && c.activo) ||
-      (filtro === 'inactivos' && !c.activo)
-
-    const q = search.trim().toLowerCase()
-    const matchSearch =
-      !q ||
-      c.nombre_completo.toLowerCase().includes(q) ||
-      c.numero_documento.toLowerCase().includes(q) ||
-      (c.telefono?.toLowerCase().includes(q) ?? false)
-
-    return matchFiltro && matchSearch
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [globalFilter, setGlobalFilter] = useState('')
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 15,
   })
 
   const activos = costureros.filter((c) => c.activo).length
+
+  const columns = useMemo(() => [
+    {
+      id: 'avatar',
+      header: '',
+      cell: (props: any) => (
+        <td className="px-5 py-3.5">
+          <AvatarInitials nombre={props.row.original.nombre_completo} />
+        </td>
+      ),
+      enableSorting: false,
+    },
+    {
+      accessorKey: 'nombre_completo',
+      header: (props: any) => (
+        <div
+          className="flex items-center gap-1 cursor-pointer"
+          onClick={() => props.column.toggleSorting(props.column.getIsSorted() === 'asc')}
+        >
+          Nombre completo
+          {props.column.getIsSorted() && (props.column.getIsSorted() === 'asc' ? '↑' : '↓')}
+        </div>
+      ),
+      cell: (props: any) => (
+        <td className="px-5 py-3.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-semibold text-brand-ink">{props.row.original.nombre_completo}</span>
+            {!props.row.original.activo && (
+              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500 ring-1 ring-gray-200">
+                Inactivo
+              </span>
+            )}
+          </div>
+        </td>
+      ),
+      enableSorting: true,
+    },
+    {
+      accessorKey: 'numero_documento',
+      header: (props: any) => (
+        <div
+          className="flex items-center gap-1 cursor-pointer"
+          onClick={() => props.column.toggleSorting(props.column.getIsSorted() === 'asc')}
+        >
+          Documento
+          {props.column.getIsSorted() && (props.column.getIsSorted() === 'asc' ? '↑' : '↓')}
+        </div>
+      ),
+      cell: (props: any) => (
+        <td className="px-5 py-3.5">
+          <span className="text-sm text-brand-ink">
+            {props.row.original.tipo_documento} {props.row.original.numero_documento}
+          </span>
+        </td>
+      ),
+      enableSorting: true,
+    },
+    {
+      accessorKey: 'telefono',
+      header: 'Teléfono',
+      cell: (props: any) => (
+        <td className="px-5 py-3.5">
+          <span className="text-sm text-brand-ink-muted">
+            {props.row.original.telefono || '—'}
+          </span>
+        </td>
+      ),
+      enableSorting: false,
+    },
+    {
+      accessorKey: 'direccion',
+      header: 'Dirección',
+      cell: (props: any) => (
+        <td className="px-5 py-3.5">
+          <span className="text-sm text-brand-ink-muted truncate max-w-[200px] block">
+            {props.row.original.direccion || '—'}
+          </span>
+        </td>
+      ),
+      enableSorting: false,
+    },
+    {
+      accessorKey: 'activo',
+      header: (props: any) => (
+        <div
+          className="flex items-center gap-1 cursor-pointer"
+          onClick={() => props.column.toggleSorting(props.column.getIsSorted() === 'asc')}
+        >
+          Estado
+          {props.column.getIsSorted() && (props.column.getIsSorted() === 'asc' ? '↑' : '↓')}
+        </div>
+      ),
+      cell: (props: any) => (
+        <td className="px-5 py-3.5">
+          <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+            props.row.original.activo
+              ? 'bg-green-50 ring-1 ring-green-200 text-green-700'
+              : 'bg-gray-100 ring-1 ring-gray-200 text-gray-500'
+          }`}>
+            <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+              props.row.original.activo ? 'bg-green-400' : 'bg-gray-400'
+            }`} />
+            {props.row.original.activo ? 'Activo' : 'Inactivo'}
+          </span>
+        </td>
+      ),
+      enableSorting: true,
+    },
+    {
+      id: 'actions',
+      header: 'Acciones',
+      cell: (props: any) => {
+        const costurero = props.row.original
+        const { onDeleteRequest, onToggleActivo } = props.table.meta
+        return (
+          <td className="px-5 py-3.5">
+            <div className="flex shrink-0 items-center gap-1 justify-end">
+              <button
+                type="button"
+                aria-label={costurero.activo ? 'Desactivar' : 'Activar'}
+                onClick={() => onToggleActivo(costurero.id, !costurero.activo)}
+                disabled={toggleMutation.isPending}
+                className={`flex h-8 w-8 items-center justify-center rounded-lg transition ${
+                  costurero.activo
+                    ? 'text-green-600 hover:bg-green-50'
+                    : 'text-brand-ink-faint hover:bg-brand-primary-ghost hover:text-brand-primary'
+                }`}
+              >
+                {costurero.activo ? <IconCheck size={15} stroke={2.5} aria-hidden /> : <IconX size={15} stroke={2} aria-hidden />}
+              </button>
+
+              <Link
+                to={`/produccion/costureros/${costurero.id}`}
+                aria-label={`Ver detalle de ${costurero.nombre_completo}`}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-brand-ink-faint transition hover:bg-brand-primary-ghost hover:text-brand-primary"
+              >
+                <IconEye size={15} stroke={1.5} aria-hidden />
+              </Link>
+
+              <Link
+                to={`/produccion/costureros/${costurero.id}/editar`}
+                aria-label={`Editar ${costurero.nombre_completo}`}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-brand-ink-faint transition hover:bg-brand-primary-ghost hover:text-brand-primary"
+              >
+                <IconEdit size={15} stroke={1.5} aria-hidden />
+              </Link>
+
+              <button
+                type="button"
+                aria-label={`Eliminar ${costurero.nombre_completo}`}
+                onClick={() => onDeleteRequest(costurero)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-brand-ink-faint transition hover:bg-red-50 hover:text-red-500"
+              >
+                <IconTrash size={15} stroke={1.5} aria-hidden />
+              </button>
+            </div>
+          </td>
+        )
+      },
+      enableSorting: false,
+    },
+  ], [deleteTarget, toggleMutation])
+
+  const table = useReactTable({
+    data: costureros,
+    columns,
+    state: {
+      sorting,
+      globalFilter,
+      columnFilters,
+      pagination,
+    },
+    onSortingChange: setSorting,
+    onGlobalFilterChange: setGlobalFilter,
+    onColumnFiltersChange: setColumnFilters,
+    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    globalFilterFn: (row, _columnId, filterValue) => {
+      const q = (filterValue as string).toLowerCase()
+      if (!q) return true
+      const c = row.original
+      return (
+        c.nombre_completo.toLowerCase().includes(q) ||
+        c.numero_documento.toLowerCase().includes(q) ||
+        (c.telefono?.toLowerCase().includes(q) ?? false)
+      )
+    },
+    meta: {
+      onDeleteRequest: (costurero: Costurero) => setDeleteTarget(costurero),
+      onToggleActivo: (id: string, activo: boolean) => toggleMutation.mutate({ id, activo }),
+    },
+  })
+
+  // Apply filters
+  useEffect(() => {
+    setGlobalFilter(search)
+  }, [search])
+
+  useEffect(() => {
+    if (filtro === 'todos') {
+      setColumnFilters((prev) => prev.filter((f) => f.id !== 'activo'))
+    } else {
+      const isActive = filtro === 'activos'
+      setColumnFilters((prev) => {
+        const existing = prev.find((f) => f.id === 'activo')
+        if (existing) {
+          return prev.map((f) => f.id === 'activo' ? { id: 'activo', value: isActive } : f)
+        } else {
+          return [...prev, { id: 'activo', value: isActive }]
+        }
+      })
+    }
+  }, [filtro])
 
   return (
     <div className="space-y-6">
@@ -166,14 +385,21 @@ export function CosturerosPage() {
         </div>
       </div>
 
-      {/* Lista */}
+      {/* Loading skeleton */}
       {loading ? (
-        <div className="space-y-3">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-20 animate-pulse rounded-xl bg-brand-border" />
-          ))}
+        <div className="overflow-hidden rounded-xl bg-brand-surface shadow-sm ring-1 ring-brand-border">
+          <div className="divide-y divide-brand-border-subtle">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex animate-pulse items-center gap-4 px-5 py-4">
+                <div className="h-10 w-10 rounded-full bg-brand-border" />
+                <div className="h-4 flex-1 rounded bg-brand-border" />
+                <div className="h-4 w-32 rounded bg-brand-border" />
+                <div className="h-4 w-24 rounded bg-brand-border" />
+              </div>
+            ))}
+          </div>
         </div>
-      ) : filtered.length === 0 ? (
+      ) : table.getFilteredRowModel().rows.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-brand-border py-16 text-center">
           <IconUser size={36} stroke={1} className="text-brand-ink-faint" aria-hidden />
           <div>
@@ -195,73 +421,72 @@ export function CosturerosPage() {
           )}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/4">
-          <ul className="divide-y divide-brand-border-subtle">
-            {filtered.map((c) => (
-              <li key={c.id} className="flex items-center gap-4 px-5 py-4 transition hover:bg-[#faf9fb]">
-                <AvatarInitials nombre={c.nombre_completo} />
+        <>
+          {/* Table info */}
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-medium text-brand-ink-faint">
+              {table.getFilteredRowModel().rows.length} costurero{table.getFilteredRowModel().rows.length !== 1 ? 's' : ''}
+            </p>
+            {table.getPageCount() > 1 && (
+              <p className="text-xs font-medium text-brand-ink-faint">
+                Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
+              </p>
+            )}
+          </div>
 
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-semibold text-brand-ink">{c.nombre_completo}</p>
-                    {!c.activo && (
-                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500 ring-1 ring-gray-200">
-                        Inactivo
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-brand-ink-faint">
-                    <span>{c.tipo_documento} {c.numero_documento}</span>
-                    {c.telefono && <span>{c.telefono}</span>}
-                    {c.direccion && <span>{c.direccion}</span>}
-                  </div>
-                </div>
+          {/* Table */}
+          <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/4">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[800px] table-auto text-sm">
+                <thead>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <tr key={headerGroup.id} className="border-b border-brand-border-subtle bg-brand-canvas">
+                      {headerGroup.headers.map((header) => (
+                        <th key={header.id} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-ink-faint">
+                          {flexRender(header.column.columnDef.header, header.getContext())}
+                        </th>
+                      ))}
+                    </tr>
+                  ))}
+                </thead>
+                <tbody className="divide-y divide-brand-border-subtle">
+                  {table.getRowModel().rows.map((row) => (
+                    <tr key={row.id} className="transition-colors hover:bg-[#faf9fb]">
+                      {row.getVisibleCells().map((cell) => (
+                        <React.Fragment key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </React.Fragment>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-                <div className="flex shrink-0 items-center gap-1">
-                  {/* Toggle activo */}
-                  <button
-                    type="button"
-                    aria-label={c.activo ? 'Desactivar' : 'Activar'}
-                    onClick={() => toggleMutation.mutate({ id: c.id, activo: !c.activo })}
-                    disabled={toggleMutation.isPending}
-                    className={`flex h-8 w-8 items-center justify-center rounded-lg transition ${
-                      c.activo
-                        ? 'text-green-600 hover:bg-green-50'
-                        : 'text-brand-ink-faint hover:bg-brand-primary-ghost hover:text-brand-primary'
-                    }`}
-                  >
-                    {c.activo ? <IconCheck size={15} stroke={2.5} aria-hidden /> : <IconX size={15} stroke={2} aria-hidden />}
-                  </button>
-
-                  <Link
-                    to={`/produccion/costureros/${c.id}`}
-                    aria-label={`Ver detalle de ${c.nombre_completo}`}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-brand-ink-faint transition hover:bg-brand-primary-ghost hover:text-brand-primary"
-                  >
-                    <IconEye size={15} stroke={1.5} aria-hidden />
-                  </Link>
-
-                  <Link
-                    to={`/produccion/costureros/${c.id}/editar`}
-                    aria-label={`Editar ${c.nombre_completo}`}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-brand-ink-faint transition hover:bg-brand-primary-ghost hover:text-brand-primary"
-                  >
-                    <IconEdit size={15} stroke={1.5} aria-hidden />
-                  </Link>
-
-                  <button
-                    type="button"
-                    aria-label={`Eliminar ${c.nombre_completo}`}
-                    onClick={() => setDeleteTarget(c)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-brand-ink-faint transition hover:bg-red-50 hover:text-red-500"
-                  >
-                    <IconTrash size={15} stroke={1.5} aria-hidden />
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
+          {/* Pagination */}
+          {table.getPageCount() > 1 && (
+            <div className="flex items-center justify-center gap-2">
+              <button
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+                className="rounded-lg border border-brand-border px-3 py-1.5 text-sm disabled:opacity-40"
+              >
+                Anterior
+              </button>
+              <span className="text-sm text-brand-ink-faint">
+                {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
+              </span>
+              <button
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+                className="rounded-lg border border-brand-border px-3 py-1.5 text-sm disabled:opacity-40"
+              >
+                Siguiente
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {/* Dialog eliminar */}
