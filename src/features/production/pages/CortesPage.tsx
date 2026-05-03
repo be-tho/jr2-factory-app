@@ -294,12 +294,11 @@ export function CortesPage() {
       ),
       enableSorting: true,
     },
-    {
+      {
       id: 'actions',
       header: 'Acciones',
-      cell: ({ row, table }: { row: { original: Corte }; table: { meta: { onDeleteRequest: (id: string) => void } } }) => {
-        const corte = row.original
-        const { onDeleteRequest } = table.meta
+      cell: (props: any) => {
+        const corte = props.row.original
         return (
           <td className="px-5 py-3.5">
             <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
@@ -320,7 +319,7 @@ export function CortesPage() {
               <button
                 type="button"
                 aria-label={`Eliminar corte ${corte.numero_corte}`}
-                onClick={() => onDeleteRequest(corte.id)}
+                onClick={() => setConfirmDeleteId(corte.id)}
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-brand-ink-faint transition hover:bg-red-50 hover:text-red-500"
               >
                 <IconTrash size={16} stroke={1.5} aria-hidden />

@@ -217,19 +217,18 @@ export function CosturerosPage() {
       ),
       enableSorting: true,
     },
-    {
+      {
       id: 'actions',
       header: 'Acciones',
       cell: (props: any) => {
         const costurero = props.row.original
-        const { onDeleteRequest, onToggleActivo } = props.table.meta
         return (
           <td className="px-5 py-3.5">
             <div className="flex shrink-0 items-center gap-1 justify-end">
               <button
                 type="button"
                 aria-label={costurero.activo ? 'Desactivar' : 'Activar'}
-                onClick={() => onToggleActivo(costurero.id, !costurero.activo)}
+                onClick={() => toggleMutation.mutate({ id: costurero.id, activo: !costurero.activo })}
                 disabled={toggleMutation.isPending}
                 className={`flex h-8 w-8 items-center justify-center rounded-lg transition ${
                   costurero.activo
@@ -259,7 +258,7 @@ export function CosturerosPage() {
               <button
                 type="button"
                 aria-label={`Eliminar ${costurero.nombre_completo}`}
-                onClick={() => onDeleteRequest(costurero)}
+                onClick={() => setDeleteTarget(costurero)}
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-brand-ink-faint transition hover:bg-red-50 hover:text-red-500"
               >
                 <IconTrash size={15} stroke={1.5} aria-hidden />
