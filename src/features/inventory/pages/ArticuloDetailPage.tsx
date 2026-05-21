@@ -7,13 +7,16 @@ import {
   IconMoodEmpty,
   IconPackage,
   IconPencil,
+  IconPhoto,
   IconRefresh,
   IconSeeding,
   IconStack,
   IconTag,
   IconTrash,
 } from '@tabler/icons-react'
+import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { ArticuloImageModal } from '../../production/components/ArticuloImageModal'
 import {
   DEFAULT_ARTICLE_IMAGE_PUBLIC_URL,
   hasStorageCoverImage,
@@ -121,6 +124,7 @@ export function ArticuloDetailPage() {
   const navigate = useNavigate()
   const { data: article, isPending, isError, error, refetch } = useProductQuery(id)
   const deleteMutation = useDeleteProductMutation()
+  const [imageModalOpen, setImageModalOpen] = useState(false)
 
   if (!id) {
     return (
@@ -245,17 +249,26 @@ export function ArticuloDetailPage() {
 
             {/* Image island */}
             <Island className="overflow-hidden">
-              <div
-                className={`aspect-square w-full ${hasFile ? 'bg-[#f8f7fa]' : 'bg-white'}`}
+              <button
+                type="button"
+                onClick={() => setImageModalOpen(true)}
+                aria-label={`Ver imagen de ${product.name}`}
+                className={`group relative block aspect-square w-full cursor-zoom-in text-left ${hasFile ? 'bg-[#f8f7fa]' : 'bg-white'}`}
               >
                 <img
                   src={coverSrc}
-                  alt={product.name}
-                  className={`h-full w-full ${hasFile ? 'object-cover' : 'object-contain p-10'}`}
+                  alt=""
+                  className={`h-full w-full transition duration-300 group-hover:scale-[1.02] ${hasFile ? 'object-cover' : 'object-contain p-10'}`}
                   loading="eager"
                   decoding="async"
                 />
-              </div>
+                <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 transition group-hover:bg-black/25">
+                  <span className="flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-brand-ink opacity-0 shadow-md transition group-hover:opacity-100">
+                    <IconPhoto size={14} stroke={1.75} aria-hidden />
+                    Ver imagen
+                  </span>
+                </span>
+              </button>
             </Island>
 
             {/* Identification island */}
@@ -404,6 +417,17 @@ export function ArticuloDetailPage() {
             value={product.id}
           />
         </div>
+
+      {imageModalOpen ? (
+        <ArticuloImageModal
+          articulo={{
+            nombre: product.name,
+            codigo: product.sku,
+            cover_image_path: product.cover_image_path,
+          }}
+          onClose={() => setImageModalOpen(false)}
+        />
+      ) : null}
 
       </div>
   )

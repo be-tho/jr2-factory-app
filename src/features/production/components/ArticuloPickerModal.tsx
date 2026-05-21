@@ -213,15 +213,9 @@ export function ArticuloPickerModal({ selected, onConfirm, onClose }: ArticuloPi
         </div>
       </div>
 
-      {/* Image lightbox (higher z-index, inside modal stack) */}
-      {imageTarget && (
-        <div className="fixed inset-0 z-50">
-          <ArticuloImageModal
-            articulo={imageTarget}
-            onClose={() => setImageTarget(null)}
-          />
-        </div>
-      )}
+      {imageTarget ? (
+        <ArticuloImageModal articulo={imageTarget} onClose={() => setImageTarget(null)} />
+      ) : null}
     </>
   )
 }

@@ -147,9 +147,8 @@ export function CortesPage() {
     {
       accessorKey: 'articulos',
       header: 'Artículos',
-      cell: ({ row, table }: { row: { original: Corte }; table: { meta: { onImageRequest: (target: ImageTargetState) => void } } }) => {
+      cell: ({ row }: { row: { original: Corte } }) => {
         const corte = row.original
-        const { onImageRequest } = table.meta
         return (
           <td className="px-5 py-3.5">
             <div className="flex flex-wrap gap-1.5">
@@ -167,7 +166,13 @@ export function CortesPage() {
                       type="button"
                       aria-label={`Ver imagen de ${art.nombre}`}
                       title={`${art.nombre} · ${art.codigo}`}
-                      onClick={() => onImageRequest({ nombre: art.nombre, codigo: art.codigo, cover_image_path: art.cover_image_path })}
+                      onClick={() =>
+                        setImageTarget({
+                          nombre: art.nombre,
+                          codigo: art.codigo,
+                          cover_image_path: art.cover_image_path,
+                        })
+                      }
                       className="group/art flex items-center gap-1.5 rounded-full border border-brand-border bg-brand-canvas px-2 py-1 text-xs text-brand-ink-muted transition hover:border-brand-blush-deep hover:bg-brand-primary-ghost hover:text-brand-primary"
                     >
                       <div className="h-5 w-5 shrink-0 overflow-hidden rounded-full border border-brand-border bg-white">
@@ -359,10 +364,6 @@ export function CortesPage() {
         (corte.costureros ? normalizeForSearch(corte.costureros).includes(q) : false) ||
         corte.articulos.some((a) => normalizeForSearch(a.nombre).includes(q) || normalizeForSearch(a.codigo).includes(q))
       )
-    },
-    meta: {
-      onDeleteRequest: setConfirmDeleteId,
-      onImageRequest: setImageTarget,
     },
   })
 
