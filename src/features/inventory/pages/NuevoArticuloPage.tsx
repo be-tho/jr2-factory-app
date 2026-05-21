@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useId, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
@@ -7,18 +8,16 @@ import { DEFAULT_ARTICLE_IMAGE_PUBLIC_URL } from '../../../constants/defaultArti
 import { FormField } from '../../../components/ui/FormField'
 import { IconArrowLeft, IconStack } from '@tabler/icons-react'
 import { ic } from '../../../lib/tabler'
-import {
-  loadDefaultArticleImageFile,
-  removeProductImage,
-  uploadDefaultArticlePlaceholder,
-  uploadProductImage,
-  validateImageFile,
-} from '../../media/services/storage.service'
+import { validateImageFile } from '../../media/services/storage.service'
+import { articuloImagenesKeys } from '../hooks/useArticuloImagenes'
 import { useCategoriasQuery } from '../hooks/useCategorias'
-import { useCreateProductMutation } from '../hooks/useProducts'
+import { useCreateProductMutation, productsKeys } from '../hooks/useProducts'
 import { useTemporadasCatalogQuery } from '../hooks/useTemporadas'
 import { articuloFormSchema, type ArticuloFormValues } from '../../../lib/schemas/inventory'
-import { createArticuloImagen } from '../services/articulo-imagenes.service'
+import {
+  attachCustomArticleCover,
+  attachDefaultArticleCover,
+} from '../services/articulo-cover.service'
 
 const selectClass =
   'w-full rounded-lg border border-brand-border-strong bg-brand-surface px-3 py-2 text-brand-ink outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50'
@@ -36,6 +35,7 @@ function SectionHeader({ title, hint }: { title: string; hint?: string }) {
 
 export function NuevoArticuloPage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const coverInputId = useId()
   const categoriasQ = useCategoriasQuery()
   const temporadasQ = useTemporadasCatalogQuery()
@@ -87,36 +87,11 @@ export function NuevoArticuloPage() {
     }
   }, [coverImage])
 
-  async function attachImageToArticle(articuloId: string, file: File): Promise<void> {
-    const v = validateImageFile(file)
-    if (v) throw new Error(v)
-    const { path } = await uploadProductImage(articuloId, file)
-    const { error: insErr } = await createArticuloImagen({
-      articulo_id: articuloId,
-      storage_path: path,
-      es_principal: true,
-      orden: 0,
-    })
-    if (insErr) {
-      await removeProductImage(path).catch(() => {})
-      throw new Error(insErr.message)
-    }
-  }
-
-  /** Sube `default-articulo.svg` a `images/<id>/default-articulo.svg` y registra la fila. */
-  async function attachDefaultArticleImage(articuloId: string): Promise<void> {
-    const file = await loadDefaultArticleImageFile()
-    const { path } = await uploadDefaultArticlePlaceholder(articuloId, file)
-    const { error: insErr } = await createArticuloImagen({
-      articulo_id: articuloId,
-      storage_path: path,
-      es_principal: true,
-      orden: 0,
-    })
-    if (insErr) {
-      await removeProductImage(path).catch(() => {})
-      throw new Error(insErr.message)
-    }
+  function finishCreateAndNavigate(articuloId: string) {
+    void queryClient.invalidateQueries({ queryKey: productsKeys.detail(articuloId) })
+    void queryClient.invalidateQueries({ queryKey: articuloImagenesKeys.byArticulo(articuloId) })
+    setSaving(false)
+    navigate(`/inventario/articulos/${articuloId}`, { replace: true })
   }
 
   async function retryImageOnly() {
@@ -124,17 +99,12 @@ export function NuevoArticuloPage() {
     setSaving(true)
     setError(null)
     try {
-      if (coverImage) {
-        await attachImageToArticle(articleIdPendingImage, coverImage)
-      } else {
-        await attachDefaultArticleImage(articleIdPendingImage)
-      }
-      navigate(`/inventario/articulos/${articleIdPendingImage}`, { replace: true })
+      await attachCustomArticleCover(articleIdPendingImage, coverImage!)
+      finishCreateAndNavigate(articleIdPendingImage)
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'No se pudo subir la imagen.'
       setError(msg)
       toast.error(msg)
-    } finally {
       setSaving(false)
     }
   }
@@ -189,25 +159,27 @@ export function NuevoArticuloPage() {
       return
     }
 
-    try {
-      if (coverImage) {
-        await attachImageToArticle(newId, coverImage)
-      } else {
-        await attachDefaultArticleImage(newId)
+    if (coverImage) {
+      try {
+        await attachCustomArticleCover(newId, coverImage)
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'No se pudo guardar la imagen.'
+        setArticleIdPendingImage(newId)
+        setError(`El artículo se creó, pero la imagen no se guardó: ${msg}`)
+        setSaving(false)
+        return
       }
-    } catch (e) {
-      setArticleIdPendingImage(newId)
-      setError(
-        e instanceof Error
-          ? `El artículo se creó, pero la imagen no se guardó: ${e.message}`
-          : 'El artículo se creó, pero la imagen no se guardó.'
-      )
-      setSaving(false)
-      return
+    } else {
+      try {
+        await attachDefaultArticleCover(newId)
+      } catch (e) {
+        setSaving(false)
+        setError(e instanceof Error ? e.message : 'No se pudo guardar la imagen por defecto.')
+        return
+      }
     }
 
-    setSaving(false)
-    navigate(`/inventario/articulos/${newId}`, { replace: true })
+    finishCreateAndNavigate(newId)
   }
 
   return (
@@ -374,7 +346,7 @@ export function NuevoArticuloPage() {
         <section className={sectionCardClass}>
           <SectionHeader
             title="Imagen del producto"
-            hint="Opcional. Sin archivo, al guardar se copia public/default-articulo.svg al bucket como images/<id>/default-articulo.svg."
+            hint="Opcional. Sin archivo, al guardar se sube la imagen por defecto (WebP) a Storage."
           />
           <div className="px-5 py-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
@@ -424,12 +396,10 @@ export function NuevoArticuloPage() {
           </div>
         </section>
 
-        {articleIdPendingImage ? (
+        {articleIdPendingImage && coverImage ? (
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950">
             <p className="font-medium">El artículo ya está creado</p>
-            <p className="mt-1 text-amber-900">
-              Podés reintentar: con el archivo elegido, o sin archivo para volver a subir la imagen por defecto.
-            </p>
+            <p className="mt-1 text-amber-900">Reintentá subir la imagen que elegiste o continuá al artículo.</p>
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 type="button"
@@ -444,12 +414,6 @@ export function NuevoArticuloPage() {
                 className="inline-flex items-center rounded-lg border border-brand-border bg-brand-surface px-4 py-2 text-sm font-medium text-brand-ink transition hover:border-brand-border-strong"
               >
                 Ir al artículo
-              </Link>
-              <Link
-                to="/inventario/articulos"
-                className="inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium text-amber-900 underline-offset-2 hover:underline"
-              >
-                Ir al listado
               </Link>
             </div>
           </div>

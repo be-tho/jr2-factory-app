@@ -1,5 +1,5 @@
-/** Nombre del objeto en Storage: `images/<articuloId>/default-articulo.svg`. */
-export const DEFAULT_ARTICLE_STORAGE_FILE_NAME = 'default-articulo.svg'
+/** Nombre del objeto en Storage: `images/<articuloId>/default-articulo.webp` (rasterizado desde el SVG público). */
+export const DEFAULT_ARTICLE_STORAGE_FILE_NAME = 'default-articulo.webp'
 
 /**
  * URL del asset en `public/` (sirve para `<img>` y para `fetch` al subir el placeholder).

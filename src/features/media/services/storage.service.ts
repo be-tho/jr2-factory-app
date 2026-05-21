@@ -99,28 +99,76 @@ export function buildProductImageObjectPath(articuloId: string, file: File): str
   return `${PRODUCT_IMAGES_PREFIX}/${articuloId}/${unique}`
 }
 
-/** Ruta fija para la imagen por defecto por artículo: `images/<id>/default-articulo.svg`. */
+/** Ruta fija para la imagen por defecto por artículo: `images/<id>/default-articulo.webp`. */
 export function buildDefaultArticleStoragePath(articuloId: string): string {
   return `${PRODUCT_IMAGES_PREFIX}/${articuloId}/${DEFAULT_ARTICLE_STORAGE_FILE_NAME}`
 }
 
+/**
+ * El bucket `products` solo admite JPEG/PNG/WebP. El asset público es SVG:
+ * lo rasterizamos a WebP antes de subirlo a Storage.
+ */
+async function rasterizeSvgFileToWebp(svgFile: File, outputName: string): Promise<File> {
+  const url = URL.createObjectURL(svgFile)
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image()
+      el.onload = () => resolve(el)
+      el.onerror = () => reject(new Error('No se pudo leer la imagen por defecto.'))
+      el.src = url
+    })
+
+    const w = img.naturalWidth > 0 ? img.naturalWidth : 500
+    const h = img.naturalHeight > 0 ? img.naturalHeight : 600
+    const canvas = document.createElement('canvas')
+    canvas.width = w
+    canvas.height = h
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('No se pudo preparar la imagen por defecto.')
+
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, w, h)
+    ctx.drawImage(img, 0, 0, w, h)
+
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, 'image/webp', WEBP_QUALITY)
+    })
+    if (!blob) {
+      throw new Error('No se pudo convertir la imagen por defecto a WebP.')
+    }
+
+    return new File([blob], outputName, { type: 'image/webp' })
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}
+
+/** Convierte el SVG de `public/` a WebP si hace falta para cumplir MIME del bucket. */
+export async function prepareDefaultArticleFileForStorage(file: File): Promise<File> {
+  if (file.type === 'image/svg+xml' || file.name.endsWith('.svg')) {
+    return rasterizeSvgFileToWebp(file, DEFAULT_ARTICLE_STORAGE_FILE_NAME)
+  }
+  return file
+}
+
 /** Sube el placeholder con nombre fijo (permite reemplazar si ya existía). */
 export async function uploadDefaultArticlePlaceholder(articuloId: string, file: File) {
+  const toUpload = await prepareDefaultArticleFileForStorage(file)
   const path = buildDefaultArticleStoragePath(articuloId)
-  const { data, error } = await supabase.storage.from(PRODUCTS_BUCKET).upload(path, file, {
+  const { data, error } = await supabase.storage.from(PRODUCTS_BUCKET).upload(path, toUpload, {
     upsert: true,
-    contentType: file.type || 'image/svg+xml',
+    contentType: toUpload.type || 'image/webp',
   })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return { path: data.path }
 }
 
-/** Carga el archivo desde `/public/default-articulo.svg` para subirlo a Storage. */
+/** Carga el SVG desde `/public/default-articulo.svg` (se rasteriza a WebP antes del upload). */
 export async function loadDefaultArticleImageFile(): Promise<File> {
   const res = await fetch(DEFAULT_ARTICLE_IMAGE_PUBLIC_URL)
   if (!res.ok) throw new Error('No se pudo cargar la imagen por defecto del sitio.')
   const blob = await res.blob()
-  return new File([blob], DEFAULT_ARTICLE_STORAGE_FILE_NAME, { type: blob.type || 'image/svg+xml' })
+  return new File([blob], 'default-articulo.svg', { type: 'image/svg+xml' })
 }
 
 export function validateImageFile(file: File): string | null {
