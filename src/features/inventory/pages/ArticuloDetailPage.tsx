@@ -15,7 +15,7 @@ import {
   IconTrash,
 } from '@tabler/icons-react'
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ArticuloImageModal } from '../../production/components/ArticuloImageModal'
 import {
   DEFAULT_ARTICLE_IMAGE_PUBLIC_URL,
@@ -24,6 +24,7 @@ import {
 import { getProductImagePublicUrl } from '../../media/services/storage.service'
 import { ic } from '../../../lib/tabler'
 import { useDeleteProductMutation, useProductQuery } from '../hooks/useProducts'
+import { articulosListPath } from '../lib/articulosListFilters'
 
 // ── Island — white card base ──────────────────────────────────────────────────
 function Island({ children, className = '' }: { children: React.ReactNode; className?: string }) {
@@ -64,9 +65,12 @@ function DetailSkeleton() {
 
 // ── Back button ───────────────────────────────────────────────────────────────
 function BackButton() {
+  const location = useLocation()
+  const listSearch = (location.state as { listSearch?: string } | null)?.listSearch
+
   return (
     <Link
-      to="/inventario/articulos"
+      to={articulosListPath(listSearch)}
       className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-[#6e6b7b] transition hover:bg-white hover:text-[#3d3b4f] hover:shadow-sm"
     >
       <IconArrowLeft size={16} stroke={1.5} className="shrink-0" aria-hidden />

@@ -9,7 +9,7 @@ import {
   IconX,
 } from '@tabler/icons-react'
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   useReactTable,
   getCoreRowModel,
@@ -26,30 +26,61 @@ import { useProductsQuery } from '../hooks/useProducts'
 import { ic } from '../../../lib/tabler'
 import { normalizeForSearch } from '../../../lib/normalize'
 import { ArticuloCard } from '../components/ArticuloCard'
+import {
+  buildArticulosListSearch,
+  parseArticulosListSearch,
+  type EstadoFilter,
+} from '../lib/articulosListFilters'
 
 const PAGE_SIZE = 12
-
-type EstadoFilter = 'todos' | 'activo' | 'inactivo'
 
 export function ArticulosPage() {
   const { data: articles = [], isPending: loading, isError, error, refetch } = useProductsQuery()
   const errorMessage = isError && error instanceof Error ? error.message : null
+  const [searchParams, setSearchParams] = useSearchParams()
+  const initialFilters = useMemo(
+    () => parseArticulosListSearch(searchParams.toString()),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only read URL on first mount
+    [],
+  )
 
-  const [query, setQuery] = useState('')
-  const [categoriaFilter, setCategoriaFilter] = useState('')
-  const [estadoFilter, setEstadoFilter] = useState<EstadoFilter>('todos')
+  const [query, setQuery] = useState(initialFilters.query)
+  const [categoriaFilter, setCategoriaFilter] = useState(initialFilters.categoria)
+  const [estadoFilter, setEstadoFilter] = useState<EstadoFilter>(initialFilters.estado)
 
   const [sorting, setSorting] = useState<SortingState>([])
-  const [globalFilter, setGlobalFilter] = useState('')
+  const [globalFilter, setGlobalFilter] = useState(initialFilters.query)
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
+    pageIndex: initialFilters.page - 1,
     pageSize: PAGE_SIZE,
   })
 
   useEffect(() => {
     setGlobalFilter(query)
   }, [query])
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      const nextSearch = buildArticulosListSearch({
+        query,
+        categoria: categoriaFilter,
+        estado: estadoFilter,
+        page: pagination.pageIndex + 1,
+      })
+
+      setSearchParams(nextSearch ? nextSearch : {}, { replace: true })
+    }, 350)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [query, categoriaFilter, estadoFilter, pagination.pageIndex, setSearchParams])
+
+  const listSearch = buildArticulosListSearch({
+    query,
+    categoria: categoriaFilter,
+    estado: estadoFilter,
+    page: pagination.pageIndex + 1,
+  })
 
   useEffect(() => {
     if (categoriaFilter) {
@@ -95,12 +126,17 @@ export function ArticulosPage() {
 
   const hasFilters = query.trim() !== '' || categoriaFilter !== '' || estadoFilter !== 'todos'
 
+  function resetPage() {
+    setPagination((prev) => (prev.pageIndex === 0 ? prev : { ...prev, pageIndex: 0 }))
+  }
+
   function clearFilters() {
     setQuery('')
     setCategoriaFilter('')
     setEstadoFilter('todos')
     setColumnFilters([])
     setGlobalFilter('')
+    resetPage()
   }
 
   const columns = useMemo(() => [
@@ -224,8 +260,8 @@ export function ArticulosPage() {
 
       {/* Filter bar island */}
       {!errorMessage && (
-        <div className="flex flex-col gap-3 rounded-xl bg-brand-surface p-4 shadow-sm ring-1 ring-brand-border sm:flex-row sm:items-center">
-          <div className="relative flex-1">
+        <div className="flex flex-col gap-3 rounded-xl bg-brand-surface p-4 shadow-sm ring-1 ring-brand-border">
+          <div className="relative min-w-0 w-full">
             <IconSearch
               size={15}
               stroke={1.5}
@@ -235,52 +271,63 @@ export function ArticulosPage() {
             <input
               type="search"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value)
+                resetPage()
+              }}
               placeholder="Buscar por nombre, código, categoría o temporada…"
               className="w-full rounded-lg border border-brand-border bg-brand-canvas py-2 pl-9 pr-3 text-sm text-brand-ink outline-none transition placeholder:text-brand-ink-muted focus:border-brand-primary focus:bg-brand-surface focus:ring-2 focus:ring-brand-blush/50"
             />
           </div>
 
-          <select
-            value={categoriaFilter}
-            onChange={(e) => setCategoriaFilter(e.target.value)}
-            className="rounded-lg border border-brand-border bg-brand-canvas px-3 py-2 text-sm text-brand-ink outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50 sm:w-44"
-          >
-            <option value="">Todas las categorías</option>
-            {categorias.map(([id, nombre]) => (
-              <option key={id} value={id}>
-                {nombre}
-              </option>
-            ))}
-          </select>
-
-          <div className="flex items-center gap-1 rounded-lg border border-brand-border bg-brand-canvas p-1">
-            {(['todos', 'activo', 'inactivo'] as const).map((op) => (
-              <button
-                key={op}
-                type="button"
-                onClick={() => setEstadoFilter(op)}
-                className={`rounded-md px-3 py-1 text-sm font-medium transition ${
-                  estadoFilter === op
-                    ? 'bg-brand-primary text-white shadow-sm'
-                    : 'text-brand-ink-muted hover:text-brand-ink'
-                }`}
-              >
-                {op === 'todos' ? 'Todos' : op === 'activo' ? 'Activos' : 'Inactivos'}
-              </button>
-            ))}
-          </div>
-
-          {hasFilters && (
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border px-3 py-2 text-sm text-brand-ink-muted transition hover:bg-brand-canvas hover:text-brand-ink"
+          <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center">
+            <select
+              value={categoriaFilter}
+              onChange={(e) => {
+                setCategoriaFilter(e.target.value)
+                resetPage()
+              }}
+              className="w-full min-w-0 rounded-lg border border-brand-border bg-brand-canvas px-3 py-2 text-sm text-brand-ink outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50 lg:w-44 lg:shrink-0"
             >
-              <IconX size={14} stroke={2} aria-hidden />
-              Limpiar
-            </button>
-          )}
+              <option value="">Todas las categorías</option>
+              {categorias.map(([id, nombre]) => (
+                <option key={id} value={id}>
+                  {nombre}
+                </option>
+              ))}
+            </select>
+
+            <div className="grid min-w-0 grid-cols-3 gap-1 rounded-lg border border-brand-border bg-brand-canvas p-1 lg:shrink-0">
+              {(['todos', 'activo', 'inactivo'] as const).map((op) => (
+                <button
+                  key={op}
+                  type="button"
+                  onClick={() => {
+                    setEstadoFilter(op)
+                    resetPage()
+                  }}
+                  className={`rounded-md px-2 py-1.5 text-sm font-medium transition sm:px-3 ${
+                    estadoFilter === op
+                      ? 'bg-brand-primary text-white shadow-sm'
+                      : 'text-brand-ink-muted hover:text-brand-ink'
+                  }`}
+                >
+                  {op === 'todos' ? 'Todos' : op === 'activo' ? 'Activos' : 'Inactivos'}
+                </button>
+              ))}
+            </div>
+
+            {hasFilters ? (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="inline-flex w-full shrink-0 items-center justify-center gap-1.5 rounded-lg border border-brand-border px-3 py-2 text-sm text-brand-ink-muted transition hover:bg-brand-canvas hover:text-brand-ink lg:w-auto"
+              >
+                <IconX size={14} stroke={2} aria-hidden />
+                Limpiar
+              </button>
+            ) : null}
+          </div>
         </div>
       )}
 
@@ -367,7 +414,7 @@ export function ArticulosPage() {
           <ul className="grid list-none gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {table.getRowModel().rows.map((row) => (
               <li key={row.id}>
-                <ArticuloCard product={row.original} />
+                <ArticuloCard product={row.original} listSearch={listSearch} />
               </li>
             ))}
           </ul>

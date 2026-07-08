@@ -10,6 +10,7 @@ import type { Product } from '../../../types/database'
 
 type ArticuloCardProps = {
   product: Product
+  listSearch?: string
 }
 
 type StockLevel = 'sin-stock' | 'bajo' | 'ok'
@@ -41,7 +42,7 @@ const stockConfig: Record<StockLevel, { label: string; dot: string; text: string
   },
 }
 
-export function ArticuloCard({ product }: ArticuloCardProps) {
+export function ArticuloCard({ product, listSearch }: ArticuloCardProps) {
   const storagePath = product.cover_image_path
   const hasFile = hasStorageCoverImage(storagePath)
   const coverSrc = hasFile
@@ -63,6 +64,7 @@ export function ArticuloCard({ product }: ArticuloCardProps) {
   return (
     <Link
       to={`/inventario/articulos/${product.id}`}
+      state={listSearch ? { listSearch } : undefined}
       className="group relative flex flex-col overflow-hidden rounded-2xl bg-brand-surface ring-1 ring-brand-border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-brand-ink/8 hover:ring-brand-blush-deep"
     >
       {/* Inactive overlay indicator */}
