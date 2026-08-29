@@ -4,6 +4,7 @@ export type ArticulosListFilters = {
   query: string
   categoria: string
   estado: EstadoFilter
+  temporada: string
   page: number
 }
 
@@ -16,6 +17,7 @@ export function parseArticulosListSearch(search: string): ArticulosListFilters {
     query: params.get('q') ?? '',
     categoria: params.get('categoria') ?? '',
     estado: estado === 'activo' || estado === 'inactivo' ? estado : 'todos',
+    temporada: params.get('temporada') ?? '',
     page: Number.isFinite(pageRaw) && pageRaw > 0 ? pageRaw : 1,
   }
 }
@@ -27,6 +29,7 @@ export function buildArticulosListSearch(filters: ArticulosListFilters): string 
   if (trimmedQuery) params.set('q', trimmedQuery)
   if (filters.categoria) params.set('categoria', filters.categoria)
   if (filters.estado !== 'todos') params.set('estado', filters.estado)
+  if (filters.temporada) params.set('temporada', filters.temporada)
   if (filters.page > 1) params.set('page', String(filters.page))
 
   return params.toString()

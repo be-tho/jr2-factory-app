@@ -99,6 +99,7 @@ export function CorteForm({ mode, initialData, onSubmit, saving, error }: CorteF
       id: a.articulo_id,
       name: a.nombre,
       sku: a.codigo,
+      codigo: a.codigo,
       slug: '',
       category: '',
       temporada: '',

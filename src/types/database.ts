@@ -54,6 +54,7 @@ export interface Product {
   id: string
   name: string
   sku: string
+  codigo: string
   slug: string
   category: string
   temporada: string

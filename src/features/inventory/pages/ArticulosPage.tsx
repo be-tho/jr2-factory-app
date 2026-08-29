@@ -47,6 +47,8 @@ export function ArticulosPage() {
   const [query, setQuery] = useState(initialFilters.query)
   const [categoriaFilter, setCategoriaFilter] = useState(initialFilters.categoria)
   const [estadoFilter, setEstadoFilter] = useState<EstadoFilter>(initialFilters.estado)
+  const [temporadaFilter, setTemporadaFilter] = useState(initialFilters.temporada)
+  const [sortDescending, setSortDescending] = useState(true)
 
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState(initialFilters.query)
@@ -66,6 +68,7 @@ export function ArticulosPage() {
         query,
         categoria: categoriaFilter,
         estado: estadoFilter,
+        temporada: temporadaFilter,
         page: pagination.pageIndex + 1,
       })
 
@@ -73,12 +76,13 @@ export function ArticulosPage() {
     }, 350)
 
     return () => window.clearTimeout(timeoutId)
-  }, [query, categoriaFilter, estadoFilter, pagination.pageIndex, setSearchParams])
+  }, [query, categoriaFilter, estadoFilter, temporadaFilter, pagination.pageIndex, setSearchParams])
 
   const listSearch = buildArticulosListSearch({
     query,
     categoria: categoriaFilter,
     estado: estadoFilter,
+    temporada: temporadaFilter,
     page: pagination.pageIndex + 1,
   })
 
@@ -113,6 +117,21 @@ export function ArticulosPage() {
     }
   }, [estadoFilter])
 
+  useEffect(() => {
+    if (temporadaFilter) {
+      setColumnFilters((prev) => {
+        const existing = prev.find((f) => f.id === 'temporada_id')
+        if (existing) {
+          return prev.map((f) => f.id === 'temporada_id' ? { id: 'temporada_id', value: temporadaFilter } : f)
+        } else {
+          return [...prev, { id: 'temporada_id', value: temporadaFilter }]
+        }
+      })
+    } else {
+      setColumnFilters((prev) => prev.filter((f) => f.id !== 'temporada_id'))
+    }
+  }, [temporadaFilter])
+
   const activeCount = articles.filter((a) => a.activo).length
   const noStockCount = articles.filter((a) => a.stock_actual === 0).length
 
@@ -124,7 +143,23 @@ export function ArticulosPage() {
     return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1], 'es'))
   }, [articles])
 
-  const hasFilters = query.trim() !== '' || categoriaFilter !== '' || estadoFilter !== 'todos'
+  const temporadas = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const a of articles) {
+      if (a.temporada_id && a.temporada) map.set(a.temporada_id, a.temporada)
+    }
+    return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1], 'es'))
+  }, [articles])
+
+  const sortedArticles = useMemo(() => {
+    return [...articles].sort((a, b) => {
+      const numA = getCodigoNumber(a.codigo)
+      const numB = getCodigoNumber(b.codigo)
+      return sortDescending ? numB - numA : numA - numB
+    })
+  }, [articles, sortDescending])
+
+  const hasFilters = query.trim() !== '' || categoriaFilter !== '' || estadoFilter !== 'todos' || temporadaFilter !== ''
 
   function resetPage() {
     setPagination((prev) => (prev.pageIndex === 0 ? prev : { ...prev, pageIndex: 0 }))
@@ -134,9 +169,16 @@ export function ArticulosPage() {
     setQuery('')
     setCategoriaFilter('')
     setEstadoFilter('todos')
+    setTemporadaFilter('')
     setColumnFilters([])
     setGlobalFilter('')
     resetPage()
+  }
+
+  // Función para extraer número del código (ART-12345 -> 12345)
+  function getCodigoNumber(codigo: string): number {
+    const match = codigo.match(/\d+/)
+    return match ? parseInt(match[0], 10) : 0
   }
 
   const columns = useMemo(() => [
@@ -184,10 +226,22 @@ export function ArticulosPage() {
       cell: () => null,
       enableSorting: false,
     },
+    {
+      accessorKey: 'codigo',
+      header: '',
+      cell: () => null,
+      enableSorting: false,
+    },
+    {
+      accessorKey: 'temporada_id',
+      header: '',
+      cell: () => null,
+      enableSorting: false,
+    },
   ], [])
 
   const table = useReactTable({
-    data: articles,
+    data: sortedArticles,
     columns,
     state: {
       sorting,
@@ -210,6 +264,7 @@ export function ArticulosPage() {
       return (
         normalizeForSearch(a.name).includes(q) ||
         normalizeForSearch(a.sku).includes(q) ||
+        normalizeForSearch(a.codigo).includes(q) ||
         normalizeForSearch(a.category).includes(q) ||
         normalizeForSearch(a.temporada).includes(q)
       )
@@ -280,7 +335,7 @@ export function ArticulosPage() {
             />
           </div>
 
-          <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center lg:flex-wrap">
             <select
               value={categoriaFilter}
               onChange={(e) => {
@@ -296,6 +351,32 @@ export function ArticulosPage() {
                 </option>
               ))}
             </select>
+
+            <select
+              value={temporadaFilter}
+              onChange={(e) => {
+                setTemporadaFilter(e.target.value)
+                resetPage()
+              }}
+              className="w-full min-w-0 rounded-lg border border-brand-border bg-brand-canvas px-3 py-2 text-sm text-brand-ink outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50 lg:w-44 lg:shrink-0"
+            >
+              <option value="">Todas las temporadas</option>
+              {temporadas.map(([temporada_id, nombre]) => (
+                <option key={temporada_id} value={temporada_id}>
+                  {nombre}
+                </option>
+              ))}
+            </select>
+
+            <button
+              type="button"
+              onClick={() => setSortDescending(!sortDescending)}
+              className="inline-flex shrink-0 items-center justify-center rounded-lg border border-brand-border bg-brand-canvas px-3 py-2 text-sm text-brand-ink-muted transition hover:bg-brand-primary hover:text-white hover:border-brand-primary"
+              aria-label={sortDescending ? 'Ordenar ascendente' : 'Ordenar descendente'}
+              title={sortDescending ? 'Ordenar ascendente' : 'Ordenar descendente'}
+            >
+              {sortDescending ? '↓' : '↑'}
+            </button>
 
             <div className="grid min-w-0 grid-cols-3 gap-1 rounded-lg border border-brand-border bg-brand-canvas p-1 lg:shrink-0">
               {(['todos', 'activo', 'inactivo'] as const).map((op) => (

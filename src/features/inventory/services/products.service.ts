@@ -115,6 +115,7 @@ function rowToProduct(row: ArticuloQueryRow): Product {
     id: row.id,
     name: row.nombre,
     sku: row.codigo,
+    codigo: row.codigo,
     slug: row.slug,
     category: nombreFromEmbed(row.categorias),
     temporada: nombreFromEmbed(row.temporadas),
