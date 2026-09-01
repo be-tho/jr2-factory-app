@@ -11,7 +11,7 @@ import {
   IconCheck,
 } from '@tabler/icons-react'
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { SimplePagination } from '../../../components/ui/SimplePagination'
 import { PROVINCIAS_ARGENTINA } from '../../../lib/argentina-provincias'
 import { ic } from '../../../lib/tabler'
@@ -80,12 +80,34 @@ export function EnviosPage() {
   const { data: rows = [], isPending: loading } = useClientesEnvioQuery()
   const deleteMutation = useDeleteClienteEnvioMutation()
   const toggleMutation = useToggleClienteEnvioActivoMutation()
+  const [searchParams, setSearchParams] = useSearchParams()
 
-  const [search, setSearch] = useState('')
-  const [provinciaFiltro, setProvinciaFiltro] = useState<string>('')
-  const [filtro, setFiltro] = useState<FiltroActivo>('activos')
-  const [page, setPage] = useState(1)
+  const search = searchParams.get('q') ?? ''
+  const provinciaFiltro = searchParams.get('provincia') ?? ''
+  const filtro = (searchParams.get('estado') as FiltroActivo) ?? 'activos'
+  const page = Number(searchParams.get('page') ?? '1')
   const [deleteTarget, setDeleteTarget] = useState<ClienteEnvio | null>(null)
+
+  const updateFilters = (next: Partial<{ q: string; provincia: string; estado: FiltroActivo; page: number }>) => {
+    const params = new URLSearchParams(searchParams)
+    const nextSearch = next.q ?? search
+    if (nextSearch.trim()) params.set('q', nextSearch.trim())
+    else params.delete('q')
+
+    const nextProvincia = next.provincia ?? provinciaFiltro
+    if (nextProvincia) params.set('provincia', nextProvincia)
+    else params.delete('provincia')
+
+    const nextEstado = next.estado ?? filtro
+    if (nextEstado === 'activos') params.delete('estado')
+    else params.set('estado', nextEstado)
+
+    const nextPage = next.page ?? page
+    if (nextPage <= 1) params.delete('page')
+    else params.set('page', String(nextPage))
+
+    setSearchParams(params, { replace: true })
+  }
 
   const filtered = useMemo(() => {
     return rows.filter((r) => {
@@ -110,22 +132,23 @@ export function EnviosPage() {
   }, [rows, filtro, provinciaFiltro, search])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const normalizedPage = Number.isFinite(page) && page > 0 ? page : 1
+  const safePage = Math.min(normalizedPage, totalPages)
 
   useEffect(() => {
-    setPage(1)
-  }, [search, provinciaFiltro, filtro])
-
-  useEffect(() => {
-    setPage((p) => Math.min(p, totalPages))
-  }, [totalPages])
+    if (safePage !== normalizedPage) {
+      updateFilters({ page: safePage })
+    }
+  }, [safePage, normalizedPage])
 
   const pageRows = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE
+    const start = (safePage - 1) * PAGE_SIZE
     return filtered.slice(start, start + PAGE_SIZE)
-  }, [filtered, page])
+  }, [filtered, safePage])
 
   const activos = rows.filter((r) => r.activo).length
   const ctcCount = rows.filter((r) => r.catalogo_origen === 'ctc').length
+  const hasFilters = search.trim() !== '' || provinciaFiltro !== '' || filtro !== 'activos'
 
   return (
     <div className="space-y-6">
@@ -162,16 +185,16 @@ export function EnviosPage() {
             type="search"
             placeholder="Buscar por empresa, dirección o zonas de envío…"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-brand-border-strong bg-brand-surface py-2 pl-9 pr-3 text-sm text-brand-ink outline-none transition placeholder:text-brand-ink-faint focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50"
+            onChange={(e) => updateFilters({ q: e.target.value, page: 1 })}
+            className="w-full rounded-xl border border-brand-border bg-brand-surface py-2.5 pl-9 pr-3 text-sm text-brand-ink outline-none transition placeholder:text-brand-ink-faint focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50"
           />
         </div>
         <label className="flex min-w-0 items-center gap-2 lg:w-64">
           <IconMapPin size={16} stroke={1.5} className="shrink-0 text-brand-ink-faint" aria-hidden />
           <select
             value={provinciaFiltro}
-            onChange={(e) => setProvinciaFiltro(e.target.value)}
-            className="w-full rounded-lg border border-brand-border-strong bg-brand-surface px-3 py-2 text-sm text-brand-ink outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50"
+            onChange={(e) => updateFilters({ provincia: e.target.value, page: 1 })}
+            className="w-full rounded-xl border border-brand-border bg-brand-surface px-3 py-2.5 text-sm text-brand-ink outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50"
           >
             <option value="">Todas las provincias</option>
             {PROVINCIAS_ARGENTINA.map((p) => (
@@ -181,12 +204,12 @@ export function EnviosPage() {
             ))}
           </select>
         </label>
-        <div className="flex overflow-hidden rounded-lg border border-brand-border bg-brand-canvas text-sm font-medium">
+        <div className="flex overflow-hidden rounded-xl border border-brand-border bg-brand-canvas text-sm font-medium shadow-sm">
           {(['activos', 'todos', 'inactivos'] as FiltroActivo[]).map((f) => (
             <button
               key={f}
               type="button"
-              onClick={() => setFiltro(f)}
+              onClick={() => updateFilters({ estado: f, page: 1 })}
               className={`px-4 py-2 transition capitalize ${
                 filtro === f
                   ? 'bg-brand-primary text-white'
@@ -197,6 +220,16 @@ export function EnviosPage() {
             </button>
           ))}
         </div>
+        {hasFilters && (
+          <button
+            type="button"
+            onClick={() => updateFilters({ q: '', provincia: '', estado: 'activos', page: 1 })}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-brand-border bg-brand-canvas px-3 py-2 text-sm text-brand-ink-muted transition hover:bg-brand-primary-ghost hover:text-brand-primary"
+          >
+            <IconX size={14} stroke={2} aria-hidden />
+            Limpiar
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -229,7 +262,7 @@ export function EnviosPage() {
           )}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/4">
+        <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/4">
           <ul className="divide-y divide-brand-border-subtle">
             {pageRows.map((r) => (
               <li key={r.id} className="flex flex-col gap-3 px-5 py-4 transition hover:bg-[#faf9fb] sm:flex-row sm:items-center sm:gap-4">
@@ -320,11 +353,11 @@ export function EnviosPage() {
           {totalPages > 1 && (
             <div className="px-5 pb-5">
               <SimplePagination
-                page={page}
+                page={safePage}
                 totalPages={totalPages}
                 totalItems={filtered.length}
                 pageSize={PAGE_SIZE}
-                onPageChange={setPage}
+                onPageChange={(nextPage) => updateFilters({ page: nextPage })}
                 ariaLabel="Paginación de direcciones de envío"
               />
             </div>

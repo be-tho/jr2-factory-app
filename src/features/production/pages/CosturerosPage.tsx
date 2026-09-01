@@ -11,7 +11,7 @@ import {
   IconX,
 } from '@tabler/icons-react'
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   flexRender,
   useReactTable,
@@ -95,10 +95,24 @@ export function CosturerosPage() {
   const { data: costureros = [], isPending: loading } = useCosturerosQuery()
   const deleteMutation = useDeleteCostureroMutation()
   const toggleMutation = useToggleCostureroActivoMutation()
+  const [searchParams, setSearchParams] = useSearchParams()
 
-  const [search, setSearch] = useState('')
-  const [filtro, setFiltro] = useState<FiltroActivo>('activos')
+  const search = searchParams.get('q') ?? ''
+  const filtro = (searchParams.get('estado') as FiltroActivo) ?? 'activos'
   const [deleteTarget, setDeleteTarget] = useState<Costurero | null>(null)
+
+  const updateFilters = (next: Partial<{ q: string; estado: FiltroActivo }>) => {
+    const params = new URLSearchParams(searchParams)
+    const nextSearch = next.q ?? search
+    if (nextSearch.trim()) params.set('q', nextSearch.trim())
+    else params.delete('q')
+
+    const nextEstado = next.estado ?? filtro
+    if (nextEstado === 'activos') params.delete('estado')
+    else params.set('estado', nextEstado)
+
+    setSearchParams(params, { replace: true })
+  }
 
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState('')
@@ -362,7 +376,7 @@ export function CosturerosPage() {
             type="search"
             placeholder="Buscar por nombre, documento o teléfono…"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => updateFilters({ q: e.target.value })}
             className="w-full rounded-lg border border-brand-border-strong bg-brand-surface py-2 pl-9 pr-3 text-sm text-brand-ink outline-none transition placeholder:text-brand-ink-faint focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50"
           />
         </div>
@@ -371,7 +385,7 @@ export function CosturerosPage() {
             <button
               key={f}
               type="button"
-              onClick={() => setFiltro(f)}
+              onClick={() => updateFilters({ estado: f })}
               className={`px-4 py-2 transition capitalize ${
                 filtro === f
                   ? 'bg-brand-primary text-white'

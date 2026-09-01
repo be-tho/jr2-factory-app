@@ -8,10 +8,11 @@ import {
   IconSearch,
   IconX,
 } from '@tabler/icons-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { StatCard } from '../../../components/ui/StatCard'
 import { ic } from '../../../lib/tabler'
+import { useListFilters } from '../../../hooks/useListFilters'
 import { usePatronesQuery } from '../hooks/usePatrones'
 import { PatronCard } from '../components/PatronCard'
 import type { Patron } from '../../../types/database'
@@ -110,21 +111,15 @@ function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) 
 export function PatronesPage() {
   const { data: patrones = [], isPending: loading, isError, error, refetch } = usePatronesQuery()
   const errorMessage = isError && error instanceof Error ? error.message : null
+  const { search, page, updateFilters } = useListFilters()
 
-  const [query, setQuery] = useState('')
-  const [currentPage, setCurrentPage] = useState(1)
-
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [query])
-
-  const filtered = useMemo(() => filterPatrones(patrones, query), [patrones, query])
+  const filtered = useMemo(() => filterPatrones(patrones, search), [patrones, search])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const safePage = Math.min(currentPage, totalPages)
-  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+  const safePage = Math.min(page, totalPages)
 
-  const hasFilters = query.trim() !== ''
+  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+  const hasFilters = search.trim() !== ''
 
   return (
     <div className="space-y-6">
@@ -175,8 +170,8 @@ export function PatronesPage() {
             />
             <input
               type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              value={search}
+              onChange={(e) => updateFilters({ q: e.target.value })}
               placeholder="Buscar por nombre, artículo, código o archivo…"
               className="w-full rounded-lg border border-[#e8e4f0] bg-[#f8f7fa] py-2 pl-9 pr-3 text-sm text-[#3d3b4f] outline-none transition placeholder:text-[#b9b6c3] focus:border-brand-primary focus:bg-white focus:ring-2 focus:ring-brand-blush/50"
             />
@@ -184,7 +179,7 @@ export function PatronesPage() {
           {hasFilters && (
             <button
               type="button"
-              onClick={() => setQuery('')}
+              onClick={() => updateFilters({ q: '', page: 1 })}
               className="inline-flex items-center gap-1.5 rounded-lg border border-[#e8e4f0] px-3 py-2 text-sm text-[#6e6b7b] transition hover:bg-[#f8f7fa] hover:text-[#3d3b4f]"
             >
               <IconX size={14} stroke={2} aria-hidden />
@@ -245,7 +240,7 @@ export function PatronesPage() {
           <p className="text-sm text-[#6e6b7b]">Ningún patrón coincide con la búsqueda.</p>
           <button
             type="button"
-            onClick={() => setQuery('')}
+            onClick={() => updateFilters({ q: '', page: 1 })}
             className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-[#e8e4f0] px-3 py-1.5 text-sm text-[#6e6b7b] transition hover:text-[#3d3b4f]"
           >
             <IconX size={14} stroke={2} aria-hidden />
@@ -280,7 +275,7 @@ export function PatronesPage() {
             <Pagination
               currentPage={safePage}
               totalPages={totalPages}
-              onPageChange={setCurrentPage}
+              onPageChange={(page) => updateFilters({ page })}
             />
           )}
         </>

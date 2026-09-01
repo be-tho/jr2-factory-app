@@ -1,9 +1,10 @@
 import { IconClipboardList, IconHistory, IconReceipt, IconSearch, IconTrash } from '@tabler/icons-react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { SimplePagination } from '../../../components/ui/SimplePagination'
 import { ic } from '../../../lib/tabler'
+import { useListFilters } from '../../../hooks/useListFilters'
 import type { OrdenVentaEstado, OrdenVentaRow } from '../../../types/database'
 import { OrdenDeleteConfirmDialog } from '../components/OrdenDeleteConfirmDialog'
 import { formatARS } from '../lib/pricing'
@@ -38,9 +39,8 @@ export function VentasOrdenesListPage({ estado }: VentasOrdenesListPageProps) {
   const reduceMotion = useReducedMotion()
   const { data: rows = [], isPending: loading } = useOrdenesVentaListQuery(estado)
   const deleteMutation = useDeleteOrdenVentaPendienteMutation()
-  const [search, setSearch] = useState('')
-  const [page, setPage] = useState(1)
   const [deleteTarget, setDeleteTarget] = useState<OrdenVentaRow | null>(null)
+  const { search, page, updateFilters } = useListFilters()
 
   const historial = estado === 'pagado'
 
@@ -55,19 +55,12 @@ export function VentasOrdenesListPage({ estado }: VentasOrdenesListPageProps) {
   }, [rows, search])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-
-  useEffect(() => {
-    setPage(1)
-  }, [search])
-
-  useEffect(() => {
-    setPage((p) => Math.min(p, totalPages))
-  }, [totalPages])
+  const safePage = Math.min(page, totalPages)
 
   const pageRows = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE
+    const start = (safePage - 1) * PAGE_SIZE
     return filtered.slice(start, start + PAGE_SIZE)
-  }, [filtered, page])
+  }, [filtered, safePage])
 
   const title = historial ? 'Historial de ventas' : 'Órdenes de venta'
   const subtitle = historial
@@ -123,7 +116,7 @@ export function VentasOrdenesListPage({ estado }: VentasOrdenesListPageProps) {
             id="ordenes-buscar"
             type="search"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => updateFilters({ q: e.target.value, page: 1 })}
             placeholder="Nombre del cliente…"
             className="w-full rounded-2xl border-2 border-brand-border bg-brand-surface py-3 pl-11 pr-4 text-sm text-brand-ink shadow-sm outline-none transition placeholder:text-brand-ink-faint focus:border-brand-primary focus:ring-4 focus:ring-brand-blush/35"
             autoComplete="off"
@@ -212,11 +205,11 @@ export function VentasOrdenesListPage({ estado }: VentasOrdenesListPageProps) {
 
             {totalPages > 1 && (
               <SimplePagination
-                page={page}
+                page={safePage}
                 totalPages={totalPages}
                 totalItems={filtered.length}
                 pageSize={PAGE_SIZE}
-                onPageChange={setPage}
+                onPageChange={(nextPage) => updateFilters({ page: nextPage })}
                 ariaLabel={historial ? 'Paginación historial de ventas' : 'Paginación de órdenes'}
               />
             )}
