@@ -66,11 +66,15 @@ function DetailSkeleton() {
 // ── Back button ───────────────────────────────────────────────────────────────
 function BackButton() {
   const location = useLocation()
-  const listSearch = (location.state as { listSearch?: string } | null)?.listSearch
+  const routeState = location.state as { listSearch?: string; fromList?: string } | null
+  const listSearch = routeState?.listSearch
+  const fromList = routeState?.fromList
+
+  const targetUrl = fromList ?? (listSearch ? articulosListPath(listSearch) : articulosListPath())
 
   return (
     <Link
-      to={articulosListPath(listSearch)}
+      to={targetUrl}
       className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-[#6e6b7b] transition hover:bg-white hover:text-[#3d3b4f] hover:shadow-sm"
     >
       <IconArrowLeft size={16} stroke={1.5} className="shrink-0" aria-hidden />

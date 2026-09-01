@@ -1,4 +1,6 @@
 export type EstadoFilter = 'todos' | 'activo' | 'inactivo'
+export type ArticulosSortMode = 'codigo' | 'creacion'
+export type ArticulosSortDirection = 'asc' | 'desc'
 
 export type ArticulosListFilters = {
   query: string
@@ -6,12 +8,16 @@ export type ArticulosListFilters = {
   estado: EstadoFilter
   temporada: string
   page: number
+  sortMode: ArticulosSortMode
+  sortDirection: ArticulosSortDirection
 }
 
 export function parseArticulosListSearch(search: string): ArticulosListFilters {
   const params = new URLSearchParams(search)
   const estado = params.get('estado')
   const pageRaw = Number.parseInt(params.get('page') ?? '1', 10)
+  const sortMode = params.get('sort') === 'creacion' ? 'creacion' : 'codigo'
+  const sortDirection = params.get('dir') === 'asc' ? 'asc' : 'desc'
 
   return {
     query: params.get('q') ?? '',
@@ -19,6 +25,8 @@ export function parseArticulosListSearch(search: string): ArticulosListFilters {
     estado: estado === 'activo' || estado === 'inactivo' ? estado : 'todos',
     temporada: params.get('temporada') ?? '',
     page: Number.isFinite(pageRaw) && pageRaw > 0 ? pageRaw : 1,
+    sortMode,
+    sortDirection,
   }
 }
 
@@ -30,6 +38,8 @@ export function buildArticulosListSearch(filters: ArticulosListFilters): string 
   if (filters.categoria) params.set('categoria', filters.categoria)
   if (filters.estado !== 'todos') params.set('estado', filters.estado)
   if (filters.temporada) params.set('temporada', filters.temporada)
+  params.set('sort', filters.sortMode)
+  params.set('dir', filters.sortDirection)
   if (filters.page > 1) params.set('page', String(filters.page))
 
   return params.toString()

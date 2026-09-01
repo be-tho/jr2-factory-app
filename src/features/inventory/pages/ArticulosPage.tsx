@@ -8,7 +8,7 @@ import {
   IconTag,
   IconX,
 } from '@tabler/icons-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
   useReactTable,
@@ -29,7 +29,7 @@ import { ArticuloCard } from '../components/ArticuloCard'
 import {
   buildArticulosListSearch,
   parseArticulosListSearch,
-  type EstadoFilter,
+  type ArticulosListFilters,
 } from '../lib/articulosListFilters'
 
 const PAGE_SIZE = 12
@@ -38,99 +38,61 @@ export function ArticulosPage() {
   const { data: articles = [], isPending: loading, isError, error, refetch } = useProductsQuery()
   const errorMessage = isError && error instanceof Error ? error.message : null
   const [searchParams, setSearchParams] = useSearchParams()
-  const initialFilters = useMemo(
-    () => parseArticulosListSearch(searchParams.toString()),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only read URL on first mount
-    [],
-  )
+  const filters = useMemo(() => parseArticulosListSearch(searchParams.toString()), [searchParams])
+  const {
+    query,
+    categoria: categoriaFilter,
+    estado: estadoFilter,
+    temporada: temporadaFilter,
+    page,
+    sortMode,
+    sortDirection,
+  } = filters
 
-  const [query, setQuery] = useState(initialFilters.query)
-  const [categoriaFilter, setCategoriaFilter] = useState(initialFilters.categoria)
-  const [estadoFilter, setEstadoFilter] = useState<EstadoFilter>(initialFilters.estado)
-  const [temporadaFilter, setTemporadaFilter] = useState(initialFilters.temporada)
-  const [sortDescending, setSortDescending] = useState(true)
+  const updateFilters = (next: Partial<ArticulosListFilters>) => {
+    const merged: ArticulosListFilters = {
+      query: filters.query,
+      categoria: filters.categoria,
+      estado: filters.estado,
+      temporada: filters.temporada,
+      page: filters.page,
+      sortMode: filters.sortMode,
+      sortDirection: filters.sortDirection,
+      ...next,
+    }
 
-  const [sorting, setSorting] = useState<SortingState>([])
-  const [globalFilter, setGlobalFilter] = useState(initialFilters.query)
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: initialFilters.page - 1,
+    const nextSearch = buildArticulosListSearch(merged)
+    setSearchParams(nextSearch ? nextSearch : {}, { replace: true })
+  }
+
+  const pagination: PaginationState = {
+    pageIndex: Math.max(page - 1, 0),
     pageSize: PAGE_SIZE,
-  })
-
-  useEffect(() => {
-    setGlobalFilter(query)
-  }, [query])
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      const nextSearch = buildArticulosListSearch({
-        query,
-        categoria: categoriaFilter,
-        estado: estadoFilter,
-        temporada: temporadaFilter,
-        page: pagination.pageIndex + 1,
-      })
-
-      setSearchParams(nextSearch ? nextSearch : {}, { replace: true })
-    }, 350)
-
-    return () => window.clearTimeout(timeoutId)
-  }, [query, categoriaFilter, estadoFilter, temporadaFilter, pagination.pageIndex, setSearchParams])
+  }
 
   const listSearch = buildArticulosListSearch({
     query,
     categoria: categoriaFilter,
     estado: estadoFilter,
     temporada: temporadaFilter,
-    page: pagination.pageIndex + 1,
+    page,
+    sortMode,
+    sortDirection,
   })
 
-  useEffect(() => {
-    if (categoriaFilter) {
-      setColumnFilters((prev) => {
-        const existing = prev.find((f) => f.id === 'categoria_id')
-        if (existing) {
-          return prev.map((f) => f.id === 'categoria_id' ? { id: 'categoria_id', value: categoriaFilter } : f)
-        } else {
-          return [...prev, { id: 'categoria_id', value: categoriaFilter }]
-        }
-      })
-    } else {
-      setColumnFilters((prev) => prev.filter((f) => f.id !== 'categoria_id'))
-    }
-  }, [categoriaFilter])
+  const sorting = useMemo<SortingState>(() => [], [])
+  const setSorting = () => undefined
+  const globalFilter = query
+  const setGlobalFilter = (value: string) => updateFilters({ query: value, page: 1 })
+  const columnFilters = useMemo<ColumnFiltersState>(() => {
+    const next: ColumnFiltersState = []
 
-  useEffect(() => {
-    if (estadoFilter === 'todos') {
-      setColumnFilters((prev) => prev.filter((f) => f.id !== 'activo'))
-    } else {
-      const isActive = estadoFilter === 'activo'
-      setColumnFilters((prev) => {
-        const existing = prev.find((f) => f.id === 'activo')
-        if (existing) {
-          return prev.map((f) => f.id === 'activo' ? { id: 'activo', value: isActive } : f)
-        } else {
-          return [...prev, { id: 'activo', value: isActive }]
-        }
-      })
-    }
-  }, [estadoFilter])
+    if (categoriaFilter) next.push({ id: 'categoria_id', value: categoriaFilter })
+    if (estadoFilter !== 'todos') next.push({ id: 'activo', value: estadoFilter === 'activo' })
+    if (temporadaFilter) next.push({ id: 'temporada_id', value: temporadaFilter })
 
-  useEffect(() => {
-    if (temporadaFilter) {
-      setColumnFilters((prev) => {
-        const existing = prev.find((f) => f.id === 'temporada_id')
-        if (existing) {
-          return prev.map((f) => f.id === 'temporada_id' ? { id: 'temporada_id', value: temporadaFilter } : f)
-        } else {
-          return [...prev, { id: 'temporada_id', value: temporadaFilter }]
-        }
-      })
-    } else {
-      setColumnFilters((prev) => prev.filter((f) => f.id !== 'temporada_id'))
-    }
-  }, [temporadaFilter])
+    return next
+  }, [categoriaFilter, estadoFilter, temporadaFilter])
 
   const activeCount = articles.filter((a) => a.activo).length
   const noStockCount = articles.filter((a) => a.stock_actual === 0).length
@@ -153,26 +115,28 @@ export function ArticulosPage() {
 
   const sortedArticles = useMemo(() => {
     return [...articles].sort((a, b) => {
+      if (sortMode === 'creacion') {
+        const timeA = new Date(a.created_at).getTime()
+        const timeB = new Date(b.created_at).getTime()
+        return sortDirection === 'asc' ? timeA - timeB : timeB - timeA
+      }
+
       const numA = getCodigoNumber(a.codigo)
       const numB = getCodigoNumber(b.codigo)
-      return sortDescending ? numB - numA : numA - numB
+      return sortDirection === 'asc' ? numA - numB : numB - numA
     })
-  }, [articles, sortDescending])
+  }, [articles, sortDirection, sortMode])
 
   const hasFilters = query.trim() !== '' || categoriaFilter !== '' || estadoFilter !== 'todos' || temporadaFilter !== ''
 
-  function resetPage() {
-    setPagination((prev) => (prev.pageIndex === 0 ? prev : { ...prev, pageIndex: 0 }))
-  }
-
   function clearFilters() {
-    setQuery('')
-    setCategoriaFilter('')
-    setEstadoFilter('todos')
-    setTemporadaFilter('')
-    setColumnFilters([])
-    setGlobalFilter('')
-    resetPage()
+    updateFilters({
+      query: '',
+      categoria: '',
+      estado: 'todos',
+      temporada: '',
+      page: 1,
+    })
   }
 
   // Función para extraer número del código (ART-12345 -> 12345)
@@ -251,8 +215,8 @@ export function ArticulosPage() {
     },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
-    onColumnFiltersChange: setColumnFilters,
-    onPaginationChange: setPagination,
+    onColumnFiltersChange: () => undefined,
+    onPaginationChange: () => undefined,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -326,10 +290,7 @@ export function ArticulosPage() {
             <input
               type="search"
               value={query}
-              onChange={(e) => {
-                setQuery(e.target.value)
-                resetPage()
-              }}
+              onChange={(e) => updateFilters({ query: e.target.value, page: 1 })}
               placeholder="Buscar por nombre, código, categoría o temporada…"
               className="w-full rounded-lg border border-brand-border bg-brand-canvas py-2 pl-9 pr-3 text-sm text-brand-ink outline-none transition placeholder:text-brand-ink-muted focus:border-brand-primary focus:bg-brand-surface focus:ring-2 focus:ring-brand-blush/50"
             />
@@ -338,10 +299,7 @@ export function ArticulosPage() {
           <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center lg:flex-wrap">
             <select
               value={categoriaFilter}
-              onChange={(e) => {
-                setCategoriaFilter(e.target.value)
-                resetPage()
-              }}
+              onChange={(e) => updateFilters({ categoria: e.target.value, page: 1 })}
               className="w-full min-w-0 rounded-lg border border-brand-border bg-brand-canvas px-3 py-2 text-sm text-brand-ink outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50 lg:w-44 lg:shrink-0"
             >
               <option value="">Todas las categorías</option>
@@ -354,10 +312,7 @@ export function ArticulosPage() {
 
             <select
               value={temporadaFilter}
-              onChange={(e) => {
-                setTemporadaFilter(e.target.value)
-                resetPage()
-              }}
+              onChange={(e) => updateFilters({ temporada: e.target.value, page: 1 })}
               className="w-full min-w-0 rounded-lg border border-brand-border bg-brand-canvas px-3 py-2 text-sm text-brand-ink outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50 lg:w-44 lg:shrink-0"
             >
               <option value="">Todas las temporadas</option>
@@ -368,25 +323,59 @@ export function ArticulosPage() {
               ))}
             </select>
 
-            <button
-              type="button"
-              onClick={() => setSortDescending(!sortDescending)}
-              className="inline-flex shrink-0 items-center justify-center rounded-lg border border-brand-border bg-brand-canvas px-3 py-2 text-sm text-brand-ink-muted transition hover:bg-brand-primary hover:text-white hover:border-brand-primary"
-              aria-label={sortDescending ? 'Ordenar ascendente' : 'Ordenar descendente'}
-              title={sortDescending ? 'Ordenar ascendente' : 'Ordenar descendente'}
-            >
-              {sortDescending ? '↓' : '↑'}
-            </button>
+            <div className="flex min-w-0 items-center gap-2 rounded-lg border border-brand-border bg-brand-canvas px-2 py-1.5 lg:shrink-0">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-brand-ink-faint">Orden</span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextDirection = sortMode === 'codigo' && sortDirection === 'asc' ? 'desc' : 'asc'
+                    updateFilters({
+                      sortMode: 'codigo',
+                      sortDirection: nextDirection,
+                      page: 1,
+                    })
+                  }}
+                  className={`inline-flex shrink-0 items-center justify-center rounded-md border px-2.5 py-1.5 text-xs font-medium transition ${
+                    sortMode === 'codigo'
+                      ? 'border-brand-primary bg-brand-primary text-white shadow-sm'
+                      : 'border-brand-border bg-brand-canvas text-brand-ink-muted hover:border-brand-primary hover:text-brand-ink'
+                  }`}
+                  aria-label={sortMode === 'codigo' ? `Ordenar código ${sortDirection === 'asc' ? 'descendente' : 'ascendente'}` : 'Ordenar por código'}
+                  title={sortMode === 'codigo' ? `Ordenar código ${sortDirection === 'asc' ? 'descendente' : 'ascendente'}` : 'Ordenar por código'}
+                >
+                  {sortMode === 'codigo' ? (sortDirection === 'asc' ? 'Código ↑' : 'Código ↓') : 'Código'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextDirection = sortMode === 'creacion' && sortDirection === 'asc' ? 'desc' : 'asc'
+                    updateFilters({
+                      sortMode: 'creacion',
+                      sortDirection: nextDirection,
+                      page: 1,
+                    })
+                  }}
+                  className={`inline-flex shrink-0 items-center justify-center rounded-md border px-2.5 py-1.5 text-xs font-medium transition ${
+                    sortMode === 'creacion'
+                      ? 'border-brand-primary bg-brand-primary text-white shadow-sm'
+                      : 'border-brand-border bg-brand-canvas text-brand-ink-muted hover:border-brand-primary hover:text-brand-ink'
+                  }`}
+                  aria-label={sortMode === 'creacion' ? `Ordenar por ID de creación ${sortDirection === 'asc' ? 'descendente' : 'ascendente'}` : 'Ordenar por ID de creación'}
+                  title={sortMode === 'creacion' ? `Ordenar por ID de creación ${sortDirection === 'asc' ? 'descendente' : 'ascendente'}` : 'Ordenar por ID de creación'}
+                >
+                  {sortMode === 'creacion' ? (sortDirection === 'asc' ? 'ID creación ↑' : 'ID creación ↓') : 'ID creación'}
+                </button>
+              </div>
+            </div>
 
             <div className="grid min-w-0 grid-cols-3 gap-1 rounded-lg border border-brand-border bg-brand-canvas p-1 lg:shrink-0">
               {(['todos', 'activo', 'inactivo'] as const).map((op) => (
                 <button
                   key={op}
                   type="button"
-                  onClick={() => {
-                    setEstadoFilter(op)
-                    resetPage()
-                  }}
+                  onClick={() => updateFilters({ estado: op, page: 1 })}
                   className={`rounded-md px-2 py-1.5 text-sm font-medium transition sm:px-3 ${
                     estadoFilter === op
                       ? 'bg-brand-primary text-white shadow-sm'
@@ -505,7 +494,7 @@ export function ArticulosPage() {
               totalPages={table.getPageCount()}
               totalItems={table.getFilteredRowModel().rows.length}
               pageSize={PAGE_SIZE}
-              onPageChange={(newPage) => table.setPageIndex(newPage - 1)}
+              onPageChange={(newPage) => updateFilters({ page: newPage })}
               ariaLabel="Paginación de artículos"
             />
           )}

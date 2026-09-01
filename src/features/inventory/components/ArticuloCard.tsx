@@ -48,6 +48,9 @@ export function ArticuloCard({ product, listSearch }: ArticuloCardProps) {
   const coverSrc = hasFile
     ? getProductImagePublicUrl(storagePath)
     : DEFAULT_ARTICLE_IMAGE_PUBLIC_URL
+  const currentListUrl = typeof window !== 'undefined'
+    ? `${window.location.pathname}${window.location.search}`
+    : '/inventario/articulos'
 
   const imgRef = useRef<HTMLImageElement>(null)
   const [imgLoaded, setImgLoaded] = useState(false)
@@ -64,7 +67,10 @@ export function ArticuloCard({ product, listSearch }: ArticuloCardProps) {
   return (
     <Link
       to={`/inventario/articulos/${product.id}`}
-      state={listSearch ? { listSearch } : undefined}
+      state={{
+        listSearch: listSearch ? listSearch : undefined,
+        fromList: currentListUrl,
+      }}
       className="group relative flex flex-col overflow-hidden rounded-2xl bg-brand-surface ring-1 ring-brand-border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-brand-ink/8 hover:ring-brand-blush-deep"
     >
       {/* Inactive overlay indicator */}
