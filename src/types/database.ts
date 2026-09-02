@@ -1,4 +1,4 @@
-export type AppRole = 'admin' | 'ventas' | 'produccion' | 'inventario'
+export type AppRole = 'admin' | 'gerente' | 'ventas' | 'produccion' | 'inventario'
 
 /** `public.profiles` — extiende auth.users con datos del usuario. */
 export interface Profile {

@@ -1,3 +1,4 @@
+import { assertInventoryWriteAccess } from '../../../lib/auth/inventoryAccess'
 import { supabase } from '../../../lib/supabase/client'
 import type { ProductImage } from '../../../types/database'
 
@@ -24,6 +25,15 @@ export async function createArticuloImagen(input: {
   orden: number
   alt_text?: string | null
 }): Promise<{ data: ProductImage | null; error: Error | null }> {
+  try {
+    await assertInventoryWriteAccess()
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error : new Error('No tenés permisos para gestionar imágenes.'),
+    }
+  }
+
   const { data, error } = await supabase
     .from(TABLE)
     .insert({
@@ -41,6 +51,12 @@ export async function createArticuloImagen(input: {
 }
 
 export async function deleteArticuloImagen(id: string): Promise<{ error: Error | null }> {
+  try {
+    await assertInventoryWriteAccess()
+  } catch (error) {
+    return { error: error instanceof Error ? error : new Error('No tenés permisos para gestionar imágenes.') }
+  }
+
   const { error } = await supabase.from(TABLE).delete().eq('id', id)
   if (error) return { error: new Error(error.message) }
   return { error: null }
@@ -50,6 +66,12 @@ export async function updateArticuloImagenStoragePath(
   imagenId: string,
   storage_path: string
 ): Promise<{ error: Error | null }> {
+  try {
+    await assertInventoryWriteAccess()
+  } catch (error) {
+    return { error: error instanceof Error ? error : new Error('No tenés permisos para gestionar imágenes.') }
+  }
+
   const { error } = await supabase.from(TABLE).update({ storage_path }).eq('id', imagenId)
   if (error) return { error: new Error(error.message) }
   return { error: null }

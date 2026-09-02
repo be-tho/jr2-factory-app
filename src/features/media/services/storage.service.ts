@@ -2,6 +2,7 @@ import {
   DEFAULT_ARTICLE_IMAGE_PUBLIC_URL,
   DEFAULT_ARTICLE_STORAGE_FILE_NAME,
 } from '../../../constants/defaultArticleImage'
+import { assertInventoryWriteAccess } from '../../../lib/auth/inventoryAccess'
 import { supabase } from '../../../lib/supabase/client'
 
 /** Bucket en Supabase Storage (equivalente al segmento `products` en `products/images/...`). */
@@ -153,6 +154,8 @@ export async function prepareDefaultArticleFileForStorage(file: File): Promise<F
 
 /** Sube el placeholder con nombre fijo (permite reemplazar si ya existía). */
 export async function uploadDefaultArticlePlaceholder(articuloId: string, file: File) {
+  await assertInventoryWriteAccess()
+
   const toUpload = await prepareDefaultArticleFileForStorage(file)
   const path = buildDefaultArticleStoragePath(articuloId)
   const { data, error } = await supabase.storage.from(PRODUCTS_BUCKET).upload(path, toUpload, {
@@ -186,6 +189,8 @@ export function validateImageFile(file: File): string | null {
  * Requiere bucket `products` y políticas RLS que permitan `insert` al usuario autenticado.
  */
 export async function uploadProductImage(articuloId: string, file: File) {
+  await assertInventoryWriteAccess()
+
   const err = validateImageFile(file)
   if (err) throw new Error(err)
 
@@ -210,6 +215,8 @@ export function getProductImagePublicUrl(storagePath: string) {
 }
 
 export async function removeProductImage(storagePath: string) {
+  await assertInventoryWriteAccess()
+
   const { error } = await supabase.storage.from(PRODUCTS_BUCKET).remove([storagePath])
   if (error) throw error
 }

@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabase/client'
+import { assertInventoryWriteAccess } from '../../../lib/auth/inventoryAccess'
 import type { ArticuloQueryRow, Product } from '../../../types/database'
 import { removeProductImage } from '../../media/services/storage.service'
 
@@ -173,6 +174,12 @@ export type NewProductInput = {
 }
 
 export async function createProduct(input: NewProductInput): Promise<{ data: Product | null; error: Error | null }> {
+  try {
+    await assertInventoryWriteAccess()
+  } catch (error) {
+    return { data: null, error: error instanceof Error ? error : new Error('No tenés permisos para gestionar artículos.') }
+  }
+
   const slug = `${slugify(input.nombre)}-${slugify(input.codigo)}`.slice(0, 200)
   const promo =
     input.precio_promocional != null && Number.isFinite(input.precio_promocional)
@@ -208,6 +215,12 @@ export async function updateProduct(
   id: string,
   input: UpdateProductInput
 ): Promise<{ data: Product | null; error: Error | null }> {
+  try {
+    await assertInventoryWriteAccess()
+  } catch (error) {
+    return { data: null, error: error instanceof Error ? error : new Error('No tenés permisos para gestionar artículos.') }
+  }
+
   const slug = `${slugify(input.nombre)}-${slugify(input.codigo)}`.slice(0, 200)
   const promo =
     input.precio_promocional != null && Number.isFinite(input.precio_promocional)
@@ -242,6 +255,12 @@ export async function updateProduct(
  * (El esquema SQL no garantiza ON DELETE CASCADE en Storage; se limpia desde el cliente.)
  */
 export async function deleteProduct(id: string): Promise<{ error: Error | null }> {
+  try {
+    await assertInventoryWriteAccess()
+  } catch (error) {
+    return { error: error instanceof Error ? error : new Error('No tenés permisos para gestionar artículos.') }
+  }
+
   const { data: imagenes, error: listErr } = await supabase
     .from('articulo_imagenes')
     .select('storage_path')
