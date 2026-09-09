@@ -13,12 +13,12 @@ function readIdleSessionMs(): number {
   if (Number.isFinite(n) && n > 0) {
     return n
   }
-  return 30 * 60 * 1000
+  return 2 * 60 * 60 * 1000
 }
 
 /**
  * Cierra solo la sesión local tras un período sin interacción (útil en PCs compartidos).
- * Configuración: `VITE_IDLE_SESSION_MS` (ej. `900000` = 15 min). `0` desactiva.
+ * Configuración: `VITE_IDLE_SESSION_MS` (ej. `7200000` = 2 hs). `0` desactiva.
  */
 export function useIdleSessionTimeout(enabled: boolean): void {
   const idleMs = readIdleSessionMs()

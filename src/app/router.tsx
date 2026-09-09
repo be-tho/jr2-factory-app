@@ -11,6 +11,7 @@ const ROUTE_TITLES: Array<{ pattern: RegExp | string; title: string }> = [
   { pattern: '/recuperar-password', title: 'Recuperar password' },
   { pattern: '/actualizar-password', title: 'Actualizar password' },
   { pattern: '/dashboard', title: 'Dashboard' },
+  { pattern: '/descanso', title: 'Descanso' },
   { pattern: /^\/produccion\/cortes\/[^/]+\/editar$/, title: 'Editar Corte' },
   { pattern: /^\/produccion\/cortes\/[^/]+$/, title: 'Detalle Corte' },
   { pattern: '/produccion/cortes/nuevo', title: 'Nuevo Corte' },
@@ -71,6 +72,9 @@ const CuentaPage = lazy(() =>
 )
 const DashboardPage = lazy(() =>
   import('../features/dashboard/pages/DashboardPage').then((m) => ({ default: m.DashboardPage })),
+)
+const DescansoPage = lazy(() =>
+  import('../features/rest/pages/DescansoPage').then((m) => ({ default: m.DescansoPage })),
 )
 const LoginPage = lazy(() =>
   import('../features/auth/pages/LoginPage').then((m) => ({ default: m.LoginPage })),
@@ -208,6 +212,7 @@ export function AppRouter() {
         <Route element={<ProtectedRoute />}>
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/descanso" element={<DescansoPage />} />
             <Route path="/produccion/cortes" element={<CortesPage />} />
             <Route path="/produccion/cortes/nuevo" element={<NuevoCortePage />} />
             <Route path="/produccion/cortes/:id" element={<CorteDetailPage />} />

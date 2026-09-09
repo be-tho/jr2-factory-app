@@ -4,6 +4,7 @@ import {
   IconBuildingFactory2,
   IconCalendar,
   IconChevronDown,
+  IconClockHour3,
   IconClipboardList,
   IconCreditCard,
   IconHistory,
@@ -98,6 +99,11 @@ const SidebarNav = memo(function SidebarNav({ onNavigate }: NavBlockProps) {
       <NavLink to="/dashboard" end className={itemClass} onClick={onNavigate}>
         <IconLayoutDashboard {...ic.nav} aria-hidden />
         Dashboard
+      </NavLink>
+
+      <NavLink to="/descanso" className={itemClass} onClick={onNavigate}>
+        <IconClockHour3 {...ic.nav} aria-hidden />
+        Descanso
       </NavLink>
 
       <div>
