@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   IconBellRinging,
@@ -12,6 +12,64 @@ import {
 import { ic } from '../../../lib/tabler'
 
 const DEFAULT_PRESETS = [10, 15, 30, 45, 60]
+const STORAGE_KEY = 'jr2-descanso-timer-v1'
+
+type BreakTimerState = {
+  selectedMinutes: number
+  customMinutes: string
+  secondsLeft: number
+  isRunning: boolean
+  isCompleted: boolean
+  endAt: number | null
+}
+
+const defaultTimerState: BreakTimerState = {
+  selectedMinutes: 15,
+  customMinutes: '',
+  secondsLeft: 15 * 60,
+  isRunning: false,
+  isCompleted: false,
+  endAt: null,
+}
+
+function readStoredTimer(): BreakTimerState {
+  if (typeof window === 'undefined') {
+    return defaultTimerState
+  }
+
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY)
+    if (!raw) {
+      return defaultTimerState
+    }
+
+    const parsed = JSON.parse(raw) as Partial<BreakTimerState>
+    const nextState: BreakTimerState = {
+      ...defaultTimerState,
+      ...parsed,
+      selectedMinutes: Math.max(1, Number(parsed.selectedMinutes ?? defaultTimerState.selectedMinutes)),
+      customMinutes: String(parsed.customMinutes ?? ''),
+      secondsLeft: Math.max(0, Number(parsed.secondsLeft ?? defaultTimerState.secondsLeft)),
+      isRunning: Boolean(parsed.isRunning),
+      isCompleted: Boolean(parsed.isCompleted),
+      endAt: typeof parsed.endAt === 'number' ? parsed.endAt : null,
+    }
+
+    if (nextState.isRunning && typeof nextState.endAt === 'number') {
+      const remainingSeconds = Math.max(0, Math.ceil((nextState.endAt - Date.now()) / 1000))
+      nextState.secondsLeft = remainingSeconds
+      if (remainingSeconds <= 0) {
+        nextState.isRunning = false
+        nextState.isCompleted = true
+        nextState.endAt = null
+      }
+    }
+
+    return nextState
+  } catch {
+    return defaultTimerState
+  }
+}
 
 function formatTime(totalSeconds: number) {
   const safeSeconds = Math.max(0, totalSeconds)
@@ -76,11 +134,14 @@ function announceBreakFinished(repetitions = 2) {
 }
 
 export function DescansoPage() {
-  const [selectedMinutes, setSelectedMinutes] = useState(15)
-  const [customMinutes, setCustomMinutes] = useState('')
-  const [secondsLeft, setSecondsLeft] = useState(15 * 60)
-  const [isRunning, setIsRunning] = useState(false)
-  const [isCompleted, setIsCompleted] = useState(false)
+  const [timer, setTimer] = useState<BreakTimerState>(() => readStoredTimer())
+  const completionSoundRef = useRef(false)
+
+  const selectedMinutes = timer.selectedMinutes
+  const customMinutes = timer.customMinutes
+  const secondsLeft = timer.secondsLeft
+  const isRunning = timer.isRunning
+  const isCompleted = timer.isCompleted
 
   const totalDurationSeconds = useMemo(() => Math.max(1, selectedMinutes * 60), [selectedMinutes])
   const progress = useMemo(
@@ -89,33 +150,67 @@ export function DescansoPage() {
   )
 
   useEffect(() => {
-    if (!isRunning) {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(timer))
+    }
+  }, [timer])
+
+  useEffect(() => {
+    if (!isRunning || typeof timer.endAt !== 'number') {
       return undefined
     }
 
-    const timerId = window.setInterval(() => {
-      setSecondsLeft((current) => {
-        if (current <= 1) {
-          window.clearInterval(timerId)
-          setIsRunning(false)
-          setIsCompleted(true)
-          playCompletionAlert(2)
-          announceBreakFinished(2)
-          return 0
+    const tick = () => {
+      setTimer((current) => {
+        if (!current.isRunning || typeof current.endAt !== 'number') {
+          return current
         }
 
-        return current - 1
-      })
-    }, 1000)
+        const remainingSeconds = Math.max(0, Math.ceil((current.endAt - Date.now()) / 1000))
 
+        if (remainingSeconds <= 0) {
+          return {
+            ...current,
+            secondsLeft: 0,
+            isRunning: false,
+            isCompleted: true,
+            endAt: null,
+          }
+        }
+
+        return {
+          ...current,
+          secondsLeft: remainingSeconds,
+        }
+      })
+    }
+
+    tick()
+    const timerId = window.setInterval(tick, 1000)
     return () => window.clearInterval(timerId)
-  }, [isRunning])
+  }, [isRunning, timer.endAt])
+
+  useEffect(() => {
+    if (isCompleted && !completionSoundRef.current) {
+      completionSoundRef.current = true
+      playCompletionAlert(2)
+      announceBreakFinished(2)
+    }
+
+    if (!isCompleted) {
+      completionSoundRef.current = false
+    }
+  }, [isCompleted])
 
   const applyMinutes = (minutes: number) => {
-    setSelectedMinutes(minutes)
-    setSecondsLeft(minutes * 60)
-    setIsRunning(false)
-    setIsCompleted(false)
+    setTimer((current) => ({
+      ...current,
+      selectedMinutes: minutes,
+      secondsLeft: minutes * 60,
+      isRunning: false,
+      isCompleted: false,
+      endAt: null,
+    }))
   }
 
   const handleCustomMinutes = () => {
@@ -125,30 +220,54 @@ export function DescansoPage() {
     }
 
     const normalized = Math.min(Math.max(Math.round(parsed), 1), 180)
-    const nextMinutes = normalized
-    setSelectedMinutes(nextMinutes)
-    setCustomMinutes(String(nextMinutes))
-    setSecondsLeft(nextMinutes * 60)
-    setIsRunning(false)
-    setIsCompleted(false)
+    setTimer((current) => ({
+      ...current,
+      selectedMinutes: normalized,
+      customMinutes: String(normalized),
+      secondsLeft: normalized * 60,
+      isRunning: false,
+      isCompleted: false,
+      endAt: null,
+    }))
   }
 
   const handleStart = () => {
-    if (secondsLeft === 0) {
-      setSecondsLeft(selectedMinutes * 60)
-    }
-    setIsCompleted(false)
-    setIsRunning(true)
+    setTimer((current) => {
+      const duration = current.secondsLeft > 0 ? current.secondsLeft : current.selectedMinutes * 60
+      return {
+        ...current,
+        secondsLeft: duration,
+        isRunning: true,
+        isCompleted: false,
+        endAt: Date.now() + duration * 1000,
+      }
+    })
   }
 
   const handlePause = () => {
-    setIsRunning(false)
+    setTimer((current) => {
+      if (!current.isRunning || typeof current.endAt !== 'number') {
+        return current
+      }
+
+      const remainingSeconds = Math.max(0, Math.ceil((current.endAt - Date.now()) / 1000))
+      return {
+        ...current,
+        secondsLeft: remainingSeconds,
+        isRunning: false,
+        endAt: null,
+      }
+    })
   }
 
   const handleReset = () => {
-    setIsRunning(false)
-    setIsCompleted(false)
-    setSecondsLeft(selectedMinutes * 60)
+    setTimer((current) => ({
+      ...current,
+      secondsLeft: current.selectedMinutes * 60,
+      isRunning: false,
+      isCompleted: false,
+      endAt: null,
+    }))
   }
 
   const ringStyle = {
@@ -239,7 +358,12 @@ export function DescansoPage() {
                   max={180}
                   inputMode="numeric"
                   value={customMinutes}
-                  onChange={(event) => setCustomMinutes(event.target.value)}
+                  onChange={(event) =>
+                    setTimer((current) => ({
+                      ...current,
+                      customMinutes: event.target.value,
+                    }))
+                  }
                   placeholder="15"
                   className="w-full rounded-xl border border-brand-border bg-white px-3 py-2.5 text-base font-medium text-brand-ink outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
                 />
