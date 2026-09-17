@@ -1,8 +1,9 @@
-import React from 'react'
 import {
+  IconCalendar,
+  IconPalette,
+  IconUsers,
   IconEdit,
   IconEye,
-  IconPhoto,
   IconPlus,
   IconRefresh,
   IconScissors,
@@ -13,7 +14,6 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  flexRender,
   useReactTable,
   getCoreRowModel,
   getFilteredRowModel,
@@ -125,217 +125,16 @@ export function CortesPage() {
     setConfirmDeleteId(null)
   }
 
-  const columns = useMemo(() => [
-    {
-      accessorKey: 'numero_corte',
-      header: ({ column }: { column: { getIsSorted: () => string | boolean; toggleSorting: (asc: boolean) => void } }) => (
-        <div
-          className="flex items-center gap-1 cursor-pointer"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Nº Corte
-          {column.getIsSorted() && (column.getIsSorted() === 'asc' ? '↑' : '↓')}
-        </div>
-      ),
-      cell: ({ row }: { row: { original: Corte } }) => (
-        <td className="px-5 py-3.5">
-          <span className="font-mono text-sm font-semibold text-brand-ink">#{row.original.numero_corte}</span>
-        </td>
-      ),
-      enableSorting: true,
-    },
-    {
-      accessorKey: 'articulos',
-      header: 'Artículos',
-      cell: ({ row }: { row: { original: Corte } }) => {
-        const corte = row.original
-        return (
-          <td className="px-5 py-3.5">
-            <div className="flex flex-wrap gap-1.5">
-              {corte.articulos.length === 0 ? (
-                <span className="text-xs text-brand-ink-faint">—</span>
-              ) : (
-                corte.articulos.map((art) => {
-                  const imgSrc = hasStorageCoverImage(art.cover_image_path)
-                    ? getProductImagePublicUrl(art.cover_image_path)
-                    : DEFAULT_ARTICLE_IMAGE_PUBLIC_URL
-                  const isPlaceholder = !hasStorageCoverImage(art.cover_image_path)
-                  return (
-                    <button
-                      key={art.articulo_id}
-                      type="button"
-                      aria-label={`Ver imagen de ${art.nombre}`}
-                      title={`${art.nombre} · ${art.codigo}`}
-                      onClick={() =>
-                        setImageTarget({
-                          nombre: art.nombre,
-                          codigo: art.codigo,
-                          cover_image_path: art.cover_image_path,
-                        })
-                      }
-                      className="group/art flex items-center gap-1.5 rounded-full border border-brand-border bg-brand-canvas px-2 py-1 text-xs text-brand-ink-muted transition hover:border-brand-blush-deep hover:bg-brand-primary-ghost hover:text-brand-primary"
-                    >
-                      <div className="h-5 w-5 shrink-0 overflow-hidden rounded-full border border-brand-border bg-white">
-                        <img
-                          src={imgSrc}
-                          alt=""
-                          className={`h-full w-full ${isPlaceholder ? 'object-contain' : 'object-cover'}`}
-                        />
-                      </div>
-                      <span className="max-w-[80px] truncate font-medium">{art.nombre}</span>
-                      <IconPhoto size={11} stroke={1.5} className="shrink-0 opacity-0 transition group-hover/art:opacity-100" aria-hidden />
-                    </button>
-                  )
-                })
-              )}
-            </div>
-          </td>
-        )
-      },
-      enableSorting: false,
-    },
-    {
-      accessorKey: 'tipo_tela',
-      header: ({ column }: { column: { getIsSorted: () => string | boolean; toggleSorting: (asc: boolean) => void } }) => (
-        <div
-          className="flex items-center gap-1 cursor-pointer"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Tipo de Tela
-          {column.getIsSorted() && (column.getIsSorted() === 'asc' ? '↑' : '↓')}
-        </div>
-      ),
-      cell: ({ row }: { row: { original: Corte } }) => (
-        <td className="px-5 py-3.5">
-          <span className="text-sm text-brand-ink">{row.original.tipo_tela}</span>
-        </td>
-      ),
-      enableSorting: true,
-    },
-    {
-      accessorKey: 'cantidad_total',
-      header: ({ column }: { column: { getIsSorted: () => string | boolean; toggleSorting: (asc: boolean) => void } }) => (
-        <div
-          className="flex items-center justify-end gap-1 cursor-pointer"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Cant.
-          {column.getIsSorted() && (column.getIsSorted() === 'asc' ? '↑' : '↓')}
-        </div>
-      ),
-      cell: ({ row }: { row: { original: Corte } }) => (
-        <td className="px-5 py-3.5 text-right">
-          <span className="font-mono text-sm font-semibold text-brand-ink">{row.original.cantidad_total}</span>
-        </td>
-      ),
-      enableSorting: true,
-    },
-    {
-      accessorKey: 'colores',
-      header: 'Colores',
-      cell: ({ row }: { row: { original: Corte } }) => {
-        const corte = row.original
-        return (
-          <td className="px-5 py-3.5">
-            <div className="flex flex-wrap gap-1">
-              {corte.colores.length === 0 ? (
-                <span className="text-xs text-brand-ink-faint">—</span>
-              ) : (
-                corte.colores.map((col) => (
-                  <span
-                    key={col.id}
-                    className="inline-flex items-center gap-1 rounded-full bg-brand-border-subtle px-2 py-0.5 text-[11px] text-brand-ink-muted ring-1 ring-brand-border"
-                  >
-                    {col.color}
-                    <span className="font-semibold text-brand-ink">×{col.cantidad}</span>
-                  </span>
-                ))
-              )}
-            </div>
-          </td>
-        )
-      },
-      enableSorting: false,
-    },
-    {
-      accessorKey: 'estado',
-      header: ({ column }: { column: { getIsSorted: () => string | boolean; toggleSorting: (asc: boolean) => void } }) => (
-        <div
-          className="flex items-center gap-1 cursor-pointer"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Estado
-          {column.getIsSorted() && (column.getIsSorted() === 'asc' ? '↑' : '↓')}
-        </div>
-      ),
-      cell: ({ row }: { row: { original: Corte } }) => (
-        <td className="px-5 py-3.5">
-          <EstadoBadge estado={row.original.estado} />
-        </td>
-      ),
-      enableSorting: true,
-    },
-    {
-      accessorKey: 'fecha',
-      header: ({ column }: { column: { getIsSorted: () => string | boolean; toggleSorting: (asc: boolean) => void } }) => (
-        <div
-          className="flex items-center gap-1 cursor-pointer"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Fecha
-          {column.getIsSorted() && (column.getIsSorted() === 'asc' ? '↑' : '↓')}
-        </div>
-      ),
-      cell: ({ row }: { row: { original: Corte } }) => (
-        <td className="px-5 py-3.5">
-          <span className="text-sm text-brand-ink-muted">
-            {new Date(row.original.fecha + 'T00:00:00').toLocaleDateString('es-AR', {
-              day: 'numeric',
-              month: 'short',
-              year: 'numeric',
-            })}
-          </span>
-        </td>
-      ),
-      enableSorting: true,
-    },
-      {
-      id: 'actions',
-      header: 'Acciones',
-      cell: (props: any) => {
-        const corte = props.row.original
-        return (
-          <td className="px-5 py-3.5">
-            <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-              <Link
-                to={`/produccion/cortes/${corte.id}`}
-                aria-label={`Ver corte ${corte.numero_corte}`}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-brand-ink-faint transition hover:bg-brand-canvas hover:text-brand-ink"
-              >
-                <IconEye size={16} stroke={1.5} aria-hidden />
-              </Link>
-              <Link
-                to={`/produccion/cortes/${corte.id}/editar`}
-                aria-label={`Editar corte ${corte.numero_corte}`}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-brand-ink-faint transition hover:bg-brand-canvas hover:text-brand-ink"
-              >
-                <IconEdit size={16} stroke={1.5} aria-hidden />
-              </Link>
-              <button
-                type="button"
-                aria-label={`Eliminar corte ${corte.numero_corte}`}
-                onClick={() => setConfirmDeleteId(corte.id)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-brand-ink-faint transition hover:bg-red-50 hover:text-red-500"
-              >
-                <IconTrash size={16} stroke={1.5} aria-hidden />
-              </button>
-            </div>
-          </td>
-        )
-      },
-      enableSorting: false,
-    },
-  ] as ColumnDef<Corte>[], [setConfirmDeleteId, setImageTarget])
+  const columns = useMemo<ColumnDef<Corte>[]>(
+    () => [
+      { accessorKey: 'numero_corte' },
+      { accessorKey: 'tipo_tela' },
+      { accessorKey: 'cantidad_total' },
+      { accessorKey: 'estado' },
+      { accessorKey: 'fecha' },
+    ],
+    [],
+  )
 
   const table = useReactTable({
     data: cortes,
@@ -517,7 +316,7 @@ export function CortesPage() {
         </div>
       )}
 
-      {/* Table */}
+      {/* Board */}
       {!loading && !errorMessage && cortes.length > 0 && table.getFilteredRowModel().rows.length > 0 && (
         <>
           <div className="flex items-center justify-between gap-2">
@@ -532,33 +331,16 @@ export function CortesPage() {
             )}
           </div>
 
-          <div className="overflow-hidden rounded-xl bg-brand-surface shadow-sm ring-1 ring-brand-border">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[720px] table-auto text-sm">
-                <thead>
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <tr key={headerGroup.id} className="border-b border-brand-border-subtle bg-brand-canvas">
-                      {headerGroup.headers.map((header) => (
-                        <th key={header.id} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-ink-faint">
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                        </th>
-                      ))}
-                    </tr>
-                  ))}
-                </thead>
-                <tbody className="divide-y divide-brand-border-subtle">
-                  {table.getRowModel().rows.map((row) => (
-                    <tr key={row.id} className="group transition-colors hover:bg-brand-canvas">
-                      {row.getVisibleCells().map((cell) => (
-                        <React.Fragment key={cell.id}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </React.Fragment>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {table.getRowModel().rows.map((row, index) => (
+              <CorteCard
+                key={row.original.id}
+                corte={row.original}
+                index={index}
+                onDelete={() => setConfirmDeleteId(row.original.id)}
+                onImage={(articulo) => setImageTarget(articulo)}
+              />
+            ))}
           </div>
 
           {table.getPageCount() > 1 && (
@@ -588,6 +370,154 @@ export function CortesPage() {
         <ArticuloImageModal articulo={imageTarget} onClose={() => setImageTarget(null)} />
       )}
     </div>
+  )
+}
+
+function CorteCard({
+  corte,
+  index,
+  onDelete,
+  onImage,
+}: {
+  corte: Corte
+  index: number
+  onDelete: () => void
+  onImage: (articulo: ImageTargetState) => void
+}) {
+  const date = new Date(`${corte.fecha}T00:00:00`).toLocaleDateString('es-AR', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+  const accent = {
+    pendiente: 'bg-amber-400',
+    en_proceso: 'bg-blue-500',
+    completado: 'bg-emerald-500',
+    cancelado: 'bg-slate-300',
+  }[corte.estado]
+
+  return (
+    <article
+      className="group relative overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5 transition duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:ring-brand-primary/20"
+      style={{ animationDelay: `${index * 45}ms` }}
+    >
+      <div className={`h-1.5 ${accent}`} />
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="font-mono text-xs font-semibold tracking-wide text-brand-primary">CORTE</p>
+            <h2 className="mt-1 text-xl font-bold tracking-tight text-brand-ink">#{corte.numero_corte}</h2>
+          </div>
+          <div className="flex items-center gap-1">
+            <Link
+              to={`/produccion/cortes/${corte.id}`}
+              aria-label={`Ver corte ${corte.numero_corte}`}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-brand-ink-faint transition hover:bg-brand-canvas hover:text-brand-ink"
+            >
+              <IconEye size={17} stroke={1.6} aria-hidden />
+            </Link>
+            <Link
+              to={`/produccion/cortes/${corte.id}/editar`}
+              aria-label={`Editar corte ${corte.numero_corte}`}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-brand-ink-faint transition hover:bg-brand-canvas hover:text-brand-ink"
+            >
+              <IconEdit size={17} stroke={1.6} aria-hidden />
+            </Link>
+            <button
+              type="button"
+              aria-label={`Eliminar corte ${corte.numero_corte}`}
+              onClick={onDelete}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-brand-ink-faint transition hover:bg-red-50 hover:text-red-500"
+            >
+              <IconTrash size={17} stroke={1.6} aria-hidden />
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <EstadoBadge estado={corte.estado} />
+          <span className="inline-flex items-center gap-1.5 text-xs text-brand-ink-muted">
+            <IconCalendar size={14} stroke={1.6} aria-hidden />
+            {date}
+          </span>
+        </div>
+
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          <div className="rounded-xl bg-brand-canvas px-3 py-2.5">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-ink-faint">Tela</p>
+            <p className="mt-1 truncate text-sm font-semibold text-brand-ink" title={corte.tipo_tela}>{corte.tipo_tela}</p>
+          </div>
+          <div className="rounded-xl bg-brand-canvas px-3 py-2.5">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-ink-faint">Encimadas</p>
+            <p className="mt-1 font-mono text-lg font-bold leading-none text-brand-primary">{corte.cantidad_total}</p>
+          </div>
+        </div>
+
+        <div className="mt-5 border-t border-brand-border-subtle pt-4">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-ink-faint">
+              Artículos · {corte.articulos.length}
+            </p>
+            {corte.costureros && (
+              <span className="inline-flex max-w-[150px] items-center gap-1 truncate text-xs text-brand-ink-muted" title={corte.costureros}>
+                <IconUsers size={14} stroke={1.6} aria-hidden />
+                {corte.costureros}
+              </span>
+            )}
+          </div>
+          <div className="mt-3 flex items-center gap-2">
+            {corte.articulos.length === 0 ? (
+              <span className="text-xs text-brand-ink-faint">Sin artículos vinculados</span>
+            ) : (
+              <>
+                <div className="flex -space-x-2">
+                  {corte.articulos.slice(0, 4).map((art) => {
+                    const hasImage = hasStorageCoverImage(art.cover_image_path)
+                    const imageSrc = hasImage && art.cover_image_path
+                      ? getProductImagePublicUrl(art.cover_image_path)
+                      : DEFAULT_ARTICLE_IMAGE_PUBLIC_URL
+                    return (
+                      <button
+                        key={art.articulo_id}
+                        type="button"
+                        aria-label={`Ver imagen de ${art.nombre}`}
+                        title={`${art.nombre} · ${art.codigo}`}
+                        onClick={() => onImage({ nombre: art.nombre, codigo: art.codigo, cover_image_path: art.cover_image_path })}
+                        className="h-9 w-9 overflow-hidden rounded-full border-2 border-white bg-brand-canvas transition hover:z-10 hover:scale-110"
+                      >
+                        <img
+                          src={imageSrc}
+                          alt=""
+                          className={`h-full w-full ${hasImage ? 'object-cover' : 'object-contain p-0.5'}`}
+                        />
+                      </button>
+                    )
+                  })}
+                </div>
+                <p className="min-w-0 truncate text-xs text-brand-ink-muted">
+                  {corte.articulos[0]?.nombre}
+                  {corte.articulos.length > 1 && ` +${corte.articulos.length - 1}`}
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+
+        {corte.colores.length > 0 && (
+          <div className="mt-4 flex items-center gap-2 border-t border-brand-border-subtle pt-3">
+            <IconPalette size={14} stroke={1.6} className="shrink-0 text-brand-ink-faint" aria-hidden />
+            <div className="flex min-w-0 flex-wrap gap-1.5">
+              {corte.colores.slice(0, 3).map((color) => (
+                <span key={color.id} className="rounded-full bg-brand-border-subtle px-2 py-0.5 text-[11px] text-brand-ink-muted">
+                  {color.color} <strong className="text-brand-ink">×{color.cantidad}</strong>
+                </span>
+              ))}
+              {corte.colores.length > 3 && <span className="text-[11px] text-brand-ink-faint">+{corte.colores.length - 3}</span>}
+            </div>
+          </div>
+        )}
+      </div>
+    </article>
   )
 }
 
