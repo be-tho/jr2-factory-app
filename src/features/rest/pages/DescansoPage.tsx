@@ -79,58 +79,54 @@ function formatTime(totalSeconds: number) {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 }
 
-function playCompletionAlert(repetitions = 2) {
+function playCompletionAlert() {
   const AudioCtor = window.AudioContext ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
 
   if (!AudioCtor) {
     return
   }
 
-  const scheduleBeep = (index: number) => {
-    const context = new AudioCtor()
+  const context = new AudioCtor()
+  const startAt = context.currentTime + 0.05
+  const melody = [
+    { frequency: 523.25, offset: 0, duration: 0.32 },
+    { frequency: 659.25, offset: 0.22, duration: 0.32 },
+    { frequency: 783.99, offset: 0.44, duration: 0.55 },
+  ]
+
+  melody.forEach(({ frequency, offset, duration }) => {
     const oscillator = context.createOscillator()
     const gain = context.createGain()
 
-    oscillator.type = 'triangle'
-    oscillator.frequency.setValueAtTime(880 + index * 40, context.currentTime)
-    oscillator.frequency.exponentialRampToValueAtTime(440, context.currentTime + 0.45)
+    oscillator.type = 'sine'
+    oscillator.frequency.setValueAtTime(frequency, startAt + offset)
 
-    gain.gain.setValueAtTime(0.0001, context.currentTime)
-    gain.gain.exponentialRampToValueAtTime(0.16, context.currentTime + 0.04)
-    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.9)
+    gain.gain.setValueAtTime(0.0001, startAt + offset)
+    gain.gain.exponentialRampToValueAtTime(0.13, startAt + offset + 0.04)
+    gain.gain.exponentialRampToValueAtTime(0.0001, startAt + offset + duration)
 
     oscillator.connect(gain)
     gain.connect(context.destination)
 
-    oscillator.start()
-    oscillator.stop(context.currentTime + 1)
+    oscillator.start(startAt + offset)
+    oscillator.stop(startAt + offset + duration + 0.05)
+  })
 
-    window.setTimeout(() => {
-      void context.close()
-    }, 1100)
-  }
-
-  for (let i = 0; i < repetitions; i += 1) {
-    window.setTimeout(() => scheduleBeep(i), i * 550)
-  }
+  window.setTimeout(() => void context.close(), 1400)
 }
 
-function announceBreakFinished(repetitions = 2) {
+function announceBreakFinished() {
   if (!('speechSynthesis' in window)) {
     return
   }
 
   window.speechSynthesis.cancel()
 
-  for (let i = 0; i < repetitions; i += 1) {
-    const utterance = new SpeechSynthesisUtterance('Descanso terminado. ¡Hora de trabajar!')
-    utterance.lang = 'es-AR'
-    utterance.rate = 1
-    utterance.pitch = 1.2
-    window.setTimeout(() => {
-      window.speechSynthesis.speak(utterance)
-    }, i * 700)
-  }
+  const utterance = new SpeechSynthesisUtterance('Pausa cumplida. Volvemos con energía.')
+  utterance.lang = 'es-AR'
+  utterance.rate = 0.95
+  utterance.pitch = 1.15
+  window.speechSynthesis.speak(utterance)
 }
 
 export function DescansoPage() {
@@ -193,8 +189,8 @@ export function DescansoPage() {
   useEffect(() => {
     if (isCompleted && !completionSoundRef.current) {
       completionSoundRef.current = true
-      playCompletionAlert(2)
-      announceBreakFinished(2)
+      playCompletionAlert()
+      announceBreakFinished()
     }
 
     if (!isCompleted) {
@@ -294,9 +290,9 @@ export function DescansoPage() {
             </div>
           </div>
 
-          <div className="inline-flex items-center gap-2 rounded-full border border-brand-border bg-brand-primary-ghost px-3 py-2 text-sm font-medium text-brand-primary">
+          <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition-colors ${isCompleted ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-brand-border bg-brand-primary-ghost text-brand-primary'}`}>
             <IconSparkles size={16} aria-hidden />
-            {isCompleted ? '¡Listo!' : 'Pausa activa'}
+            {isCompleted ? '¡Pausa cumplida!' : 'Pausa activa'}
           </div>
         </div>
 
@@ -307,18 +303,18 @@ export function DescansoPage() {
               style={ringStyle}
             >
               <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-white text-center ring-1 ring-brand-border">
-                <span className="text-xs font-bold uppercase tracking-[0.28em] text-brand-ink-faint">
-                  {isCompleted ? 'Tiempo terminado' : 'Resting'}
+                <span className={`text-xs font-bold uppercase tracking-[0.28em] ${isCompleted ? 'text-emerald-600' : 'text-brand-ink-faint'}`}>
+                  {isCompleted ? 'Momento de volver' : 'Resting'}
                 </span>
                 <time
                   aria-live="polite"
-                  className="mt-3 text-5xl font-black tabular-nums tracking-[-0.08em] text-brand-ink sm:text-7xl"
+                  className={`mt-3 text-5xl font-black tabular-nums tracking-[-0.08em] sm:text-7xl ${isCompleted ? 'text-emerald-600' : 'text-brand-ink'}`}
                   dateTime={`PT${Math.floor(secondsLeft / 60)}M${secondsLeft % 60}S`}
                 >
                   {formatTime(secondsLeft)}
                 </time>
                 <span className="mt-2 text-sm text-brand-ink-muted">
-                  {selectedMinutes} minuto{selectedMinutes === 1 ? '' : 's'} programados
+                  {isCompleted ? 'Listo para seguir' : `${selectedMinutes} minuto${selectedMinutes === 1 ? '' : 's'} programados`}
                 </span>
               </div>
             </div>
@@ -409,17 +405,19 @@ export function DescansoPage() {
               </button>
             </div>
 
-            <div className="rounded-2xl border border-brand-border bg-[#fffafc] p-4 text-sm text-brand-ink-muted">
+            <div className={`rounded-2xl border p-4 text-sm transition-colors ${isCompleted ? 'border-emerald-200 bg-emerald-50/70 text-emerald-800' : 'border-brand-border bg-[#fffafc] text-brand-ink-muted'}`}>
               <div className="mb-2 flex items-center gap-2 font-semibold text-brand-ink">
                 <IconBellRinging size={18} aria-hidden className="text-brand-primary" />
-                Al terminar
+                {isCompleted ? '¡Pausa lista!' : 'Al terminar'}
               </div>
               <p className="leading-relaxed">
-                El timer avisará con dos timbres y dos voces que dicen: “Descanso terminado. ¡Hora de trabajar!”
+                {isCompleted
+                  ? 'Tomaste un momento para recargar. Cuando quieras, reiniciá el timer para la próxima pausa.'
+                  : 'Vas a escuchar una melodía breve y un mensaje de voz cuando termine la pausa.'}
               </p>
-              <div className="mt-3 flex items-center gap-2 text-brand-primary">
+              <div className={`mt-3 flex items-center gap-2 ${isCompleted ? 'text-emerald-700' : 'text-brand-primary'}`}>
                 <IconVolume size={16} aria-hidden />
-                <span className="font-medium">Sonido + voz activados</span>
+                <span className="font-medium">Melodía + voz activadas</span>
               </div>
             </div>
           </div>
