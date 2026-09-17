@@ -5,6 +5,9 @@ import {
   IconCamera,
   IconFileText,
   IconHash,
+  IconEye,
+  IconEyeOff,
+  IconKey,
   IconPencil,
   IconUser,
   IconX,
@@ -16,10 +19,14 @@ import { FormField } from '../../../components/ui/FormField'
 import { useSession } from '../../../hooks/useSession'
 import { ProfileAvatarImage } from '../components/ProfileAvatarImage'
 import { useProfileQuery, useUpdateProfileMutation } from '../hooks/useProfile'
+import { updatePasswordSchema, type UpdatePasswordFormValues } from '../../../lib/schemas/auth'
+import { supabase } from '../../../lib/supabase/client'
 import {
   uploadAvatar,
   validateAvatarFile,
 } from '../services/profile.service'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm, type UseFormRegisterReturn } from 'react-hook-form'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -98,8 +105,19 @@ export function CuentaPage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const avatarInputId = useId()
+
+  const {
+    register: registerPassword,
+    handleSubmit: handlePasswordSubmit,
+    reset: resetPassword,
+    formState: { errors: passwordErrors, isSubmitting: changingPassword },
+  } = useForm<UpdatePasswordFormValues>({
+    resolver: zodResolver(updatePasswordSchema),
+    defaultValues: { password: '', confirmPassword: '' },
+  })
 
   // Sync form when profile loads
   useEffect(() => {
@@ -163,6 +181,16 @@ export function CuentaPage() {
         onSettled: () => setSaving(false),
       },
     )
+  }
+
+  async function handleChangePassword(values: UpdatePasswordFormValues) {
+    const { error } = await supabase.auth.updateUser({ password: values.password })
+    if (error) {
+      toast.error(error.message)
+      return
+    }
+    resetPassword()
+    toast.success('Contraseña actualizada')
   }
 
   // Derived
@@ -372,6 +400,52 @@ export function CuentaPage() {
               />
             </div>
           </div>
+
+          {/* Password */}
+          <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/4">
+            <div className="border-b border-[#f0eef5] bg-[#f8f7fa] px-5 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-[#b9b6c3]">
+                Seguridad
+              </p>
+            </div>
+            <form
+              className="space-y-4 p-5"
+              onSubmit={(e) => void handlePasswordSubmit(handleChangePassword)(e)}
+              noValidate
+            >
+              <div className="flex items-start gap-3 rounded-lg bg-brand-primary-ghost px-3 py-2.5">
+                <IconKey size={17} stroke={1.5} className="mt-0.5 shrink-0 text-brand-primary" aria-hidden />
+                <p className="text-xs leading-relaxed text-brand-primary">
+                  Elegí una contraseña nueva para proteger tu cuenta.
+                </p>
+              </div>
+
+              <PasswordField
+                label="Nueva contraseña"
+                registration={registerPassword('password')}
+                error={passwordErrors.password?.message}
+                showPassword={showPassword}
+                onToggleVisibility={() => setShowPassword((value) => !value)}
+                autoComplete="new-password"
+              />
+              <PasswordField
+                label="Confirmar contraseña"
+                registration={registerPassword('confirmPassword')}
+                error={passwordErrors.confirmPassword?.message}
+                showPassword={showPassword}
+                onToggleVisibility={() => setShowPassword((value) => !value)}
+                autoComplete="new-password"
+              />
+
+              <button
+                type="submit"
+                disabled={changingPassword}
+                className="inline-flex items-center justify-center rounded-lg bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {changingPassword ? 'Actualizando…' : 'Cambiar contraseña'}
+              </button>
+            </form>
+          </div>
         </div>
 
         {/* RIGHT: Edit form or completion prompt ────────────────── */}
@@ -518,5 +592,46 @@ export function CuentaPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+function PasswordField({
+  label,
+  registration,
+  error,
+  showPassword,
+  onToggleVisibility,
+  autoComplete,
+}: {
+  label: string
+  registration: UseFormRegisterReturn<'password'> | UseFormRegisterReturn<'confirmPassword'>
+  error?: string
+  showPassword: boolean
+  onToggleVisibility: () => void
+  autoComplete: string
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-sm font-medium text-brand-ink-muted">{label}</span>
+      <div className="relative">
+        <input
+          type={showPassword ? 'text' : 'password'}
+          autoComplete={autoComplete}
+          placeholder="Mínimo 6 caracteres"
+          className="w-full rounded-lg border border-brand-border-strong bg-brand-surface py-2 pl-3 pr-10 text-sm text-brand-ink outline-none transition placeholder:text-brand-ink-faint focus:border-brand-primary focus:ring-2 focus:ring-brand-blush/50 aria-invalid:border-red-400"
+          aria-invalid={Boolean(error)}
+          {...registration}
+        />
+        <button
+          type="button"
+          aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+          className="absolute inset-y-0 right-0 flex items-center px-3 text-brand-ink-faint transition hover:text-brand-primary"
+          onClick={onToggleVisibility}
+        >
+          {showPassword ? <IconEyeOff size={18} stroke={1.5} aria-hidden /> : <IconEye size={18} stroke={1.5} aria-hidden />}
+        </button>
+      </div>
+      {error ? <p className="mt-1 text-xs font-medium text-red-600">{error}</p> : null}
+    </label>
   )
 }
