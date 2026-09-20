@@ -43,6 +43,7 @@ export function ArticulosPage() {
   const skipInitialPageScrollRef = useRef(true)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const filters = useMemo(() => parseArticulosListSearch(searchParams.toString()), [searchParams])
+  const [searchInput, setSearchInput] = useState(filters.query)
   const {
     query,
     categoria: categoriaFilter,
@@ -52,6 +53,10 @@ export function ArticulosPage() {
     sortMode,
     sortDirection,
   } = filters
+
+  useEffect(() => {
+    setSearchInput(filters.query)
+  }, [filters.query])
 
   useEffect(() => {
     if (skipInitialPageScrollRef.current) {
@@ -304,8 +309,12 @@ export function ArticulosPage() {
             />
             <input
               type="search"
-              value={query}
-              onChange={(e) => updateFilters({ query: e.target.value, page: 1 })}
+              value={searchInput}
+              onChange={(e) => {
+                const nextQuery = e.target.value
+                setSearchInput(nextQuery)
+                updateFilters({ query: nextQuery, page: 1 })
+              }}
               placeholder="Buscar por nombre, código, categoría o temporada…"
               className="w-full rounded-lg border border-brand-border bg-brand-canvas py-2 pl-9 pr-3 text-sm text-brand-ink outline-none transition placeholder:text-brand-ink-muted focus:border-brand-primary focus:bg-brand-surface focus:ring-2 focus:ring-brand-blush/50"
             />
