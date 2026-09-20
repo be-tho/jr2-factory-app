@@ -6,9 +6,10 @@ import {
   IconSearch,
   IconStack,
   IconTag,
+  IconAdjustmentsHorizontal,
   IconX,
 } from '@tabler/icons-react'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
   useReactTable,
@@ -38,6 +39,9 @@ export function ArticulosPage() {
   const { data: articles = [], isPending: loading, isError, error, refetch } = useProductsQuery()
   const errorMessage = isError && error instanceof Error ? error.message : null
   const [searchParams, setSearchParams] = useSearchParams()
+  const resultsRef = useRef<HTMLDivElement>(null)
+  const skipInitialPageScrollRef = useRef(true)
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const filters = useMemo(() => parseArticulosListSearch(searchParams.toString()), [searchParams])
   const {
     query,
@@ -48,6 +52,17 @@ export function ArticulosPage() {
     sortMode,
     sortDirection,
   } = filters
+
+  useEffect(() => {
+    if (skipInitialPageScrollRef.current) {
+      skipInitialPageScrollRef.current = false
+      return
+    }
+
+    if (!window.matchMedia('(max-width: 767px)').matches) return
+
+    resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [page])
 
   const updateFilters = (next: Partial<ArticulosListFilters>) => {
     const merged: ArticulosListFilters = {
@@ -296,7 +311,17 @@ export function ArticulosPage() {
             />
           </div>
 
-          <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center lg:flex-wrap">
+          <button
+            type="button"
+            aria-expanded={filtersOpen}
+            onClick={() => setFiltersOpen((open) => !open)}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-brand-border bg-brand-canvas px-3 py-2 text-sm font-semibold text-brand-ink transition hover:border-brand-primary hover:text-brand-primary md:hidden"
+          >
+            <IconAdjustmentsHorizontal size={16} stroke={1.8} aria-hidden />
+            {filtersOpen ? 'Ocultar filtros' : 'Filtros'}
+          </button>
+
+          <div className={`${filtersOpen ? 'flex' : 'hidden'} min-w-0 flex-col gap-3 md:flex lg:flex-row lg:items-center lg:flex-wrap`}>
             <select
               value={categoriaFilter}
               onChange={(e) => updateFilters({ categoria: e.target.value, page: 1 })}
@@ -470,7 +495,7 @@ export function ArticulosPage() {
 
       {/* Results - Cards grid using TanStack Table data */}
       {!loading && !errorMessage && table.getFilteredRowModel().rows.length > 0 ? (
-        <>
+        <div ref={resultsRef} className="scroll-mt-6">
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs font-medium text-brand-ink-faint">
               {table.getFilteredRowModel().rows.length} artículo{table.getFilteredRowModel().rows.length !== 1 ? 's' : ''}
@@ -481,6 +506,18 @@ export function ArticulosPage() {
               </p>
             )}
           </div>
+          {table.getPageCount() > 1 && (
+            <div className="mb-5">
+              <SimplePagination
+                page={table.getState().pagination.pageIndex + 1}
+                totalPages={table.getPageCount()}
+                totalItems={table.getFilteredRowModel().rows.length}
+                pageSize={PAGE_SIZE}
+                onPageChange={(newPage) => updateFilters({ page: newPage })}
+                ariaLabel="Paginación superior de artículos"
+              />
+            </div>
+          )}
           <ul className="grid list-none gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {table.getRowModel().rows.map((row) => (
               <li key={row.id}>
@@ -498,7 +535,7 @@ export function ArticulosPage() {
               ariaLabel="Paginación de artículos"
             />
           )}
-        </>
+        </div>
       ) : null}
     </div>
   )

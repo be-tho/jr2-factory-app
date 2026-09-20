@@ -32,9 +32,9 @@ export function parseArticulosListSearch(search: string): ArticulosListFilters {
 
 export function buildArticulosListSearch(filters: ArticulosListFilters): string {
   const params = new URLSearchParams()
-  const trimmedQuery = filters.query.trim()
+  const query = filters.query.trim()
 
-  if (trimmedQuery) params.set('q', trimmedQuery)
+  if (query) params.set('q', filters.query)
   if (filters.categoria) params.set('categoria', filters.categoria)
   if (filters.estado !== 'todos') params.set('estado', filters.estado)
   if (filters.temporada) params.set('temporada', filters.temporada)
