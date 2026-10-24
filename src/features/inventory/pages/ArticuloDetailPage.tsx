@@ -14,7 +14,7 @@ import {
   IconTag,
   IconTrash,
 } from '@tabler/icons-react'
-import { useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ArticuloImageModal } from '../../production/components/ArticuloImageModal'
 import {
@@ -133,6 +133,10 @@ export function ArticuloDetailPage() {
   const { data: article, isPending, isError, error, refetch } = useProductQuery(id)
   const deleteMutation = useDeleteProductMutation()
   const [imageModalOpen, setImageModalOpen] = useState(false)
+
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0)
+  }, [id])
 
   if (!id) {
     return (
