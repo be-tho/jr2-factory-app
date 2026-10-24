@@ -1,4 +1,4 @@
-import { IconClock, IconEye, IconEyeOff, IconLogin } from '@tabler/icons-react'
+import { IconBrandGoogle, IconClock, IconEye, IconEyeOff, IconLogin } from '@tabler/icons-react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -13,6 +13,7 @@ import { supabase } from '../../../lib/supabase/client'
 
 export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const location = useLocation()
   const pendingActivation = (location.state as { pendingActivation?: boolean } | null)?.pendingActivation === true
 
@@ -66,7 +67,22 @@ export function LoginPage() {
     })
   }
 
-  const loading = isSubmitting
+  async function onGoogleSignIn() {
+    setIsGoogleLoading(true)
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/dashboard`,
+      },
+    })
+
+    if (error) {
+      setIsGoogleLoading(false)
+      toast.error(error.message)
+    }
+  }
+
+  const loading = isSubmitting || isGoogleLoading
 
   return (
     <AuthCard
@@ -129,9 +145,25 @@ export function LoginPage() {
           disabled={loading}
           className="w-full rounded-lg border border-brand-primary-hover bg-brand-primary px-4 py-2.5 text-sm font-semibold text-brand-on-primary shadow-sm transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {loading ? 'Ingresando...' : 'Ingresar'}
+          {isSubmitting ? 'Ingresando...' : 'Ingresar'}
         </button>
       </form>
+
+      <div className="my-5 flex items-center gap-3" aria-hidden>
+        <span className="h-px flex-1 bg-brand-border-subtle" />
+        <span className="text-xs font-medium text-brand-ink-faint">o</span>
+        <span className="h-px flex-1 bg-brand-border-subtle" />
+      </div>
+
+      <button
+        type="button"
+        disabled={loading}
+        onClick={() => void onGoogleSignIn()}
+        className="flex w-full items-center justify-center gap-2.5 rounded-lg border border-brand-border-strong bg-brand-surface px-4 py-2.5 text-sm font-semibold text-brand-ink shadow-sm transition hover:bg-brand-canvas disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <IconBrandGoogle size={18} stroke={1.8} aria-hidden />
+        {isGoogleLoading ? 'Conectando con Google...' : 'Continuar con Google'}
+      </button>
 
       <div className="mt-4 text-center">
         <Link
