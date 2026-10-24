@@ -136,6 +136,8 @@ export function CortesPage() {
     [],
   )
 
+  // TanStack Table exposes an imperative instance that React Compiler cannot safely memoize.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data: cortes,
     columns,
@@ -366,9 +368,7 @@ export function CortesPage() {
       )}
 
       {/* Image lightbox */}
-      {imageTarget && (
-        <ArticuloImageModal articulo={imageTarget} onClose={() => setImageTarget(null)} />
-      )}
+      <ArticuloImageModal articulo={imageTarget} onClose={() => setImageTarget(null)} />
     </div>
   )
 }

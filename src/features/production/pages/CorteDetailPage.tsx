@@ -9,6 +9,7 @@ import {
 } from '@tabler/icons-react'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { toast } from 'sonner'
 import { ic } from '../../../lib/tabler'
 import type { CorteEstado } from '../../../types/database'
 import {
@@ -39,9 +40,16 @@ export function CorteDetailPage() {
   useEffect(() => {
     if (!corte?.imagen_path) return
     let cancelled = false
-    getCorteImageSignedUrl(corte.imagen_path).then((url) => {
-      if (!cancelled) setPlantillaUrl(url)
-    })
+    void getCorteImageSignedUrl(corte.imagen_path)
+      .then((url) => {
+        if (!cancelled) setPlantillaUrl(url)
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return
+        toast.error('No se pudo cargar la imagen del corte', {
+          description: error instanceof Error ? error.message : 'Error desconocido',
+        })
+      })
     return () => { cancelled = true }
   }, [corte?.imagen_path])
 
@@ -301,9 +309,7 @@ export function CorteDetailPage() {
       </div>
 
       {/* Image lightbox */}
-      {imageTarget && (
-        <ArticuloImageModal articulo={imageTarget} onClose={() => setImageTarget(null)} />
-      )}
+      <ArticuloImageModal articulo={imageTarget} onClose={() => setImageTarget(null)} />
     </div>
   )
 }

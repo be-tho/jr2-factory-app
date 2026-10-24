@@ -430,16 +430,18 @@ export function ArticuloDetailPage() {
           />
         </div>
 
-      {imageModalOpen ? (
-        <ArticuloImageModal
-          articulo={{
-            nombre: product.name,
-            codigo: product.sku,
-            cover_image_path: product.cover_image_path,
-          }}
-          onClose={() => setImageModalOpen(false)}
-        />
-      ) : null}
+      <ArticuloImageModal
+        articulo={
+          imageModalOpen
+            ? {
+                nombre: product.name,
+                codigo: product.sku,
+                cover_image_path: product.cover_image_path,
+              }
+            : null
+        }
+        onClose={() => setImageModalOpen(false)}
+      />
 
       </div>
   )

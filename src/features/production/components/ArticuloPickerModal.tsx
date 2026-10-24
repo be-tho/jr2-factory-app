@@ -213,9 +213,7 @@ export function ArticuloPickerModal({ selected, onConfirm, onClose }: ArticuloPi
         </div>
       </div>
 
-      {imageTarget ? (
-        <ArticuloImageModal articulo={imageTarget} onClose={() => setImageTarget(null)} />
-      ) : null}
+      <ArticuloImageModal articulo={imageTarget} onClose={() => setImageTarget(null)} />
     </>
   )
 }

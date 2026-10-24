@@ -1,5 +1,5 @@
 import { IconChevronRight, IconReceipt, IconShoppingCart, IconX } from '@tabler/icons-react'
-import { motion, useReducedMotion } from 'framer-motion'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useEffect, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
@@ -41,8 +41,6 @@ export function VentasCartModal({ open, onClose, productById }: VentasCartModalP
     }
   }, [open, onClose])
 
-  if (!open) return null
-
   if (typeof document === 'undefined') return null
 
   const backdropMotion = reduceMotion
@@ -50,6 +48,7 @@ export function VentasCartModal({ open, onClose, productById }: VentasCartModalP
     : {
         initial: { opacity: 0 },
         animate: { opacity: 1 },
+        exit: { opacity: 0 },
         transition: { duration: 0.22 },
       }
 
@@ -58,18 +57,27 @@ export function VentasCartModal({ open, onClose, productById }: VentasCartModalP
     : {
         initial: { opacity: 0, y: 28, scale: 0.97 },
         animate: { opacity: 1, y: 0, scale: 1 },
+        exit: { opacity: 0, y: 28, scale: 0.97 },
         transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] as const },
       }
 
   return createPortal(
-    <div className="fixed inset-0 z-[200] flex items-end justify-center p-0 sm:items-center sm:p-4">
-      <motion.div
-        {...backdropMotion}
-        className="absolute inset-0 bg-modal-scrim"
-        onClick={onClose}
-        role="presentation"
-        aria-hidden
-      />
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          className="fixed inset-0 z-[200] flex items-end justify-center p-0 sm:items-center sm:p-4"
+          initial={false}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: reduceMotion ? 0 : 0.18 }}
+        >
+          <motion.div
+            {...backdropMotion}
+            className="absolute inset-0 bg-modal-scrim"
+            onClick={onClose}
+            role="presentation"
+            aria-hidden
+          />
 
       <motion.div
         ref={panelRef}
@@ -194,7 +202,9 @@ export function VentasCartModal({ open, onClose, productById }: VentasCartModalP
           </p>
         </footer>
       </motion.div>
-    </div>,
+        </motion.div>
+      )}
+    </AnimatePresence>,
     document.body,
   )
 }

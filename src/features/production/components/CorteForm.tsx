@@ -11,6 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect, useId, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link } from 'react-router-dom'
+import { toast } from 'sonner'
 import { FormField } from '../../../components/ui/FormField'
 import { corteScalarFormSchema, type CorteScalarFormValues } from '../../../lib/schemas/production'
 import { ic } from '../../../lib/tabler'
@@ -130,9 +131,16 @@ export function CorteForm({ mode, initialData, onSubmit, saving, error }: CorteF
   useEffect(() => {
     if (!initialData?.imagen_path) return
     let cancelled = false
-    getCorteImageSignedUrl(initialData.imagen_path).then((url) => {
-      if (!cancelled) setExistingImageUrl(url)
-    })
+    void getCorteImageSignedUrl(initialData.imagen_path)
+      .then((url) => {
+        if (!cancelled) setExistingImageUrl(url)
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return
+        toast.error('No se pudo cargar la imagen del corte', {
+          description: error instanceof Error ? error.message : 'Error desconocido',
+        })
+      })
     return () => { cancelled = true }
   }, [initialData?.imagen_path])
 
@@ -566,9 +574,7 @@ export function CorteForm({ mode, initialData, onSubmit, saving, error }: CorteF
           onClose={() => setShowPicker(false)}
         />
       )}
-      {imageTarget && (
-        <ArticuloImageModal articulo={imageTarget} onClose={() => setImageTarget(null)} />
-      )}
+      <ArticuloImageModal articulo={imageTarget} onClose={() => setImageTarget(null)} />
     </>
   )
 }
