@@ -249,28 +249,6 @@ export function CuentaPage() {
                     iconSize={28}
                   />
                 </div>
-                {isEditing && (
-                  <label
-                    htmlFor={avatarInputId}
-                    className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/50 opacity-0 transition-opacity hover:opacity-100"
-                    aria-label="Cambiar foto de perfil"
-                  >
-                    <IconCamera size={18} className="text-white" aria-hidden />
-                    <input
-                      id={avatarInputId}
-                      type="file"
-                      accept="image/jpeg,image/jpg,image/png,image/webp"
-                      className="sr-only"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0] ?? null
-                        if (!f) return
-                        const err = validateAvatarFile(f)
-                        if (err) { toast.error(err); return }
-                        setAvatarFile(f)
-                      }}
-                    />
-                  </label>
-                )}
               </div>
 
               {/* Name + meta */}
@@ -460,8 +438,42 @@ export function CuentaPage() {
 
               <div className="space-y-4 p-5">
                 <p className="rounded-lg bg-brand-primary-ghost px-3 py-2 text-xs text-brand-primary">
-                  <strong>Foto:</strong> hacé clic sobre el avatar para cambiarla.
+                  <strong>Foto:</strong> elegí una imagen para agregarla o reemplazarla. Se mostrará una vista previa antes de guardar.
                 </p>
+
+                <div className="space-y-2">
+                  <input
+                    id={avatarInputId}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    className="sr-only"
+                    disabled={saving}
+                    onChange={(event) => {
+                      const input = event.currentTarget
+                      const file = input.files?.[0]
+                      input.value = ''
+                      if (!file) return
+                      const error = validateAvatarFile(file)
+                      if (error) {
+                        toast.error(error)
+                        return
+                      }
+                      setAvatarFile(file)
+                    }}
+                  />
+                  <label
+                    htmlFor={avatarInputId}
+                    className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-brand-border-strong bg-brand-surface px-4 py-2 text-sm font-semibold text-brand-ink transition hover:bg-brand-canvas"
+                  >
+                    <IconCamera size={17} stroke={1.5} aria-hidden />
+                    {avatarFile ? 'Elegir otra foto' : profile?.avatar_path ? 'Cambiar foto' : 'Agregar foto'}
+                  </label>
+                  {avatarFile && (
+                    <p className="text-xs text-brand-ink-muted" role="status">
+                      Vista previa: {avatarFile.name}
+                    </p>
+                  )}
+                </div>
 
                 <FormField
                   label="Nombre completo"
